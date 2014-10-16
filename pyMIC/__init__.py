@@ -29,6 +29,7 @@
 
 from offload_array import offload_array
 from offload_device import offload_device
+from offload_device import number_of_devices
 from offload_device import devices
 
 # load all MIC libraries 
