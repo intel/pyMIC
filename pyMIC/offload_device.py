@@ -45,6 +45,7 @@ from _pyMICimpl import _pymic_impl_buffer_copy_from_target_and_release
 from _pyMICimpl import _pymic_impl_invoke_kernel
 
 from _misc import _debug as debug
+from _misc import _get_order as get_order
 import pyMIC
 
 import numpy
@@ -276,7 +277,7 @@ class offload_device:
     def empty_like(self, other, update_host=True):
         if not isinstance(other, numpy.ndarray) and not isinstance(other, pyMIC.offload_array):
             raise ValueError("only numpy.ndarray can be used with this function")
-        return self.empty(other.shape, other.dtype, other.order, update_host)
+        return self.empty(other.shape, other.dtype, get_order(other), update_host)
             
     def zeros(self, shape, dtype=numpy.float, order='C', update_host=True):
         # TODO: how can we get rid of the explicit cast when calling "fill"
@@ -289,7 +290,7 @@ class offload_device:
     def zeros_like(self, other, update_host=True):
         if not isinstance(other, numpy.ndarray) and not isinstance(other, pyMIC.offload_array):
             raise ValueError("only numpy.ndarray can be used with this function")
-        return self.zeros(other.shape, other.dtype, other.order, update_host)
+        return self.zeros(other.shape, other.dtype, get_order(other), update_host)
         
     def ones(self, shape, dtype=numpy.float, order='C', update_host=True):
         # TODO: how can we get rid of the explicit cast when calling "fill"
@@ -302,7 +303,7 @@ class offload_device:
     def ones_like(self, other, update_host=True):
         if not isinstance(other, numpy.ndarray) and not isinstance(other, pyMIC.offload_array):
             raise ValueError("only numpy.ndarray can be used with this function")
-        return self.ones(other.shape, other.dtype, other.order, update_host)
+        return self.ones(other.shape, other.dtype, get_order(other), update_host)
         
     def bcast(self, value, shape, dtype=numpy.float, order='C', update_host=True):
         # TODO: how can we get rid of the explicit cast when calling "fill"
@@ -315,7 +316,7 @@ class offload_device:
     def bcast_like(self, value, other, update_host=True):
         if not isinstance(other, numpy.ndarray) and not isinstance(other, pyMIC.offload_array):
             raise ValueError("only numpy.ndarray can be used with this function")
-        return self.bcast(value, other.shape, other.dtype, other.order, update_host)
+        return self.bcast(value, other.shape, other.dtype, get_order(other), update_host)
 
 def _init_devices():
     """

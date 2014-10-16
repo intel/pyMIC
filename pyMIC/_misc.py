@@ -31,6 +31,7 @@ from __future__ import print_function
 
 import os
 import sys
+import numpy
 
 # determine the integer value for PYMIC_DEBUG
 _debug_level = os.environ.get("PYMIC_DEBUG")
@@ -51,3 +52,13 @@ def _deprecated(func):
         print("Warning: function '{0}' has been deprecated".format(func.__name__))
         func(*args)
     return wrapper
+
+def _get_order(array):
+    if isinstance(array, numpy.ndarray):
+        if array.flags['CA']:
+            return 'C'
+        if array.flags['FA']:
+            return 'F'
+        raise TypeError("cannot determine order of the input array")
+    else:
+        return array.order
