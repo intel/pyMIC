@@ -52,3 +52,20 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# backup files from editors
+*.bak
+*~
+
+# compiled code
+*.o
+*.a
+*.so
+
+# release files
+pyMIC-????-??-??.tbz2
+
+# benchmarking stuff
+*.csv
+dgemm_c.x
+
