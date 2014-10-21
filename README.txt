@@ -20,7 +20,7 @@ The two biggest limitations at this point are:
        compiled as a native shared object for KNC.
  
  
-0. Requirements 
+1. Requirements 
 -----------------------
 
 You need to have the following software packages:
@@ -33,7 +33,7 @@ You need to have the following software packages:
 
 
 
-1. Setup
+2. Setup
 -----------------------
 
 To compile the native parts of pyMIC, please see README-developer.txt.
@@ -58,7 +58,7 @@ To prepare pyMIC, please follow these steps
  
  
  
-2. Examples
+3. Examples
 -----------------------
 
 There are a few (very few!) examples that you can use for your first steps.  You 
@@ -87,7 +87,7 @@ Then you should be able to run the Python application and do some offloads:
  
  
  
-3. Debugging
+4. Debugging
 -----------------------
 
 If you are interested in what is going on inside the pyMIC module, you can
