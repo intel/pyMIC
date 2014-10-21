@@ -70,17 +70,17 @@ for ds,nrep in zip(data_sizes,repeats):
     
     ts = time.time()
     for i in range(nrep):
-        offl_a = device.associate(a)
-        offl_b = device.associate(b)
-        offl_c = device.associate(c)
+        offl_a = device.bind(a)
+        offl_b = device.bind(b)
+        offl_c = device.bind(c)
         ts_kernel = time.time()
         device.invoke_kernel("dgemm_kernel", offl_a, offl_b, offl_c, m, n, k, alpha, beta)
         te_kernel = time.time()
     te = time.time()
     timings[ds] = (te - ts, nrep)
-    offl_a = device.associate(a)
-    offl_b = device.associate(b)
-    offl_c = device.associate(c)
+    offl_a = device.bind(a)
+    offl_b = device.bind(b)
+    offl_c = device.bind(c)
     ts_kernel = time.time()
     for i in range(nrep):
         device.invoke_kernel("dgemm_kernel", offl_a, offl_b, offl_c, m, n, k, alpha, beta)

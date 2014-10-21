@@ -57,7 +57,7 @@ timings = {}
 for ds,nrep in zip(data_sizes,repeats):
     print "Measuring {0} elements ({1} bytes, repeating {2})".format(ds, ds * 8, nrep)
     arr = np.zeros(ds)
-    offl_arr = device.associate(arr)
+    offl_arr = device.bind(arr)
     ts = time.time()
     for i in range(nrep):
         offl_arr.update_device()

@@ -35,45 +35,24 @@ import time
 import pyMIC as mic
 import numpy as np
 
-def limiter(data_size):
-    if data_size < 16384:
-        return 100000
-    if data_size < 131072:
-        return 10000
-    if data_size < 16777216:
-        return 1000
-    return 100
-
 benchmark = sys.argv[0][2:][:-3]
 
-# number of elements to copyin (8B to 2 GB)
-data_sizes = [pow(2,i) for i in range(29)]
-repeats = map(limiter, data_sizes)
+nrepeat = 1000000
+if len(sys.argv) > 1:
+    nrepeat = int(sys.argv[1])
 
-device = mic.devices[0]
-device.load_library("libbenchmark_kernels.so")
+np.random.seed(10)
+a = np.random.random(1)
 
-timings = {}
-for ds,nrep in zip(data_sizes,repeats):
-    print "Measuring {0} elements ({1} bytes, repeating {2})".format(ds, ds * 8, nrep)
-    arr = np.zeros(ds)
-    ts = time.time()
-    for i in range(nrep):
-        offl_arr = device.associate(arr)
-    te = time.time()
-    timings[ds] = (te - ts, nrep)
-    
+timings = []
+ts = time.time()
+for i in range(nrepeat):
+    offl_a = device.bin(a)
+te = time.time()
+
 try:
     csv = open(benchmark + ".csv", "w")
-    print >> csv, "benchmark;elements;data size;avg time;MB/sec"
-    for ds in sorted(list(timings)):
-        t, nrep = timings[ds]
-        t = (float(t) / nrep) 
-        mbs = float(ds * 8) / 1000 / 1000  / t
-        print >> csv, "{0};{1};{2};{3};{4}".format(benchmark, 
-                                                    ds,
-                                                    ds * 8,
-                                                    t,
-                                                    mbs)
+    print >> csv, "benchmark;latency"
+    print >> csv, "{0};{1}".format(benchmark, (te - ts) / float(nrepeat))
 finally:
     csv.close()
