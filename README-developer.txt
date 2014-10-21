@@ -10,8 +10,7 @@ some bugs, strange behavior, and irritating error messages.  I'm working on
 getting all these things right, so I'm happy to receive your input.
 
 There's also a certain lack of documentation.  If you have questions on how
-to use this Python module, please feel free to drop me an email or chat with
-me on the phone.
+to use this Python module, please feel free to drop me an email.
 
 The two biggest limitations at this point are: 
 
@@ -19,6 +18,20 @@ The two biggest limitations at this point are:
    
    (2) the kernel needs to be written in C/C++ (and Fortran) and must be 
        compiled as a native shared object for KNC.
+
+       
+       
+0. Requirements 
+-----------------------
+
+You need to have the following software packages:
+
+- CPython 2.6.x or 2.7.x
+
+- Intel Composer XE 2013 SP1 
+
+- MPSS 3.3 or greater
+
 
 
 1. Setup
@@ -28,6 +41,10 @@ To prepare pyMIC, please follow these steps
 
 - $pymic is the base directory of the pyMIC checkout/download
 
+- load the environment of the Intel Composer XE (if it has not been loaded yet):
+
+  $> source /opt/intel/composerxe/bin/compilervars.sh intel64
+
 - depending on the Python version installed, you may need to adjust the 
   variable PYTHON_INCLUDES in the makefiles to match your system
 
@@ -36,8 +53,8 @@ To prepare pyMIC, please follow these steps
   $> cd $pymic/src
   $> make
   
-- if you want to build the debugging version of pyMIC (adds lots of debugging 
-  output), use the following commands:
+- if you want to build the debugging version of pyMIC (enables PYMIC_DEBUG, see
+  below), use the following commands:
 
   $> cd $pymic/src
   $> make debug=1
