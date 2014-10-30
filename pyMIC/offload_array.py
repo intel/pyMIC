@@ -48,6 +48,7 @@ class offload_array(object):
     """   
     
     array = None
+    device = None
     
     def __init__(self, shape, dtype, order="C", alloc_arr=True, base=None, device=None):
         # allocate the array on the coprocessor
