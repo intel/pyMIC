@@ -81,6 +81,11 @@ required by the dynamic linker.
 
   $> ssh mic0 "chmod a+rx /lib64/libdouble_it.so"
 
+Instead of copying the shared library to the coprocessors, you could also 
+use a shared directory (through NFS).  In any case, please make sure that 
+the shared library and the directory it is located in are accessible under 
+the credentials of the COI demon running on the card (usually 'micuser').
+
 Then you should be able to run the Python application and do some offloads:
   
   $> ./double_it.py
