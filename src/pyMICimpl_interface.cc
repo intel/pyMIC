@@ -32,6 +32,7 @@
 #include <numpy/arrayobject.h>
 
 #include <cstdio>
+#include <cstdarg>
 #include <string>
 #include <vector>
 #include <utility>
@@ -44,6 +45,43 @@
 #include "debug.h"
 
 using namespace pyMIC;
+
+PyObject* throw_exception(const char* format, ...) {
+    va_list vargs;
+
+    const size_t bufsz = 256;
+    char buffer[bufsz];
+
+    PyObject* pyMIC = NULL;
+    PyObject* modules_dict = NULL;
+    PyObject* exception_type = NULL;
+    
+    // get the modules dictionary
+    modules_dict = PySys_GetObject("modules");
+    if (!modules_dict) {
+        Py_RETURN_NONE;
+    }
+    
+    // find the pyMIC module
+    pyMIC = PyDict_GetItemString(modules_dict, "pyMIC");
+    if (!pyMIC) {
+        Py_RETURN_NONE;
+    }
+    
+    // now, find the OffloadException class
+    exception_type = PyObject_GetAttrString(pyMIC, "OffloadException");
+    if (!exception_type) {
+        Py_RETURN_NONE;
+    }
+
+    // assemble the message
+    va_start(vargs, format);
+    vsnprintf(buffer, bufsz, format, vargs);
+    
+    // create (throw/register) the exception 
+    PyObject* exception = PyErr_Format(exception_type, buffer);
+    return exception;
+}
 
 PYMIC_INTERFACE 
 PyObject* pymic_impl_offload_number_of_devices(PyObject* self, PyObject* args) {
@@ -61,18 +99,27 @@ PyObject* pymic_impl_load_library(PyObject* self, PyObject* args) {
 	int device;
 	const char* library_cstr = NULL;
 	std::string library;
-	std::string errormsg;
 	debug_enter();
 	
 	if (! PyArg_ParseTuple(args, "is", &device, &library_cstr))
 		return NULL;
 	library = library_cstr;
 	
-	if (!target_load_library(device, library, errormsg)) {
-		// TODO: raise Python exception here
-		return NULL;
+    try {
+        target_load_library(device, library);
 	}
+    catch (internal_exception *exc) {
+        // catch and convert exception (re-throw as a Python exception)
+        debug(100, "internal exception raise for %s:%d, raising Python exception", 
+                   exc->file(), exc->line());
+        std::string reason = exc->reason();
+        delete exc;
+        debug_leave();
+        return throw_exception("Could not load library on target. Reason: %s.",
+                               reason.c_str());;
+    }
 	
+    debug_leave();
 	Py_RETURN_NONE;
 }
 
@@ -230,13 +277,13 @@ PyObject* pymic_impl_invoke_kernel(PyObject* self, PyObject* args) {
         else {
             // this is an offload_array, we have to get the ndarray first
             // TODO: we might want to do some safety checks here
-            PyObject *array = PyObject_GetAttrString(array_obj, "array");
+            PyObject* array = PyObject_GetAttrString(array_obj, "array");
             if (!array)
                 return NULL;
             if(PyArray_Check(array)) {
                 debug(100, "argument %d is offload_array w/ encapsulated numpy.ndarray", i);
                 PyArrayObject* nparray = reinterpret_cast<PyArrayObject*>(array);
-                char *payload = PyArray_BYTES(nparray);
+                char* payload = PyArray_BYTES(nparray);
                 size_t size = PyArray_NBYTES(nparray);
                 arguments.push_back(std::pair<char *, int>(payload, size));
             }
@@ -248,7 +295,18 @@ PyObject* pymic_impl_invoke_kernel(PyObject* self, PyObject* args) {
 	}
 	
 	// invoke the kernel on the remote side
-	target_invoke_kernel(device, kernel_name, arguments);
+    try {
+        target_invoke_kernel(device, kernel_name, arguments);
+    }
+    catch(const internal_exception *exc) {
+        // catch and convert exception (re-throw as a Python exception)
+        debug(100, "internal exception raise for %s:%d, raising Python exception", 
+                   exc->file(), exc->line());
+        delete exc;
+        debug_leave();
+        return throw_exception("Could not invoke kernel. Reason: Kernel function '%s' not found in loaded libraries.",
+                               kernel_name.c_str());;
+    }
 	
 	debug_leave();
 	Py_RETURN_NONE;

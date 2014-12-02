@@ -27,54 +27,11 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
- 
-#ifndef PYMIC_MISC_H
-#define PYMIC_MISC_H
 
-#include <string>
-#include <cstdint>
+#include <pymic_kernel.h>
 
-#include <exception>
-
-namespace pyMIC {
-
-int get_number_of_devices();
-bool target_load_library(int device, const std::string &);
-uintptr_t find_kernel(int device, const std::string &kernel_name);
-
-struct internal_exception : public std::exception {
-    const char* file_;
-    const int line_;
-    const std::string reason_;
-    
-    internal_exception(const std::string &reason, const char *file, const int line) :
-        reason_(reason), file_(file), line_(line) {
-        // left blank
-    }
-
-    internal_exception(const char *file, const int line) :
-        reason_("unknown reason"), file_(file), line_(line) {
-        // left blank
-    }
-    
-    virtual ~internal_exception() throw() {
-        // left blank
-    }
-    
-    const std::string reason() const {
-        return reason_;
-    }
-    
-    const char* file() const {
-        return file_;
-    }
-    
-    int line() const {
-        return line_;
-    }
-}; // struct internal_exception
-
-} // namespace pyMIC
-
-#endif 
+PYMIC_KERNEL
+void test_empty(int argc, uintptr_t argptr[], size_t sizes[]) {
+    // do nothing
+}
 

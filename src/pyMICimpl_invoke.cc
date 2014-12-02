@@ -64,9 +64,8 @@ void target_invoke_kernel(int device, std::string kernel_name, std::vector<std::
 		// we have not found the kernel in the cache, so try to load its symbol
 		kernel_fct_ptr = find_kernel(target, kernel_name);
 		if (!kernel_fct_ptr) {
-			// TODO: panic here if we do not find the proper kernel
-			fprintf(stderr, "PANIC!!! could not find kernel function for kernel %s\n", kernel_name.c_str());
-			assert(false);
+            // throw an internal exception that we'll promote to a Python exception
+            throw new internal_exception(__FILE__, __LINE__);
 		}
 		else {
 			// memorize the kernel's device pointer 

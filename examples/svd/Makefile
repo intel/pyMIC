@@ -27,32 +27,16 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-.PHONY: all clean realclean tests tarball
+.PHONY: all clean realclean
+ 
+all: libsvd.so
 
-all:
-	make -C src all
-	make -C pyMIC all
-	make -C examples all
-	make -C benchmarks all
+libsvd.so: svd.c
+	icc -I../../include -I$(MKLROOT)/include -fPIC -shared -mmic -g -O2 -L$(MKLROOT)/lib/mic -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -o $@ $<
+	chmod a+rX libsvd.so
 
-tests: all
-	make -C tests tests
-	
 clean:
-	make -C src clean
-	make -C pyMIC clean
-	make -C examples clean
-	make -C benchmarks clean
-	make -C tests clean
+	rm -f libsvd.so
 	
-realclean: 
-	make -C src realclean
-	make -C pyMIC realclean
-	make -C examples realclean
-	make -C benchmarks realclean
-	make -C tests realclean
-
-tarball: all
-	make -C examples realclean
-	tar cfj pyMIC-`date +%F`.tbz2 ../pyMIC/{README.txt,pyMIC,include,examples}
-
+realclean: clean
+	rm -f *~

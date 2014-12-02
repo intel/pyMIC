@@ -1,0 +1,15 @@
+Version 0.2
+----------------------------
+- Small improvements to the README files.
+- New example: Singular Value Decomposition.
+- Some documentation for the API functions.
+- Added a basic testsuite for unit testing (WIP).
+- Bugfix: benchmarks now use the latest interface.
+- Bugfix: numpy.ndarray does not offer an attribute 'order'.
+- Bugfix: number_of_devices was not visible after import.
+- Bugfix: member offload_array.device is now initialized.
+- Bugfix: use exception for errors w/ invoke_kernel & load_library.
+
+Version 0.1
+----------------------------
+Initial release.

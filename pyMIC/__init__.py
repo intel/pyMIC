@@ -28,9 +28,12 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
 from offload_array import offload_array
+
 from offload_device import offload_device
 from offload_device import number_of_devices
 from offload_device import devices
+
+from offload_exception import OffloadException
 
 # load all MIC libraries 
 if True:

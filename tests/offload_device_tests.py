@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 # Copyright (c) 2014, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
@@ -27,32 +29,32 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-.PHONY: all clean realclean tests tarball
+import unittest
 
-all:
-	make -C src all
-	make -C pyMIC all
-	make -C examples all
-	make -C benchmarks all
+import pyMIC as mic
 
-tests: all
-	make -C tests tests
-	
-clean:
-	make -C src clean
-	make -C pyMIC clean
-	make -C examples clean
-	make -C benchmarks clean
-	make -C tests clean
-	
-realclean: 
-	make -C src realclean
-	make -C pyMIC realclean
-	make -C examples realclean
-	make -C benchmarks realclean
-	make -C tests realclean
+device = mic.devices[0]        
+device.load_library("libtests.so")
 
-tarball: all
-	make -C examples realclean
-	tar cfj pyMIC-`date +%F`.tbz2 ../pyMIC/{README.txt,pyMIC,include,examples}
-
+class OffloadDeviceTest(unittest.TestCase):
+    """This class defines the test cases for the offload_device class."""
+    
+    def test_library_not_loaded(self):
+        """Test if load_library throws an exception if a library cannot be loaded
+           for any reason."""
+        device = mic.devices[0]
+        self.assertRaises(mic.OffloadException, device.load_library, "this_library_does_not_exist_anywhere")
+        
+    def test_invalid_kernel_name(self):
+        """Test if invoke_kernel throws an exception if a kernel's name does
+           not exist in any loaded library.
+        """
+        device = mic.devices[0]
+        self.assertRaises(mic.OffloadException, device.invoke_kernel, "this_kernel_does_not_exist_anywhere")
+    
+    def test_invoke_empty_kernel(self):
+        """Test if invoke_kernel does successfully invoke a kernel function
+           with no arguments."""
+        device = mic.devices[0]
+        device.invoke_kernel("test_empty")
+        

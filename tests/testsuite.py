@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 # Copyright (c) 2014, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
@@ -27,32 +29,13 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-.PHONY: all clean realclean tests tarball
+import unittest
 
-all:
-	make -C src all
-	make -C pyMIC all
-	make -C examples all
-	make -C benchmarks all
+from offload_device_tests import OffloadDeviceTest 
+from offload_array_tests import OffloadArrayTest    
 
-tests: all
-	make -C tests tests
-	
-clean:
-	make -C src clean
-	make -C pyMIC clean
-	make -C examples clean
-	make -C benchmarks clean
-	make -C tests clean
-	
-realclean: 
-	make -C src realclean
-	make -C pyMIC realclean
-	make -C examples realclean
-	make -C benchmarks realclean
-	make -C tests realclean
-
-tarball: all
-	make -C examples realclean
-	tar cfj pyMIC-`date +%F`.tbz2 ../pyMIC/{README.txt,pyMIC,include,examples}
-
+if __name__ == "__main__":        
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(OffloadDeviceTest))
+    suite.addTest(unittest.makeSuite(OffloadArrayTest))
+    unittest.main()

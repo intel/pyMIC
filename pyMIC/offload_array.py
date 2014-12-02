@@ -95,10 +95,45 @@ class offload_array(object):
         raise TypeError("An offload_array is not hashable.")
     
     def update_device(self):
+        """Update the offload_array's buffer space on the associated 
+           device by copying the contents of the associated numpy.ndarray 
+           to the device.
+        
+           Parameters
+           ----------
+           n/a
+           
+           Returns
+           -------
+           out : offload_array
+               The object instance of this offload_array.
+           
+           See Also
+           --------
+           update_host     
+        """
         self.device.buffer_update_on_target(self.array)
         return None
         
     def update_host(self):
+        """Update the associated numpy.ndarray on the host with the contents
+           by copying the offload_array's buffer space from the device to the
+           host.
+
+           Parameters
+           ----------
+           n/a 
+            
+           Returns
+           -------
+           out : offload_array
+               The object instance of this offload_array.
+           
+           See Also
+           --------
+           update_device
+           >>> 
+        """
         self.device.buffer_update_on_host(self.array)
         return self
         
@@ -275,6 +310,9 @@ class offload_array(object):
         return offload_array(result, False, device=self.device)
 
     def reshape(self, *shape):
+        """Assigns a new shape to an existing offload_array without changing 
+           the data of it."""
+        
         if isinstance(shape[0], tuple) or isinstance(shape[0], list):
             shape = tuple(shape[0])
         # determine size of the array from its shape
@@ -292,32 +330,5 @@ class offload_array(object):
                              False, self, device=self.device)
 
     def ravel(self):
+        """Return a flattened array."""
         return self.reshape(self.size)
-        
-if __name__ == '__main__':
-    # some simple tests, remove them ASAP
-    arr1 = np.arange(1.0,17.0)
-
-    offl_arr1 = offload_array(16, np.float64)
-    offl_arr2 = offload_array(16, np.float64)
-    offl_arr1.fillfrom(arr1)
-    offl_arr2.fillfrom(arr1)
-    print offl_arr1.update_host()
-    
-    offl_arr3 = offl_arr1 + 1.0
-    print offl_arr3.update_host()
-
-    offl_arr4 = offl_arr1 * 2.0
-    print offl_arr4.update_host()
-    
-    offl_arr5 = offl_arr4.reshape(4,4)
-    print offl_arr5
-    
-    offl_arr6 = offl_arr5 - 0.5
-    # print offl_arr6.update_host()
-
-    offl_arr7 = offl_arr6.ravel()
-    print offl_arr7.update_host()
-    
-    offl_arr8 = offl_arr7 + offl_arr2
-    print offl_arr8.update_host()

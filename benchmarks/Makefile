@@ -28,6 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  
 .SUFFIXES: .csv .py
+.PHONY: all benchmarks clean realclean
  
 BENCHMARKS=$(shell find . -maxdepth 1 -name \*.py )
 CSV=$(BENCHMARKS:.py=.csv)

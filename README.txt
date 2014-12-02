@@ -9,8 +9,9 @@ This is very early code.  It is still under heavy development.  Please expect
 some bugs, strange behavior, and irritating error messages.  I'm working on
 getting all these things right, so I'm happy to receive your input.
 
-There's also a certain lack of documentation.  If you have questions on how
-to use this Python module, please feel free to drop me an email.
+There's a certain lack of documentation.  If you have questions on how
+to use this Python module, please feel free to register for the mailinglist
+at https://lists.01.org/mailman/listinfo/pymic.
 
 The two biggest limitations at this point are: 
 

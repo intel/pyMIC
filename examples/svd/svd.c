@@ -27,54 +27,62 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
+
+#include <pymic_kernel.h>
+
+#include <stdlib.h>
  
-#ifndef PYMIC_MISC_H
-#define PYMIC_MISC_H
+#include <mkl.h>
 
-#include <string>
-#include <cstdint>
+PYMIC_KERNEL
+void empty(int argc, uintptr_t argptr[], size_t sizes[]) {
+#pragma omp parallel
+    {
+        // do nothing
+    }
+}
+ 
+PYMIC_KERNEL
+void dgemm_kernel(int argc, uintptr_t argptr[], size_t sizes[]) {
+	int i;
 
-#include <exception>
+	double *A = (double*) argptr[0];
+	double *B = (double*) argptr[1];
+	double *C = (double*) argptr[2];
 
-namespace pyMIC {
+	int m = *(long int*) argptr[3];
+	int n = *(long int*) argptr[4];
+	int k = *(long int*) argptr[5];
+	
+	double alpha = *(double*) argptr[6];
+	double beta = *(double*) argptr[7];
+	
+	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+	            m, n, k, alpha, A, k, B, n, beta, C, n);
+}
 
-int get_number_of_devices();
-bool target_load_library(int device, const std::string &);
-uintptr_t find_kernel(int device, const std::string &kernel_name);
+PYMIC_KERNEL
+void svd_reconstruct(int argc, uintptr_t argptr[], size_t sizes[]) {
+	int i;
 
-struct internal_exception : public std::exception {
-    const char* file_;
-    const int line_;
-    const std::string reason_;
+	double *U     = (double*) argptr[0];
+	double *sigma = (double*) argptr[1];
+	double *V     = (double*) argptr[2];
+    double *res   = (double*) argptr[3];
+
+	int x = *(long int*) argptr[4];
+	int y = *(long int*) argptr[5];
+	int z = *(long int*) argptr[6];
+	
+    double *tmp   = (double*) malloc(sizeof(double) * x * z);
     
-    internal_exception(const std::string &reason, const char *file, const int line) :
-        reason_(reason), file_(file), line_(line) {
-        // left blank
-    }
-
-    internal_exception(const char *file, const int line) :
-        reason_("unknown reason"), file_(file), line_(line) {
-        // left blank
-    }
+    /* tmp = U * sigma*/
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                x, z, z, 1.0, U, z, sigma, z, 0.0, tmp, z);
     
-    virtual ~internal_exception() throw() {
-        // left blank
-    }
+    /* res = tmp * V */
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                x, y, z, 1.0, tmp, z, V, y, 0.0, res, y);
     
-    const std::string reason() const {
-        return reason_;
-    }
-    
-    const char* file() const {
-        return file_;
-    }
-    
-    int line() const {
-        return line_;
-    }
-}; // struct internal_exception
-
-} // namespace pyMIC
-
-#endif 
-
+    free(tmp);
+}

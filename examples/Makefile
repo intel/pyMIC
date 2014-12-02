@@ -27,6 +27,8 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
+.PHONY: all clean realclean
+
 EXAMPLES=$(shell find . -maxdepth 1 -type d ! -path . -name \*)
 
 all:

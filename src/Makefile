@@ -27,6 +27,8 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
+.PHONY: all clean realclean
+
 ifeq ($(debug),0)
 DEBUG=
 else
@@ -38,7 +40,7 @@ PYTHON_INCLUDES=-I/usr/include/python2.6 -I/usr/lib64/python2.6/site-packages/nu
 CC_MIC=icc
 CFLAGS_MIC=-I../include -fPIC -shared -mmic -g -O2 -o
 CXX=icpc
-CXXFLAGS=$(DEBUG) -std=c++11 -Wall -g -O3 -fPIC -I../include $(PYTHON_INCLUDES)
+CXXFLAGS=$(DEBUG) -qoffload=mandatory -std=c++11 -Wall -g -O3 -fPIC -I../include $(PYTHON_INCLUDES)
 LD=icpc
 LDFLAGS=-shared -qoffload-option,mic,link,"--no-undefined"
 
@@ -52,9 +54,9 @@ _pyMICimpl.so: pyMICimpl_interface.o pyMICimpl_buffers.o pyMICimpl_invoke.o pyMI
 	chmod a+rX ../pyMIC/_pyMICimpl.so
 
 pyMICimpl_interface.cc: debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_misc.h pyMICimpl_buffers.h pyMICimpl_invoke.h pyMICimpl_misc.h
-pyMICimpl_buffers.cc:   debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_buffers.h 
-pyMICimpl_invoke.cc:    debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_invoke.h pyMICimpl_buffers.h 
-pyMICimpl_misc.cc:      debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_misc.h
+pyMICimpl_buffers.cc:   debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_misc.h pyMICimpl_buffers.h 
+pyMICimpl_invoke.cc:    debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_misc.h pyMICimpl_invoke.h pyMICimpl_buffers.h 
+pyMICimpl_misc.cc:      debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_misc.h 
 
 liboffload_array.so: offload_array.c
 	$(CC_MIC) $(CFLAGS_MIC) $@ $< -lm

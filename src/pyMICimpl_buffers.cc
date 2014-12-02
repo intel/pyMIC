@@ -70,14 +70,18 @@ void buffer_release(int device, char* backing_store, size_t size) {
 	debug_enter();
 	int target = PYMIC_MAP_ANY_DEVICE(device);
 	uintptr_t host_ptr = reinterpret_cast<uintptr_t>(backing_store);
+#ifdef UNOPTIMIZED_TRANSFERS
 	uintptr_t device_ptr = 0;
 #pragma offload target(mic:target) out(device_ptr) nocopy(backing_store:length(size) align(64) alloc_if(0) free_if(1))
 	{
 		device_ptr = reinterpret_cast<uintptr_t>(backing_store);
 	}
+#else
+#pragma offload_transfer target(mic:target) nocopy(backing_store:length(size) align(64) alloc_if(0) free_if(1))
+#endif
 	// the buffer has been deallocated on the target, so remove it from the buffer tracker
-	debug(100, "%s: removing device pointer 0x%lx for host pointer 0x%lx", 
-	      __FUNCTION__, device_ptr, host_ptr);
+	debug(100, "%s: removing device pointer for host pointer 0x%lx", 
+	      __FUNCTION__, host_ptr);
 	buffers[target].erase(host_ptr);
 	debug_leave();
 }
@@ -86,11 +90,15 @@ void buffer_update_on_target(int device, char* backing_store, size_t size) {
 	debug_enter();
 	int target = PYMIC_MAP_ANY_DEVICE(device);
 	uintptr_t host_ptr = reinterpret_cast<uintptr_t>(backing_store);
+#ifdef UNOPTIMIZED_TRANSFERS
 	uintptr_t device_ptr = 0;
 #pragma offload target(mic:target) out(device_ptr) in(backing_store:length(size) align(64) alloc_if(0) free_if(0))
 	{
 		device_ptr = reinterpret_cast<uintptr_t>(backing_store);
 	}
+#else
+#pragma offload_transfer target(mic:target) in(backing_store:length(size) align(64) alloc_if(0) free_if(0))
+#endif
 	// we do not need to update the buffer map here, the buffers stay in their current state
 	debug_leave();
 }
@@ -99,11 +107,15 @@ void buffer_update_on_host(int device, char* backing_store, size_t size) {
 	debug_enter();
 	int target = PYMIC_MAP_ANY_DEVICE(device);
 	uintptr_t host_ptr = reinterpret_cast<uintptr_t>(backing_store);
+#ifdef UNOPTIMIZED_TRANSFERS
 	uintptr_t device_ptr = 0;
 #pragma offload target(mic:target) out(device_ptr) out(backing_store:length(size) align(64) alloc_if(0) free_if(0))
 	{
 		device_ptr = reinterpret_cast<uintptr_t>(backing_store);
 	}
+#else
+#pragma offload_transfer target(mic:target) out(backing_store:length(size) align(64) alloc_if(0) free_if(0))
+#endif
 	// we do not need to update the buffer map here, the buffers stay in their current state
 	debug_leave();
 }
@@ -128,11 +140,15 @@ void buffer_copy_from_target_and_release(int device, char* backing_store, size_t
 	debug_enter();
 	int target = PYMIC_MAP_ANY_DEVICE(device);
 	uintptr_t host_ptr = reinterpret_cast<uintptr_t>(backing_store);
+#ifdef UNOPTIMIZED_TRANSFERS    
 	uintptr_t device_ptr = 0;
 #pragma offload target(mic:target) out(device_ptr) out(backing_store:length(size) align(64) alloc_if(0) free_if(1))
 	{
 		device_ptr = reinterpret_cast<uintptr_t>(backing_store);
 	}
+#else
+#pragma offload_transfer target(mic:target) out(backing_store:length(size) align(64) alloc_if(0) free_if(1))
+#endif
 	// the buffer has been deallocated on the target, so remove it from the buffer tracker
 	debug(100, "%s: removing device pointer 0x%lx for host pointer 0x%lx", 
 	      __FUNCTION__, buffers[target][host_ptr], host_ptr);
