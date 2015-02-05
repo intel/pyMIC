@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -32,10 +32,13 @@
 import sys
 import time
 
-import pyMIC as mic
+import pymic
 import numpy as np
 
 benchmark = sys.argv[0][2:][:-3]
+
+device = pymic.devices[0]
+stream = device.get_default_stream()
 
 nrepeat = 1000000
 if len(sys.argv) > 1:
@@ -46,8 +49,9 @@ a = np.random.random(1)
 
 timings = []
 ts = time.time()
-for i in range(nrepeat):
-    offl_a = device.bin(a)
+for i in xrange(nrepeat):
+    offl_a = stream.bind(a)
+    stream.sync()
 te = time.time()
 
 try:

@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -43,6 +43,9 @@ libbenchmark_kernels.so: benchmark_kernels.c
 
 dgemm_c.x: dgemm_c.c
 	icc -openmp -L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm -g -O2 -o dgemm_c.x dgemm_c.c
+
+pep8check:
+	pep8 --ignore=W293,W291 *.py
 
 clean:
 	rm -f libbenchmark_kernels.so

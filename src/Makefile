@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -35,28 +35,28 @@ else
 DEBUG=-DDEBUG
 endif
 
-PYTHON_INCLUDES=-I/usr/include/python2.6 -I/usr/lib64/python2.6/site-packages/numpy/core/include
+PYTHON_INCLUDES=-I/usr/include/python2.7 -I/usr/lib64/python2.7/site-packages/numpy/core/include
 
 CC_MIC=icc
 CFLAGS_MIC=-I../include -fPIC -shared -mmic -g -O2 -o
 CXX=icpc
-CXXFLAGS=$(DEBUG) -qoffload=mandatory -std=c++11 -Wall -g -O3 -fPIC -I../include $(PYTHON_INCLUDES)
+CXXFLAGS=$(DEBUG) -offload=mandatory -std=c++11 -Wall -g -O3 -fPIC -I../include $(PYTHON_INCLUDES)
 LD=icpc
-LDFLAGS=-shared -qoffload-option,mic,link,"--no-undefined"
+LDFLAGS=-shared -offload-option,mic,link,"--no-undefined"
 
-all: ../pyMIC/_pyMICimpl.so _pyMICimpl.so ../pyMIC/liboffload_array.so liboffload_array.so
+all: ../pymic/_pymicimpl.so _pymicimpl.so ../pymic/liboffload_array.so liboffload_array.so
 
-_pyMICimpl.so: pyMICimpl_interface.o pyMICimpl_buffers.o pyMICimpl_invoke.o pyMICimpl_misc.o
-	$(LD) $(LDFLAGS) -o $@  pyMICimpl_interface.o pyMICimpl_buffers.o pyMICimpl_invoke.o pyMICimpl_misc.o
+_pymicimpl.so: pymicimpl_interface.o pymicimpl_buffers.o pymicimpl_invoke.o pymicimpl_misc.o
+	$(LD) $(LDFLAGS) -o $@  pymicimpl_interface.o pymicimpl_buffers.o pymicimpl_invoke.o pymicimpl_misc.o
 	
-../pyMIC/_pyMICimpl.so: _pyMICimpl.so
-	cp _pyMICimpl.so ../pyMIC/_pyMICimpl.so
-	chmod a+rX ../pyMIC/_pyMICimpl.so
+../pymic/_pymicimpl.so: _pymicimpl.so
+	cp _pymicimpl.so ../pymic/_pymicimpl.so
+	chmod a+rX ../pymic/_pymicimpl.so
 
-pyMICimpl_interface.cc: debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_misc.h pyMICimpl_buffers.h pyMICimpl_invoke.h pyMICimpl_misc.h
-pyMICimpl_buffers.cc:   debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_misc.h pyMICimpl_buffers.h 
-pyMICimpl_invoke.cc:    debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_misc.h pyMICimpl_invoke.h pyMICimpl_buffers.h 
-pyMICimpl_misc.cc:      debug.h pyMICimpl_config.h pyMICimpl_common.h pyMICimpl_misc.h 
+pymicimpl_interface.cc: debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_buffers.h pymicimpl_invoke.h pymicimpl_misc.h
+pymicimpl_buffers.cc:   debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_buffers.h 
+pymicimpl_invoke.cc:    debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_invoke.h pymicimpl_buffers.h 
+pymicimpl_misc.cc:      debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h 
 
 liboffload_array.so: offload_array.c
 	$(CC_MIC) $(CFLAGS_MIC) $@ $< -lm
@@ -64,9 +64,9 @@ liboffload_array.so: offload_array.c
 
 offload_array.c: ../include/pymic_kernel.h
 	
-../pyMIC/liboffload_array.so: liboffload_array.so
-	cp liboffload_array.so ../pyMIC/liboffload_array.so
-	chmod a+rX ../pyMIC/liboffload_array.so
+../pymic/liboffload_array.so: liboffload_array.so
+	cp liboffload_array.so ../pymic/liboffload_array.so
+	chmod a+rX ../pymic/liboffload_array.so
 	
 clean:
 	rm -f *.o

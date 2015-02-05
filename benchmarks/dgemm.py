@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -29,11 +29,14 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
+from __future__ import print_function
+
 import sys
 import time
 
-import pyMIC as mic
+import pymic
 import numpy as np
+
 
 def limiter(data_size):
     if data_size < 128:
@@ -48,48 +51,58 @@ benchmark = sys.argv[0][2:][:-3]
 
 # number of elements to copyin (8B to 2 GB)
 data_sizes = []
-data_sizes = [(128+i*128) for i in range(64)]
+data_sizes = [(128 + i * 128) for i in range(64)]
 repeats = map(limiter, data_sizes)
 
-device = mic.devices[0]
-device.load_library("libbenchmark_kernels.so")
+device = pymic.devices[0]
+library = device.load_library("libbenchmark_kernels.so")
+stream = device.get_default_stream()
 
 timings = {}
 timings_kernel = {}
 np.random.seed(10)
-for ds,nrep in zip(data_sizes,repeats):
-    print "Measuring {0}x{0} (repeating {2})".format(ds, ds * 8, nrep)
+for ds, nrep in zip(data_sizes, repeats):
+    print("Measuring {0}x{0} (repeating {2})".format(ds, ds * 8, nrep))
     
-    m,k,n = ds, ds, ds
+    m, k, n = ds, ds, ds
     
-    a = np.random.random(m*k).reshape((m, k))
-    b = np.random.random(k*n).reshape((k, n))
+    a = np.random.random(m * k).reshape((m, k))
+    b = np.random.random(k * n).reshape((k, n))
     c = np.zeros((m, n))
     alpha = 1.0
     beta = 0.0
     
     ts = time.time()
     for i in range(nrep):
-        offl_a = device.bind(a)
-        offl_b = device.bind(b)
-        offl_c = device.bind(c)
+        offl_a = stream.bind(a)
+        offl_b = stream.bind(b)
+        offl_c = stream.bind(c)
+        stream.sync()
         ts_kernel = time.time()
-        device.invoke_kernel("dgemm_kernel", offl_a, offl_b, offl_c, m, n, k, alpha, beta)
+        stream.invoke(library.dgemm_kernel, 
+                      offl_a, offl_b, offl_c, m, n, k, alpha, beta)
+        stream.sync()
         te_kernel = time.time()
     te = time.time()
     timings[ds] = (te - ts, nrep)
-    offl_a = device.bind(a)
-    offl_b = device.bind(b)
-    offl_c = device.bind(c)
+    offl_a = stream.bind(a)
+    offl_b = stream.bind(b)
+    offl_c = stream.bind(c)
+    stream.sync()
     ts_kernel = time.time()
     for i in range(nrep):
-        device.invoke_kernel("dgemm_kernel", offl_a, offl_b, offl_c, m, n, k, alpha, beta)
+        stream.invoke(library.dgemm_kernel, 
+                      offl_a, offl_b, offl_c, m, n, k, alpha, beta)
+        stream.sync()
     te_kernel = time.time()
     timings_kernel[ds] = (te_kernel - ts_kernel, nrep)
     
 try:
     csv = open(benchmark + ".csv", "w")
-    print >> csv, "benchmark;elements;avg time;avg time kernel;flops;gflops;gflops kernel"
+    print("benchmark;elements;avg time;avg time kernel;flops;gflops"
+          ";gflops kernel", 
+          file=csv)
+                  
     for ds in sorted(list(timings)):
         t, nrep = timings[ds]
         t = (float(t) / nrep) 
@@ -98,7 +111,9 @@ try:
         flops = 2 * ds * ds * ds
         gflops = (float(flops) / (1000 * 1000 * 1000)) / t
         gflops_k = (float(flops) / (1000 * 1000 * 1000)) / t_k
-        print >> csv, "{0};{1};{2};{3};{4};{5};{6}".format(benchmark, ds, t, t_k, flops, gflops, gflops_k)
+        print("{0};{1};{2};{3};{4};{5};{6}".format(benchmark, ds, t, 
+                                                   t_k, flops, gflops, 
+                                                   gflops_k),
+              file=csv)
 finally:
     csv.close()
-                                       

@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -33,27 +33,62 @@ import os
 import sys
 import numpy
 
-# determine the integer value for PYMIC_DEBUG
-_debug_level = os.environ.get("PYMIC_DEBUG")
-if _debug_level is not None:
-    try:
-        _debug_level = int(_debug_level)
-        print("DBG: debug level set to {0}".format(_debug_level), file=sys.stderr)
-    except:
-        _debug_level = None
 
-def _debug(level, *objs):
-    if _debug_level >= level:
-        print("DBG:", *objs, file=sys.stderr)
+class pymicConfig:
+    """Object to hold the runtime configuration of pymic."""
+    def __init__(self):
+        # PYMIC_DEBUG
+        self._debug_level = None
+        _debug_level = os.getenv("PYMIC_DEBUG", None)
+        try:
+            self._debug_level = int(_debug_level)
+        except:
+            pass
+            
+        # PYMIC_TRACE
+        self._trace_level = 0
+        _trace_level = os.getenv("PYMIC_TRACE", 0)
+        try:
+            self._trace_level = int(_trace_level)
+        except:
+            pass
+
+        # PYMIC_TRACE_STACKS
+        _collect_stacks_str = os.getenv("PYMIC_TRACE_STACKS", "compact")
+        self._collect_stacks_str = _collect_stacks_str.lower()
+
+        # PYMIC_LIBRARY_PATH
+        self._search_path = os.getenv("PYMIC_LIBRARY_PATH", "")
+
+        
+_config = pymicConfig()
+
+
+# determine the integer value for PYMIC_DEBUG
+if _config._debug_level is not None:
+    print("PYMIC: debug level set to {0}".format(_config._debug_level), 
+          file=sys.stderr)
+
+
+def _debug(level, format, *objs):
+    if _config._debug_level >= level:
+        msg = "PYMIC: " + format.format(*objs)
+        print(msg, file=sys.stderr)
     return None
+
     
 def _deprecated(func):
     def wrapper(*args):
-        print("Warning: function '{0}' has been deprecated".format(func.__name__))
+        print("Warning: function '{0}' has been "
+              "deprecated".format(func.__name__))
         func(*args)
     return wrapper
 
+    
 def _get_order(array):
+    """Determine the storage order of an array and map it to its string
+       representation.
+    """
     if isinstance(array, numpy.ndarray):
         if array.flags['CA']:
             return 'C'
@@ -62,3 +97,23 @@ def _get_order(array):
         raise TypeError("cannot determine order of the input array")
     else:
         return array.order
+
+_data_type_map = {
+    # Python types
+    int: 0,
+    float: 1,
+    complex: 2, 
+
+    # Numpy dtypes
+    numpy.dtype(numpy.int64): 0,
+    numpy.dtype(numpy.float64): 1,
+    numpy.dtype(numpy.complex128): 2
+}
+
+
+def _map_data_types(dtype):
+    """Map a (known) data type to an integer to be used in the native kernels
+       that implement basic operations of OffloadArray."""
+    return _data_type_map[dtype]
+    
+    

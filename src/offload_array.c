@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, Intel Corporation All rights reserved. 
+/* Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
  * 
  * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are 
@@ -32,145 +32,370 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <complex.h>
 #include <string.h>
 
+/* Data types, needs to match _data_type_map in _misc.py */
+#define DTYPE_INT       0
+#define DTYPE_FLOAT     1
+#define DTYPE_COMPLEX   2
 
 PYMIC_KERNEL
-void offload_array_dadd(int argc, uintptr_t argptr[], size_t sizes[]) {
-    /* offload_array_dadd(int n, double* x, int incx, double *y, int incy, double* result, int incr) */
+void pymic_offload_array_add(int argc, uintptr_t argptr[], size_t sizes[]) {
+    /* pymic_offload_array_add(int n, type * x, int incx, type * y, 
+                         int incy, type * result, int incr) */
 	
-	int n = *((int*) argptr[0]);
-	double *x = (double*) argptr[1];
-	int incx = *((int*) argptr[2]);
-	double *y = (double*) argptr[3];
-	int incy = *((int*) argptr[4]);;
-	double *r = (double*) argptr[5];
-	int incr = *((int*) argptr[6]);
+	size_t i, ix, iy, ir;
+	
+    int dtype   = *(long int *) argptr[0];
+	int n       = *(long int *) argptr[1];
+	int incx    = *(long int *) argptr[3];
+	int incy    = *(long int *) argptr[5];
+	int incr    = *(long int *) argptr[7];
 
-	int i, ix, iy, ir;
-	
-    i = ix = iy = ir = 0;		   
-	for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
-		r[ir] = x[ix] + y[iy];
-	}
+	i = ix = iy = ir = 0;		   
+    switch(dtype) {
+    case DTYPE_INT:
+        {
+            long int * x = (long int *) argptr[2];
+            long int * y = (long int *) argptr[4];
+            long int * r = (long int *) argptr[6];
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = x[ix] + y[iy];
+            }
+        }
+        break;
+    case DTYPE_FLOAT:
+        {
+            double * x = (double *) argptr[2];
+            double * y = (double *) argptr[4];
+            double * r = (double *) argptr[6];
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = x[ix] + y[iy];
+            }
+        }
+        break;
+    case DTYPE_COMPLEX:
+        {
+            double complex * x = (double complex *) argptr[2];
+            double complex * y = (double complex *) argptr[4];
+            double complex * r = (double complex *) argptr[6];
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = x[ix] + y[iy];
+            }
+        }
+        break;
+    }
 }
 
 PYMIC_KERNEL
-void offload_array_dsub(int argc, uintptr_t argptr[], size_t sizes[]) {
-    /* offload_array_dsub(int n, double* x, int incx, double *y, int incy, double* result, int incr) */
+void pymic_offload_array_sub(int argc, uintptr_t argptr[], size_t sizes[]) {
+    /* pymic_offload_array_sub(int dtype, int n, type * x, int incx, type * y, 
+                         int incy, type * result, int incr) */
 	
-	int n = *((int*) argptr[0]);
-	double *x = (double*) argptr[1];
-	int incx = *((int*) argptr[2]);
-	double *y = (double*) argptr[3];
-	int incy = *((int*) argptr[4]);
-	double *r = (double*) argptr[5];
-	int incr = *((int*) argptr[6]);
+	size_t i, ix, iy, ir;
+	
+    int dtype   = *(long int *) argptr[0];
+	int n       = *(long int *) argptr[1];
+	int incx    = *(long int *) argptr[3];
+	int incy    = *(long int *) argptr[5];
+	int incr    = *(long int *) argptr[7];
 
-	int i, ix, iy, ir;
-	
-    i = ix = iy = ir = 0;		   
-	for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
-		r[ir] = x[ix] - y[iy];
-	}
+	i = ix = iy = ir = 0;		   
+    switch(dtype) {
+    case DTYPE_INT:
+        {
+            long int * x = (long int *) argptr[2];
+            long int * y = (long int *) argptr[4];
+            long int * r = (long int *) argptr[6];
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = x[ix] - y[iy];
+            }
+        }
+        break;
+    case DTYPE_FLOAT:
+        {
+            double * x = (double *) argptr[2];
+            double * y = (double *) argptr[4];
+            double * r = (double *) argptr[6];
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = x[ix] - y[iy];
+            }
+        }
+        break;
+    case DTYPE_COMPLEX:
+        {
+            double complex * x = (double complex *) argptr[2];
+            double complex * y = (double complex *) argptr[4];
+            double complex * r = (double complex *) argptr[6];
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = x[ix] - y[iy];
+            }
+        }
+        break;
+    }
 }
 
 PYMIC_KERNEL
-void offload_array_dmul(int argc, uintptr_t argptr[], size_t sizes[]) {
-    /* offload_array_dmul(int n, double* x, int incx, double *y, int incy, double* result, int incr) */
+void pymic_offload_array_mul(int argc, uintptr_t argptr[], size_t sizes[]) {
+    /* pymic_offload_array_mul(int dtype, int n, type * x, int incx, type * y, 
+                         int incy, type * result, int incr) */
+	size_t i, ix, iy, ir;
 	
-	int n = *((int*) argptr[0]);
-	double *x = (double*) argptr[1];
-	int incx = *((int*) argptr[2]);
-	double *y = (double*) argptr[3];
-	int incy = *((int*) argptr[4]);
-	double *r = (double*) argptr[5];
-	int incr = *((int*) argptr[6]);
+    int dtype   = *(long int *) argptr[0];
+	int n       = *(long int *) argptr[1];
+	int incx    = *(long int *) argptr[3];
+	int incy    = *(long int *) argptr[5];
+	int incr    = *(long int *) argptr[7];
 
-	int i, ix, iy, ir;
-	
-    i = ix = iy = ir = 0;		   
-	for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
-		r[ir] = x[ix] * y[iy];
-	}
+	i = ix = iy = ir = 0;		   
+    switch(dtype) {
+    case DTYPE_INT:
+        {
+            long int * x = (long int *) argptr[2];
+            long int * y = (long int *) argptr[4];
+            long int * r = (long int *) argptr[6];
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = x[ix] * y[iy];
+            }
+        }
+        break;
+    case DTYPE_FLOAT:
+        {
+            double * x = (double *) argptr[2];
+            double * y = (double *) argptr[4];
+            double * r = (double *) argptr[6];
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = x[ix] * y[iy];
+            }
+        }
+        break;
+    case DTYPE_COMPLEX:
+        {
+            double complex * x = (double complex *) argptr[2];
+            double complex * y = (double complex *) argptr[4];
+            double complex * r = (double complex *) argptr[6];
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = x[ix] * y[iy];
+            }
+        }
+        break;
+    }
 }
 
 PYMIC_KERNEL
-void offload_array_dfill(int argc, uintptr_t argptr[], size_t sizes[]) {
-	/* offload_array_dfill(int n, double* x, double value) */
+void pymic_offload_array_fill(int argc, uintptr_t argptr[], size_t sizes[]) {
+	/* pymic_offload_array_fill(int dtype, int n, type * x, type value) */
+    size_t i;
 	
-	int n = *((int*) argptr[0]);
-	double *x = (double*) argptr[1];
-	double v = *((double*) argptr[2]);
-	
-	int i;
-	
-	i = 0;
-	for (; i < n; i++) {
-		x[i] = v;
-	}
+    int dtype = *(long int *) argptr[0];
+	int n     = *(long int *) argptr[1];
+
+    switch(dtype) {
+    case DTYPE_INT:
+        {
+            long int * x  =  (long int *) argptr[2];
+            long int   v  = *(long int *) argptr[3];
+            for (i = 0; i < n; i++) {
+                x[i] = v;
+            }
+        }
+        break;
+    case DTYPE_FLOAT:
+        {
+            double * x  =  (double *) argptr[2];
+            double   v  = *(double *) argptr[3];
+            for (i = 0; i < n; i++) {
+                x[i] = v;
+            }
+        }
+        break;
+    case DTYPE_COMPLEX:
+        {
+            double complex * x  =  (double complex *) argptr[2];
+            double complex   v  = *(double complex *) argptr[3];
+            for (i = 0; i < n; i++) {
+                x[i] = v;
+            }
+        }
+        break;
+    }
 }
 
 PYMIC_KERNEL
-void offload_array_fillfrom(int argc, uintptr_t argptr[], size_t sizes[]) {
-	/* offload_array_fillfrom(char* x, char *y, int nbytes) */
+void pymic_offload_array_fillfrom(int argc, uintptr_t argptr[], size_t sizes[]) {
+	/* pymic_offload_array_fillfrom(char* x, char *y, int nbytes) */
 	
-	char *x = (char*) argptr[0];
-	char *y = (char*) argptr[1];
-	int nbytes = *((int*) argptr[2]);
+	char * x   =  (char *)     argptr[0];
+	char * y   =  (char *)     argptr[1];
+	int nbytes = *(long int *) argptr[2];
 	
 	memcpy(x, y, nbytes);
 }
 
 PYMIC_KERNEL
-void offload_array_dabs(int argc, uintptr_t argptr[], size_t sizes[]) {
-	/* offload_array_dabs(int n, double* x, double *result) */
+void pymic_offload_array_setslice(int argc, uintptr_t argptr[], size_t sizes[]) {
+	/* pymic_offload_array_setslice(int lower, int upper, 
+                                    type * x, type * y) */
 	
-	int n = *((int*) argptr[0]);
-	double *x = (double*) argptr[1];
-	double *r = (double*) argptr[2];
+    int      dtype = *(long int *) argptr[0];
+    long int lower = *(long int *) argptr[1];
+    long int upper = *(long int *) argptr[2];
 	
-	int i;
-	
-	i = 0;
-	for (; i < n; i++) {
-		r[i] = fabs(x[i]);
-	}
+    char *       x =  (char *)     argptr[3];
+    char *       y =  (char *)     argptr[4];
+    
+    int scale = 0;
+    int nbytes;
+    switch(dtype) {
+    case DTYPE_INT:
+        scale = 8; /* bytes */
+        break;
+    case DTYPE_FLOAT:
+        scale = 8; /* bytes */
+        break;
+    case DTYPE_COMPLEX:
+        scale = 16; /* bytes */
+        break;
+    }
+    nbytes = (upper - lower) * scale;
+    
+	memcpy(x + (lower * scale), y, nbytes);
 }
 
 PYMIC_KERNEL
-void offload_array_dpow(int argc, uintptr_t argptr[], size_t sizes[]) {
-    /* offload_array_dpow(int n, double* x, int incx, double *y, int incy, double* result, int incr) */
-	
-	int n = *((int*) argptr[0]);
-	double *x = (double*) argptr[1];
-	int incx = *((int*) argptr[2]);
-	double *y = (double*) argptr[3];
-	int incy = *((int*) argptr[4]);
-	double *r = (double*) argptr[5];
-	int incr = *((int*) argptr[6]);
+void pymic_offload_array_abs(int argc, uintptr_t argptr[], size_t sizes[]) {
+	/* pymic_offload_array_abs(int dtype, int n, type * x, type * result) */
+    
+    size_t i;
+    
+    int dtype = *(long int *) argptr[0];
+	int n     = *(long int *) argptr[1];
 
-	int i, ix, iy, ir;
-	
-    i = ix = iy = ir = 0;		   
-	for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
-		r[ir] = pow(x[ix], y[iy]);
-	}
+    switch(dtype) {
+    case DTYPE_INT:
+        {
+            long int * x = (long int *) argptr[2];
+            long int * r = (long int *) argptr[3];
+            for (i = 0; i < n; i++) {
+                r[i] = labs(x[i]);
+            }
+        }
+        break;
+    case DTYPE_FLOAT:
+        {
+            double * x = (double *) argptr[2];
+            double * r = (double *) argptr[3];
+            for (i = 0; i < n; i++) {
+                r[i] = fabs(x[i]);
+            }
+        }
+        break;
+    case DTYPE_COMPLEX:
+        {
+            double complex * x = (double complex *) argptr[2];
+            double * r = (double *) argptr[3];
+            for (i = 0; i < n; i++) {
+                r[i] = cabs(x[i]);
+            }
+        }
+        break;
+    }
 }
 
 PYMIC_KERNEL
-void offload_array_dreverse(int argc, uintptr_t argptr[], size_t sizes[]) {
-	/* offload_array_dreverse(int n, double* x, double *result) */
+void pymic_offload_array_pow(int argc, uintptr_t argptr[], size_t sizes[]) {
+    /* pymic_offload_array_pow(int dtype, int n, double * x, int incx, type * y, 
+                               int incy, type * result, int incr) */
 	
-	int n = *((int*) argptr[0]);
-	double *x = (double*) argptr[1];
-	double *r = (double*) argptr[2];
-	
-	int i;
-	
-	i = 0;
-	for (; i < n; i++) {
-		r[i] = x[n - i - 1];
-	}
+	size_t i, ix, iy, ir;
+
+    int dtype = *(long int *) argptr[0];
+	int n     = *(long int *) argptr[1];
+	int incx  = *(long int *) argptr[3];
+	int incy  = *(long int *) argptr[5];
+	int incr  = *(long int *) argptr[7];
+
+    switch(dtype) {
+    case DTYPE_INT:
+        {
+            long int * x = (long int *) argptr[2];
+            long int * y = (long int *) argptr[4];
+            long int * r = (long int *) argptr[6];
+            
+            i = ix = iy = ir = 0;		   
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                size_t j;
+                r[ir] = 1;
+                for (j = 0; j < y[iy]; j++) {
+                    r[ir] *= x[ix];
+                }
+            }
+        }
+        break;
+    case DTYPE_FLOAT:
+        {
+            double * x = (double *) argptr[2];
+            double * y = (double *) argptr[4];
+            double * r = (double *) argptr[6];
+            
+            i = ix = iy = ir = 0;		   
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = pow(x[ix], y[iy]);
+            }
+        }
+        break;
+    case DTYPE_COMPLEX:
+        {
+            double complex * x = (double complex *) argptr[2];
+            double complex * y = (double complex *) argptr[4];
+            double complex * r = (double complex *) argptr[6];
+            
+            i = ix = iy = ir = 0;		   
+            for (; i < n; i++, ix += incx, iy += incy, ir += incr) {
+                r[ir] = cpow(x[ix], y[iy]);
+            }
+        }
+        break;
+    }
 }
 
+PYMIC_KERNEL
+void pymic_offload_array_reverse(int argc, uintptr_t argptr[], size_t sizes[]) {
+	/* pymic_offload_array_dreverse(int dtype, int n, type * x, type * result) */
+	
+    size_t i;
+    
+    int dtype = *(long int *) argptr[0];
+	int n =     *(long int *) argptr[1];
+    
+    switch(dtype) {
+    case DTYPE_INT:
+        {
+            long int * x = (long int *) argptr[2];
+            long int * r = (long int *) argptr[3];
+            for (i = 0; i < n; i++) {
+                r[i] = x[n - i - 1];
+            }
+        }
+        break;
+    case DTYPE_FLOAT:
+        {
+            double * x = (double *) argptr[2];
+            double * r = (double *) argptr[3];
+            for (i = 0; i < n; i++) {
+                r[i] = x[n - i - 1];
+            }
+        }
+        break;
+    case DTYPE_COMPLEX:
+        {
+            double complex * x = (double complex *) argptr[2];
+            double complex * r = (double complex *) argptr[3];
+            for (i = 0; i < n; i++) {
+                r[i] = x[n - i - 1];
+            }
+        }
+        break;
+    }
+}

@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Copyright (c) 2014-2015, Intel Corporation All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,12 +31,36 @@ import unittest
 
 import pymic
 
-from offload_device_tests import OffloadDeviceTest
-from offload_library_tests import OffloadLibraryTests
-from offload_stream_tests import OffloadStreamTests
-from offload_array_tests import OffloadArrayTest
-from application_kernels import ApplicationKernelTests
 
-if __name__ == "__main__":        
-    # fire up all the unit tests we have
-    unittest.main()
+# detect version of unittest
+# TODO: fix this line for versions of unitttest that do no longer
+#       carry __version__
+# major, minor = unittest.__version__.split(".")
+
+
+def skipNoDevice(func):
+    def wrapper(*args):
+        args[0].assertTrue(pymic.number_of_devices() > 0,
+                           "Could not find Xeon Phi coprocessors to test with")
+        func(*args)
+    return wrapper
+
+
+def skipNoMultipleDevices(func):
+    def wrapper(*args):
+        args[0].assertTrue(pymic.number_of_devices() > 1,
+                           "Could not find multiple Xeon Phi coprocessors "
+                           "to test with")
+        func(*args)
+    return wrapper
+
+
+libraries = {}
+
+
+def get_library(device, library_name):
+    library = libraries.get((library_name, device.device_id), None)
+    if library is None:
+        library = device.load_library(library_name)
+        libraries[(library_name, device.device_id)] = library
+    return library

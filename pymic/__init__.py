@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Copyright (c) 2014-2015, Intel Corporation All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,16 +27,21 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import unittest
+from offload_error import OffloadError
 
-import pymic
+from offload_array import OffloadArray
 
-from offload_device_tests import OffloadDeviceTest
-from offload_library_tests import OffloadLibraryTests
-from offload_stream_tests import OffloadStreamTests
-from offload_array_tests import OffloadArrayTest
-from application_kernels import ApplicationKernelTests
+from offload_stream import OffloadStream
 
-if __name__ == "__main__":        
-    # fire up all the unit tests we have
-    unittest.main()
+from offload_device import OffloadDevice
+from offload_device import number_of_devices
+from offload_device import devices
+
+from offload_library import OffloadLibrary
+
+
+# load all MIC libraries
+if True:
+    from _misc import _debug 
+    _debug(5, "starting initialization of the offload infrastructure")
+    _debug(5, "loading supporting pyMIC libraries on all devices")

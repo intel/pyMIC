@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -32,7 +32,7 @@
 import sys
 import time
 
-import pyMIC as mic
+import pymic
 
 benchmark = sys.argv[0][2:][:-3]
 
@@ -40,13 +40,15 @@ nrepeat = 1000000
 if len(sys.argv) > 1:
     nrepeat = int(sys.argv[1])
 
-device = mic.devices[0]
-device.load_library("libbenchmark_kernels.so")
+device = pymic.devices[0]
+library = device.load_library("libbenchmark_kernels.so")
+stream = device.get_default_stream()
 
 timings = []
 ts = time.time()
-for i in range(nrepeat):
-    device.invoke_kernel("empty_kernel")
+for i in xrange(nrepeat):
+    stream.invoke(library.empty_kernel)
+    stream.sync()
 te = time.time()
 
 try:

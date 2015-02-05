@@ -1,3 +1,14 @@
+Version 0.3
+----------------------------
+
+- Improved handling of libraries and kernel invocation.
+- Trace collection (PYMIC_TRACE=1, PYMIC_TRACE_STACKS={none,compact,full}).
+- Replaced the device-centric API with a stream API.
+- Refactoring to better match PEP8 recommendations.
+- Added support for int(int64) and complex(complex128) data types.
+- Reworked the benchmarks and examples to fit the new API.
+- Bugfix: fixed syntax errors in OffloadArray.
+
 Version 0.2
 ----------------------------
 - Small improvements to the README files.

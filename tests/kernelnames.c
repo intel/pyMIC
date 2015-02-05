@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, Intel Corporation All rights reserved. 
+/* Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
  * 
  * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are 
@@ -27,20 +27,44 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
- 
-#ifndef PYMIC_INVOKE_H
-#define PYMIC_INVOKE_H
 
-#include <string>
-#include <vector>
-#include <utility>
+#include <pymic_kernel.h>
 
-namespace pyMIC {
+#include <complex.h>
+#include <mkl.h>
 
-void target_invoke_kernel(int, int argc, void* args[], size_t sizes[]);
-void target_invoke_kernel(int, std::string, std::vector<std::pair<char *, size_t> >);
+PYMIC_KERNEL 
+void kernel_underscores(int argc, uintptr_t argptr[], size_t sizes[]) {
+    // do nothing
+}
 
-} // namespace pyMIC
+PYMIC_KERNEL
+void a(int argc, uintptr_t argptr[], size_t sizes[]) {
+    // do nothing
+}
 
-#endif 
+PYMIC_KERNEL
+void bb(int argc, uintptr_t argptr[], size_t sizes[]) {
+    // do nothing
+}
 
+PYMIC_KERNEL
+void _bb(int argc, uintptr_t argptr[], size_t sizes[]) {
+    // do nothing
+}
+
+PYMIC_KERNEL
+void a123(int argc, uintptr_t argptr[], size_t sizes[]) {
+    // do nothing
+}
+
+PYMIC_KERNEL
+void test_offload_library_get(int argc, uintptr_t argptr[], size_t sizes[]) {
+    uintptr_t * pointers = (uintptr_t *) argptr[0];
+    
+    pointers[0] = (uintptr_t) kernel_underscores;
+    pointers[1] = (uintptr_t) a;
+    pointers[2] = (uintptr_t) bb;
+    pointers[3] = (uintptr_t) _bb;
+    pointers[4] = (uintptr_t) a123;
+}

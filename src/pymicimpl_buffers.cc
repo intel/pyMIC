@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, Intel Corporation All rights reserved. 
+/* Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
  * 
  * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are 
@@ -30,13 +30,13 @@
 
 #include <unordered_map>
  
-#include "pyMICimpl_config.h"
-#include "pyMICimpl_common.h"
-#include "pyMICimpl_buffers.h"
+#include "pymicimpl_config.h"
+#include "pymicimpl_common.h"
+#include "pymicimpl_buffers.h"
 
 #include "debug.h"
  
-namespace pyMIC {
+namespace pymic {
 
 static std::unordered_map<uintptr_t, uintptr_t> buffers[PYMIC_MAX_DEVICES];
 
@@ -156,4 +156,4 @@ void buffer_copy_from_target_and_release(int device, char* backing_store, size_t
 	debug_leave();
 }
 
-} // namespace pyMIC
+} // namespace pymic

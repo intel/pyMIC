@@ -35,16 +35,44 @@ import numpy
 import pymic
 
 from helper import skipNoDevice
+from helper import skipNoMultipleDevices
+from helper import get_library
 
 
-class OffloadDeviceTest(unittest.TestCase):
-    """This class defines the test cases for the OffloadDevice class."""
+class OffloadLibraryTests(unittest.TestCase):
+    """This class defines the test cases for the OffloadLibrary class."""
 
     @skipNoDevice
-    def test_library_not_loaded(self):
-        """Test if load_library throws an exception if a library cannot be loaded
-           for any reason."""
+    def test_kernel_names_available(self):
+        """Test if all device kernels can be found with their correct function
+           pointers."""
 
         device = pymic.devices[0]
-        self.assertRaises(pymic.OffloadError, device.load_library,
-                          "this_library_does_not_exist_anywhere")
+        stream = device.get_default_stream()
+        library = get_library(device, "libkernelnames.so")
+
+        pointers = numpy.empty((5,), dtype=numpy.int64)
+        offl_pointers = stream.bind(pointers)
+
+        stream.invoke(library.test_offload_library_get, offl_pointers)
+        offl_pointers.update_host()
+        stream.sync()
+
+        kernels = [library.kernel_underscores, library.a, library.bb,
+                   library._bb, library.a123]
+        for p, k in zip(pointers, kernels):
+            self.assertEqual(p, k[1], "Kernel pointer does not match (0x{0:x} "
+                                      "should be 0x{0:x}".format(k[1], p))
+
+    @skipNoMultipleDevices
+    def test_library_device_mismatch(self):
+        """Test that kernel invocation fails if library has been loaded for
+           another device."""
+
+        device1 = pymic.devices[0]
+        device2 = pymic.devices[1]
+        stream = device2.get_default_stream()
+        library = get_library(device1, "libkernelnames.so")
+        
+        self.assertRaises(pymic.OffloadError, stream.invoke,
+                          library.kernel_underscores)

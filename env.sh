@@ -1,4 +1,6 @@
-export MIC_ENV_PREFIX=PYMIC
-export PYMIC_LD_LIBRARY_PATH=`pwd`/examples/double_it/:`pwd`/examples/dgemm/:`pwd`/examples/svd:`pwd`/pyMIC:`pwd`/benchmarks:`pwd`/tests:$MIC_LD_LIBRARY_PATH
-export PYTHONPATH=`pwd`
 export PYMIC_BASE=`pwd`
+export MIC_ENV_PREFIX=PYMIC
+export PYMIC_LD_LIBRARY_PATH=$MIC_LD_LIBRARY_PATH
+export PYMIC_LIBRARY_PATH=$PYMIC_BASE/examples/double_it/:$PYMIC_BASE/examples/dgemm/:$PYMIC_BASE/examples/svd:$PYMIC_BASE/pymic:$PYMIC_BASE/benchmarks:$PYMIC_BASE/tests
+export MIC_LD_LIBRARY_PATH=$MIC_LD_LIBRARY_PATH:$PYMIC_BASE/pymic
+export PYTHONPATH=$PYTHONPATH:$PYMIC_BASE

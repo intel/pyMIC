@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -29,16 +29,18 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-import pyMIC as mic
+import pymic as mic
 import numpy as np
 
 # load the library with the kernel function (on the target)
 device = mic.devices[0]
-device.load_library("libdouble_it.so")
+library = device.load_library(("libdouble_it.so",))
+print str(library)
+stream = device.get_default_stream()
 
-na = np.arange(1,33)
+na = np.arange(1, 33)
 
-a = device.bind(na)
+a = stream.bind(na)
 
 print "input:"
 print "--------------------------------------"
@@ -46,8 +48,11 @@ print na
 print a.update_host()
 print
 
-device.invoke_kernel("doubleit_kernel", a, 5)
+stream.invoke(library.doubleit_kernel, a, 5)
+stream.sync()
 
 print "output:"
 print "--------------------------------------"
-print a.update_host()
+a.update_host()
+stream.sync()
+print a

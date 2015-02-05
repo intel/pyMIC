@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -27,17 +27,27 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-all: libtests.so
+.PHONY: all clean realclean tests
+
+all: libtests.so libkernelnames.so
 
 libtests.so: tests.c
-	icc -I../include -I$(MKLROOT)/include -fPIC -shared -mmic -g -O2 -o $@ $<
+	icc -I../include -I$(MKLROOT)/include -fPIC -shared -mmic -g -O2 -L$(MKLROOT)/lib/mic -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -mmic -g -O2 -o $@ $<
 	chmod a+rX libtests.so
 
-tests: libtests.so
-	./testsuite.py
+libkernelnames.so: kernelnames.c
+	icc -I../include -I$(MKLROOT)/include -fPIC -shared -mmic -g -O2 -mmic -g -O2 -o $@ $<
+	chmod a+rX libkernelnames.so
+
+tests: all
+	./testsuite.py -v
+
+pep8check:
+	pep8 --ignore=W293,W291 *.py
 
 clean:
-	rm -f libtests.so
-	
+
 realclean: clean
+	rm -f libtests.so libkernelnames.so
+	rm -f *.pyc
 	rm -f *~
