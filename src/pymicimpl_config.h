@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, Intel Corporation All rights reserved. 
+/* Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
  * 
  * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are 
@@ -28,24 +28,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
  
-#ifndef PYMIC_BUFFERS_H
-#define PYMIC_BUFFERS_H
+#ifndef PYMIC_CONFIG_H
+#define PYMIC_CONFIG_H
 
-#include <cstddef>
-#include <cstdint>
+#define PYMIC_MAX_DEVICES 			16
+#define PYMIC_DEFAULT_DEVICE		0
 
-namespace pyMIC {
-
-uintptr_t buffer_lookup_device_ptr(int, void*);
-uintptr_t buffer_lookup_device_ptr(int, uintptr_t);
-
-void buffer_allocate(int, char*, size_t);
-void buffer_release(int, char*, size_t);
-void buffer_update_on_target(int, char*, size_t);
-void buffer_update_on_host(int, char*, size_t);
-void buffer_alloc_and_copy_to_target(int, char*, size_t);
-void buffer_copy_from_target_and_release(int, char*, size_t);
-
-} // namespace pyMIC
-
-#endif 
+#endif

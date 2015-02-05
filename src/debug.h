@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, Intel Corporation All rights reserved. 
+/* Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
  * 
  * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are 
@@ -38,7 +38,7 @@
 #include <cstdarg>
 #include <cstring>
 
-#define DEBUG_SUFFIX     "DBG: "
+#define DEBUG_SUFFIX     "PYMIC: "
 #define DEBUG_SUFFIX_MIC "*MIC* "
 #define DEBUG_BUFSZ      2048
 

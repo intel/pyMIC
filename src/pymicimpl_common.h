@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, Intel Corporation All rights reserved. 
+/* Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
  * 
  * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are 
@@ -31,7 +31,7 @@
 #ifndef PYMIC_COMMON_H
 #define PYMIC_COMMON_H
 
-#include "pyMICimpl_config.h"
+#include "pymicimpl_config.h"
 
 // some definitions for much less typing
 #define PYMIC_INTERFACE extern "C" static

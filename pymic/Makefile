@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -30,6 +30,9 @@
 .PHONY: all clean realclean
 
 all: liboffload_array.so 
+
+pep8check:
+	pep8 --ignore=W293,W291 *.py
 
 clean:
 	rm -f *.pyc

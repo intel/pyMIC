@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, Intel Corporation All rights reserved. 
+/* Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
  * 
  * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are 
@@ -28,6 +28,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
 
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
@@ -37,14 +38,14 @@
 #include <vector>
 #include <utility>
 
-#include "pyMICimpl_common.h"
-#include "pyMICimpl_misc.h"
-#include "pyMICimpl_buffers.h"
-#include "pyMICimpl_invoke.h"
+#include "pymicimpl_common.h"
+#include "pymicimpl_misc.h"
+#include "pymicimpl_buffers.h"
+#include "pymicimpl_invoke.h"
 
 #include "debug.h"
 
-using namespace pyMIC;
+using namespace pymic;
 
 PyObject* throw_exception(const char* format, ...) {
     va_list vargs;
@@ -52,7 +53,7 @@ PyObject* throw_exception(const char* format, ...) {
     const size_t bufsz = 256;
     char buffer[bufsz];
 
-    PyObject* pyMIC = NULL;
+    PyObject* pymic = NULL;
     PyObject* modules_dict = NULL;
     PyObject* exception_type = NULL;
     
@@ -62,14 +63,14 @@ PyObject* throw_exception(const char* format, ...) {
         Py_RETURN_NONE;
     }
     
-    // find the pyMIC module
-    pyMIC = PyDict_GetItemString(modules_dict, "pyMIC");
-    if (!pyMIC) {
+    // find the pymic module
+    pymic = PyDict_GetItemString(modules_dict, "pymic");
+    if (!pymic) {
         Py_RETURN_NONE;
     }
     
     // now, find the OffloadException class
-    exception_type = PyObject_GetAttrString(pyMIC, "OffloadException");
+    exception_type = PyObject_GetAttrString(pymic, "OffloadError");
     if (!exception_type) {
         Py_RETURN_NONE;
     }
@@ -97,30 +98,85 @@ PyObject* pymic_impl_offload_number_of_devices(PyObject* self, PyObject* args) {
 PYMIC_INTERFACE
 PyObject* pymic_impl_load_library(PyObject* self, PyObject* args) {
 	int device;
-	const char* library_cstr = NULL;
-	std::string library;
-	debug_enter();
-	
-	if (! PyArg_ParseTuple(args, "is", &device, &library_cstr))
+    const char * filename_cstr = NULL;
+    std::string filename;
+    std::string tempname;
+    uintptr_t handle = 0;
+    debug_enter();
+    
+	if (! PyArg_ParseTuple(args, "is", &device, &filename_cstr))
 		return NULL;
-	library = library_cstr;
-	
+	filename = filename_cstr;
+    
     try {
-        target_load_library(device, library);
-	}
+        target_load_library(device, filename, tempname, handle);
+    }
     catch (internal_exception *exc) {
         // catch and convert exception (re-throw as a Python exception)
-        debug(100, "internal exception raise for %s:%d, raising Python exception", 
+        debug(100, "internal exception raised at %s:%d, raising Python exception", 
                    exc->file(), exc->line());
         std::string reason = exc->reason();
         delete exc;
         debug_leave();
-        return throw_exception("Could not load library on target. Reason: %s.",
+        return throw_exception("Could not transfer library to target. Reason: %s.",
+                               reason.c_str());;
+    }
+    
+    debug_leave();
+    return Py_BuildValue("(sk)", tempname.c_str(), handle);
+}
+
+PYMIC_INTERFACE
+PyObject* pymic_impl_unload_library(PyObject* self, PyObject* args) {
+	int device;
+    uintptr_t handle = 0;
+    char * tempname_cstr;
+    std::string tempname;
+	debug_enter();
+	
+	if (! PyArg_ParseTuple(args, "isk", &device, &tempname_cstr, &handle))
+		return NULL;
+    tempname = tempname_cstr;
+	
+    try {
+        target_unload_library(device, tempname, handle);
+	}
+    catch (internal_exception *exc) {
+        // catch and convert exception (re-throw as a Python exception)
+        debug(100, "internal exception raised at %s:%d, raising Python exception", 
+                   exc->file(), exc->line());
+        std::string reason = exc->reason();
+        delete exc;
+        debug_leave();
+        return throw_exception("Could not unload library on target. Reason: %s.",
                                reason.c_str());;
     }
 	
     debug_leave();
 	Py_RETURN_NONE;
+}
+
+PYMIC_INTERFACE
+PyObject* pymic_impl_find_kernel(PyObject* self, PyObject* args) {
+    int device;
+    uintptr_t funcptr = 0;
+    uintptr_t handle = 0;
+    const char* func_cstr = NULL;
+    std::string func;
+    
+    debug_enter();
+    
+    if (! PyArg_ParseTuple(args, "iks", &device, &handle, &func_cstr))
+        return NULL;
+    func = func_cstr;
+    
+    funcptr = find_kernel(device, handle, func);
+    if (! funcptr) {
+        return throw_exception("Could not locate kernel '%s' in library %p.",
+                               func_cstr, handle);;
+    }
+    
+    return Py_BuildValue("k", funcptr);
 }
 
 PYMIC_INTERFACE
@@ -244,25 +300,23 @@ PyObject* pymic_impl_buffer_copy_from_target_and_release(PyObject* self, PyObjec
 PYMIC_INTERFACE
 PyObject* pymic_impl_invoke_kernel(PyObject* self, PyObject* args) {
 	int device;
-	const char* kernel_cstr = NULL;
-	std::string kernel_name;
+    uintptr_t funcptr = 0;
 	PyObject* varargs = NULL;
 	int varargc = 0;
 	debug_enter();
 	
-	if (! PyArg_ParseTuple(args, "isO", &device, &kernel_cstr, &varargs))
+	if (! PyArg_ParseTuple(args, "ikO", &device, &funcptr, &varargs))
 		return NULL;
-	kernel_name = kernel_cstr;
 	
 	if (!PyTuple_Check(varargs)) 
 		return NULL;
 	varargc = PyTuple_Size(varargs);
-	debug(100, "kernel '%s': %d extra argument%s", kernel_cstr, varargc, ((varargc != 1) ? "s" : ""));
+	debug(100, "kernel %x: %d extra argument%s", funcptr, varargc, ((varargc != 1) ? "s" : ""));
 	
 	// retrieve payload and size information from the arguments
 	std::vector<std::pair<char *,size_t> > arguments;
 	for (int i = 0; i < varargc; ++i) {
-        // we expect different kinds of array: numpy.ndarray or offload_array
+        // we expect different kinds of array: numpy.ndarray or OffloadArray
         PyObject* array_obj = PyTuple_GetItem(varargs, i);
 		debug(100, "retrieving extra argument %d gave %p", i, array_obj);
 
@@ -275,13 +329,13 @@ PyObject* pymic_impl_invoke_kernel(PyObject* self, PyObject* args) {
 			arguments.push_back(std::pair<char *, int>(payload, size));
 		}
         else {
-            // this is an offload_array, we have to get the ndarray first
+            // this is an OffloadArray, we have to get the ndarray first
             // TODO: we might want to do some safety checks here
             PyObject* array = PyObject_GetAttrString(array_obj, "array");
             if (!array)
                 return NULL;
             if(PyArray_Check(array)) {
-                debug(100, "argument %d is offload_array w/ encapsulated numpy.ndarray", i);
+                debug(100, "argument %d is OffloadArray w/ encapsulated numpy.ndarray", i);
                 PyArrayObject* nparray = reinterpret_cast<PyArrayObject*>(array);
                 char* payload = PyArray_BYTES(nparray);
                 size_t size = PyArray_NBYTES(nparray);
@@ -295,22 +349,12 @@ PyObject* pymic_impl_invoke_kernel(PyObject* self, PyObject* args) {
 	}
 	
 	// invoke the kernel on the remote side
-    try {
-        target_invoke_kernel(device, kernel_name, arguments);
-    }
-    catch(const internal_exception *exc) {
-        // catch and convert exception (re-throw as a Python exception)
-        debug(100, "internal exception raise for %s:%d, raising Python exception", 
-                   exc->file(), exc->line());
-        delete exc;
-        debug_leave();
-        return throw_exception("Could not invoke kernel. Reason: Kernel function '%s' not found in loaded libraries.",
-                               kernel_name.c_str());;
-    }
+    target_invoke_kernel(device, funcptr, arguments);
 	
 	debug_leave();
 	Py_RETURN_NONE;
 }
+
 
 PYMIC_INTERFACE
 PyObject* pymic_impl_test(PyObject* self, PyObject* args) {
@@ -321,7 +365,9 @@ PyObject* pymic_impl_test(PyObject* self, PyObject* args) {
 static PyMethodDef methods[] = {
 	// generic support functions
 	PYMIC_ENTRYPOINT(pymic_impl_offload_number_of_devices, "Determine the number of offload devices available."),
-	PYMIC_ENTRYPOINT(pymic_impl_load_library, "Load a library with kernels on the target."),
+	PYMIC_ENTRYPOINT(pymic_impl_load_library, "Load a library with kernels to the target."),
+	PYMIC_ENTRYPOINT(pymic_impl_unload_library, "Unload a loaded library with kernels on the target."),
+	PYMIC_ENTRYPOINT(pymic_impl_find_kernel, "Find a kernel by its name in a loaded library."),
 	
 	// data management functions
 	PYMIC_ENTRYPOINT(pymic_impl_buffer_allocate, "Allocate a buffer on the target device."),
@@ -332,7 +378,7 @@ static PyMethodDef methods[] = {
 	PYMIC_ENTRYPOINT(pymic_impl_buffer_copy_from_target_and_release, "Copy data from target to host and release buffer."),
 	
 	// kernel invocation
-	PYMIC_ENTRYPOINT(pymic_impl_invoke_kernel, "Invoke a kernel by name and pass additional data to target."),
+	PYMIC_ENTRYPOINT(pymic_impl_invoke_kernel, "Invoke a kernel and pass additional data to target."),
 	
 	PYMIC_ENTRYPOINT(pymic_impl_test, "Test function for some testing"),
 	
@@ -341,9 +387,9 @@ static PyMethodDef methods[] = {
 };
 
 extern "C" 
-void init_pyMICimpl() {
+void init_pymicimpl() {
 	debug_enter();
-	(void) Py_InitModule("_pyMICimpl", methods);
+	(void) Py_InitModule("_pymicimpl", methods);
 	import_array();
 	debug_leave();
 }

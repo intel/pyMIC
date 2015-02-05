@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, Intel Corporation All rights reserved. 
+/* Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
  * 
  * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are 
@@ -28,53 +28,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
  
-#ifndef PYMIC_MISC_H
-#define PYMIC_MISC_H
+#ifndef PYMIC_INVOKE_H
+#define PYMIC_INVOKE_H
 
 #include <string>
-#include <cstdint>
+#include <vector>
+#include <utility>
 
-#include <exception>
+namespace pymic {
 
-namespace pyMIC {
+void target_invoke_kernel(int, uintptr_t funcptr, std::vector<std::pair<char *, size_t> >);
 
-int get_number_of_devices();
-bool target_load_library(int device, const std::string &);
-uintptr_t find_kernel(int device, const std::string &kernel_name);
-
-struct internal_exception : public std::exception {
-    const char* file_;
-    const int line_;
-    const std::string reason_;
-    
-    internal_exception(const std::string &reason, const char *file, const int line) :
-        reason_(reason), file_(file), line_(line) {
-        // left blank
-    }
-
-    internal_exception(const char *file, const int line) :
-        reason_("unknown reason"), file_(file), line_(line) {
-        // left blank
-    }
-    
-    virtual ~internal_exception() throw() {
-        // left blank
-    }
-    
-    const std::string reason() const {
-        return reason_;
-    }
-    
-    const char* file() const {
-        return file_;
-    }
-    
-    int line() const {
-        return line_;
-    }
-}; // struct internal_exception
-
-} // namespace pyMIC
+} // namespace pymic
 
 #endif 
 

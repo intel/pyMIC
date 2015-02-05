@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -29,13 +29,15 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
+from __future__ import print_function
+
 import sys
 import time
 
 import numpy as np
 
+
 def limiter(data_size):
-    return 5
     if data_size < 128:
         return 10000
     if data_size < 1024:
@@ -47,41 +49,39 @@ def limiter(data_size):
 benchmark = sys.argv[0][2:][:-3]
 
 # number of elements to copyin (8B to 2 GB)
-data_sizes = [(128+i*128) for i in range(64)]
+data_sizes = [(128 + i * 128) for i in range(64)]
 repeats = map(limiter, data_sizes)
 
-@profile
-def func():
-    timings = {}
-    np.random.seed(10)
-    for ds,nrep in zip(data_sizes,repeats):
-        print "Measuring {0}x{0} (repeating {2})".format(ds, ds * 8, nrep)
-        
-        m,k,n = ds, ds, ds
-        
-        a = np.random.random(m*k).reshape((m, k))
-        b = np.random.random(k*n).reshape((k, n))
-        c = np.zeros((m, n))
-        
-        ts = time.time()
-        for i in range(nrep):
-            A = np.matrix(a)
-            B = np.matrix(b)
-            C = np.matrix(c)
-            C = A * B + C
-        te = time.time()
-        timings[ds] = (te - ts, nrep)
-        
-    try:
-        csv = open(benchmark + ".csv", "w")
-        print >> csv, "benchmark;elements;avg time;flops;gflops"
-        for ds in sorted(list(timings)):
-            t, nrep = timings[ds]
-            t = (float(t) / nrep) 
-            flops = ds * ds * ds
-            gflops = (float(flops) / (1000 * 1000 * 1000)) / t
-            print >> csv, "{0};{1};{2};{3};{4}".format(benchmark, ds, t, flops, gflops)
-    finally:
-        csv.close()
-                                       
-func()
+
+timings = {}
+np.random.seed(10)
+for ds, nrep in zip(data_sizes, repeats):
+    print("Measuring {0}x{0} (repeating {2})".format(ds, ds * 8, nrep))
+    
+    m, k, n = ds, ds, ds
+    
+    a = np.random.random(m * k).reshape((m, k))
+    b = np.random.random(k * n).reshape((k, n))
+    c = np.zeros((m, n))
+    
+    ts = time.time()
+    for i in xrange(nrep):
+        A = np.matrix(a)
+        B = np.matrix(b)
+        C = np.matrix(c)
+        C = A * B + C
+    te = time.time()
+    timings[ds] = (te - ts, nrep)
+    
+try:
+    csv = open(benchmark + ".csv", "w")
+    print("benchmark;elements;avg time;flops;gflops", file=csv)
+    for ds in sorted(list(timings)):
+        t, nrep = timings[ds]
+        t = (float(t) / nrep) 
+        flops = ds * ds * ds
+        gflops = (float(flops) / (1000 * 1000 * 1000)) / t
+        print("{0};{1};{2};{3};{4}".format(benchmark, ds, t, flops, gflops),
+              file=csv)
+finally:
+    csv.close()

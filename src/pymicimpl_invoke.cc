@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, Intel Corporation All rights reserved. 
+/* Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
  * 
  * Redistribution and use in source and binary forms, with or without 
  * modification, are permitted provided that the following conditions are 
@@ -32,47 +32,29 @@
 #include <unordered_map>
 #include <string>
 
-#include "pyMICimpl_config.h"
-#include "pyMICimpl_common.h"
-#include "pyMICimpl_misc.h"
-#include "pyMICimpl_invoke.h"
-#include "pyMICimpl_buffers.h"
+#include "pymicimpl_config.h"
+#include "pymicimpl_common.h"
+#include "pymicimpl_misc.h"
+#include "pymicimpl_invoke.h"
+#include "pymicimpl_buffers.h"
 
 #include <pymic_kernel.h>
 
 #include "debug.h"
 #include <assert.h>
 
-namespace pyMIC {
+namespace pymic {
 
-std::unordered_map<std::string, uintptr_t> kernel_cache[PYMIC_MAX_DEVICES];
-
-void target_invoke_kernel(int device, std::string kernel_name, std::vector<std::pair<char *, size_t> > arguments) {
+void target_invoke_kernel(int device, uintptr_t funcptr, std::vector<std::pair<char *, size_t> > arguments) {
 	debug_enter();
 	int target = PYMIC_MAP_ANY_DEVICE(device);
 	
-	uintptr_t kernel_fct_ptr;
 	int argc = arguments.size();
 	uintptr_t *device_ptrs = new uintptr_t[argc];
 	size_t *sizes = new size_t[argc];
 	bool *present = new bool[argc];
 	int i = 0;
 		
-	// find the function pointer for the kernel to invoke
-	kernel_fct_ptr = kernel_cache[target][kernel_name];
-	if (!kernel_fct_ptr) {
-		// we have not found the kernel in the cache, so try to load its symbol
-		kernel_fct_ptr = find_kernel(target, kernel_name);
-		if (!kernel_fct_ptr) {
-            // throw an internal exception that we'll promote to a Python exception
-            throw new internal_exception(__FILE__, __LINE__);
-		}
-		else {
-			// memorize the kernel's device pointer 
-			kernel_cache[target][kernel_name] = kernel_fct_ptr;
-		}
-	}
-	
 	// check if all buffers have been allocated on the target already
 	// if not, do copyin, copyout semantics
 	for (auto it = arguments.begin(); it != arguments.end(); ++it,++i) {
@@ -93,9 +75,9 @@ void target_invoke_kernel(int device, std::string kernel_name, std::vector<std::
 		debug(100, "invoke: argument %d: device ptr %p, size %ld", i, device_ptrs[i], sizes[i]);
 	}
 	
-#pragma offload target(mic:target) in(argc) in(device_ptrs:length(argc)) in(kernel_fct_ptr) in(sizes:length(argc))
+#pragma offload target(mic:target) in(argc) in(device_ptrs:length(argc)) in(funcptr) in(sizes:length(argc))
 	{
-		pymic_kernel_t kernel_ptr = reinterpret_cast<pymic_kernel_t>(kernel_fct_ptr);
+		pymic_kernel_t kernel_ptr = reinterpret_cast<pymic_kernel_t>(funcptr);
 		kernel_ptr(argc, device_ptrs, sizes);
 	}
 	
@@ -113,4 +95,4 @@ void target_invoke_kernel(int device, std::string kernel_name, std::vector<std::
 	debug_leave();
 }
 
-} // namespace pyMIC
+} // namespace pymic

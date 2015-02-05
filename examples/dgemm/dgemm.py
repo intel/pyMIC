@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -29,14 +29,19 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-import pyMIC as mic
+from __future__ import print_function
+
+import pymic as mic
 import numpy as np
 import sys
 import time
 
 # load the library with the kernel function (on the target)
 device = mic.devices[0]
-device.load_library("libdgemm.so")
+library = device.load_library("libdgemm.so")
+
+# use the default stream
+stream = device.get_default_stream()
 
 # sizes of the matrices
 m = 4096
@@ -50,65 +55,68 @@ beta = 0.0
 
 # construct some matrices
 np.random.seed(10)
-a = np.random.random(m*k).reshape((m, k))
-b = np.random.random(k*n).reshape((k, n))
+a = np.random.random(m * k).reshape((m, k))
+b = np.random.random(k * n).reshape((k, n))
 c = np.zeros((m, n))
 
-print "data sizes: m={0} k={1} n={2}".format(m, k, n)
-print
+print("data sizes: m={0} k={1} n={2}".format(m, k, n))
+print()
 
 # associate host arrays with device arrats
-offl_a = device.bind(a)
-offl_b = device.bind(b)
-offl_c = device.bind(c)
+offl_a = stream.bind(a)
+offl_b = stream.bind(b)
+offl_c = stream.bind(c)
 
 # convert a and b to matrices (eases MxM in numpy)
 Am = np.matrix(a)
 Bm = np.matrix(b)
 
-# print the input if it is small enough
-print "input:"
-print "--------------------------------------"
-print "a= " + str(a)
-print "b= " + str(b)
-print 
-print 
-
+# print the input
+print("input:")
+print("--------------------------------------")
+print("a=", a)
+print("b=", b)
+print() 
+print() 
 
 # print the input of numpy's MxM if it is small enough
 np_mxm_start = time.time()
-Cm = Am*Bm
+Cm = Am * Bm
 np_mxm_end = time.time()
-print "numpy gives us: "
-print "--------------------------------------"
-print Cm
-print "checksum: " + str(np.sum(Cm))
-print 
-print 
+print("numpy gives us:")
+print("--------------------------------------")
+print(Cm)
+print("checksum:", np.sum(Cm))
+print()
+print()
 
 # invoke the offloaded dgemm
 c[:] = 0.0
 offl_c.update_device()
-np_mic_start = time.time();
-device.invoke_kernel("dgemm_kernel", offl_a, offl_b, offl_c, m, n, k, alpha, beta)
-np_mic_end = time.time();
+np_mic_start = time.time()
+stream.invoke(library.dgemm_kernel, 
+              offl_a, offl_b, offl_c, 
+              m, n, k, alpha, beta)
+stream.sync()
+np_mic_end = time.time()
 
 # print the output of the offloaded MxM
-print "offloading computed: "
-print "--------------------------------------"
+print("offloading computed:")
+print("--------------------------------------")
 offl_c.update_host()
-print offl_c
-print "checksum: " + str(np.sum(offl_c.array))
-print
-print
+stream.sync()
+print(offl_c)
+print("checksum:", np.sum(offl_c.array))
+print()
+print()
 
-	
-# print the peformance information
+# print the performance information
 flops = (2 * m * n * k) / 1000 / 1000 / 1000
 np_mxm_time = np_mxm_end - np_mxm_start
 np_mic_time = np_mic_end - np_mic_start
-print "performance:"
-print "--------------------------------------"
-print "MxM (numpy)           {0:>6.3} sec    {1:>6.3} GFLOPS".format(np_mxm_time, flops/np_mxm_time)
-print "MxM (offload)         {0:>6.3} sec    {1:>6.3} GFLOPS".format(np_mic_time, flops/np_mic_time)
-
+print("performance:")
+print("--------------------------------------")
+print("MxM (numpy)           {0:>6.3} sec    "
+      "{1:>6.3} GFLOPS".format(np_mxm_time, flops / np_mxm_time))
+print("MxM (offload)         {0:>6.3} sec    "
+      "{1:>6.3} GFLOPS".format(np_mic_time, flops / np_mic_time))

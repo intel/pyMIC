@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -31,28 +31,33 @@
 
 all:
 	make -C src all
-	make -C pyMIC all
+	make -C pymic all
 	make -C examples all
 	make -C benchmarks all
 
 tests: all
 	make -C tests tests
 	
+pep8check:
+	make -C pymic pep8check
+	make -C tests pep8check
+	make -C benchmarks pep8check
+	
 clean:
 	make -C src clean
-	make -C pyMIC clean
+	make -C pymic clean
 	make -C examples clean
 	make -C benchmarks clean
 	make -C tests clean
 	
 realclean: 
 	make -C src realclean
-	make -C pyMIC realclean
+	make -C pymic realclean
 	make -C examples realclean
 	make -C benchmarks realclean
 	make -C tests realclean
 
 tarball: all
 	make -C examples realclean
-	tar cfj pyMIC-`date +%F`.tbz2 ../pyMIC/{README.txt,pyMIC,include,examples}
+	tar cfj pymic-`date +%F`.tbz2 ../pymic/{README.txt,pymic,include,examples}
 

@@ -69,3 +69,6 @@ pyMIC-????-??-??.tbz2
 *.csv
 dgemm_c.x
 
+# IDEA specific ignores
+.idea/workspace.xml
+.idea/tasks.xml

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (c) 2014, Intel Corporation All rights reserved. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
 # 
 # Redistribution and use in source and binary forms, with or without 
 # modification, are permitted provided that the following conditions are 
@@ -29,10 +29,11 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-import pyMIC as mic
+import pymic as mic
 import numpy as np
 
 device = mic.devices[0]
+stream = device.get_default_stream()
 
-a = device.zeros((8,8))
-
+a = stream.zeros((8, 8))
+stream.sync()

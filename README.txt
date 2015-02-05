@@ -1,4 +1,4 @@
-0. General Information
+ 0. General Information
 -----------------------
 
 Maintainer: Michael Klemm, michael.klemm@intel.com, SSG-DRD EMEA HPC team
@@ -15,13 +15,14 @@ at https://lists.01.org/mailman/listinfo/pymic.
 
 The two biggest limitations at this point are: 
 
-   (1) pyMIC requires the data to be stored as numpy.array structures
+   (1) pymic requires the data to be stored as numpy.array structures
    
    (2) the kernel needs to be written in C/C++ (and Fortran) and must be 
        compiled as a native shared object for KNC.
  
  
-1. Requirements 
+
+ 1. Requirements 
 -----------------------
 
 You need to have the following software packages:
@@ -34,32 +35,32 @@ You need to have the following software packages:
 
 
 
-2. Setup
+ 2. Setup
 -----------------------
 
-To compile the native parts of pyMIC, please see README-developer.txt.
+To compile the native parts of pymic, please see README-developer.txt.
 
-To prepare pyMIC, please follow these steps
+To prepare pymic, please follow these steps
 
-- $pymic is the base directory of the pyMIC checkout/download
+- $pymic is the base directory of the pymic checkout/download
 
 - load the environment of the Intel Composer XE (if it has not been loaded yet):
 
   $> source /opt/intel/composerxe/bin/compilervars.sh intel64
 
-- set the Python search path, so that Python find the pyMIC modules:
+- set the Python search path, so that Python find the pymic modules:
 
   $> export PYTHONPATH=$PYTHONPATH:$pymic/src
 
 - you can set OFFLOAD_REPORT=<level> to see the offloads that are
-  triggered by pyMIC.
+  triggered by pymic.
 
 - if you want to have even more fine-grained debugging output, 
   set the environment variable PYMIC_DEBUG=1.
  
  
  
-3. Examples
+ 3. Examples
 -----------------------
 
 There are a few (very few!) examples that you can use for your first steps.  You 
@@ -91,12 +92,12 @@ Then you should be able to run the Python application and do some offloads:
   
   $> ./double_it.py
  
- 
- 
-4. Debugging
+
+
+ 4. Tracing & Debugging
 -----------------------
 
-If you are interested in what is going on inside the pyMIC module, you can
+If you are interested in what is going on inside the pymic module, you can
 choose from several options to get a more verbose output.
 
 You can set the OFFLOAD_REPORT environment variable to request an offload 
@@ -104,7 +105,32 @@ report from the Intel offload runtime.  Please have a loop at the article at
 https://software.intel.com/en-us/node/510366 to see what values are accepted
 for the environment variable and what effect they have.
 
-You can also set PYMIC_DEBUG to enable the debugging output of pyMIC.  Here's 
+The pymic module also supports more specific tracing and debugging.
+
+
+ 4.1. Tracing
+-----------------------
+
+As of release 0.3, pymic can collect a trace of all performance relevant calls 
+into the module.  The trace consists of the called functions' name, timings, 
+argument list, and (if collected) the source code location of the invocation.
+
+To enable tracing, set PYMIC_TRACE=1.  Shortly before the program finishes, the 
+tracing information will be printed to stdout in typical Python syntax.  You
+can then run any desired analysis on the trace data.
+
+For each trace record, pymic records its source code location of the invocation.
+This is called "compact" format (PYMIC_TRACE_STACKS=commpact).  If the full call 
+stack of the invocation is needed, PYMIC_TRACE_STACKS=full will collect the 
+full call stack from the call site of a pymic function up to the top of the 
+application code.  You can turn of stack collection (to increase performance 
+while tracing) by setting PYMIC_TRACE_STACKS=none.
+ 
+
+ 4.2. Debugging
+-----------------------
+
+You can set PYMIC_DEBUG to enable the debugging output of pymic.  Here's 
 the list of accepted values and what effect they have.  Please note that higher
 levels include lower levels, that is, they increase verbosity of the output.
 
