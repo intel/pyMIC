@@ -65,16 +65,19 @@ class OffloadLibrary:
 
     @staticmethod
     def _find_library(library):
-        for path in config._search_path.split(":"):
-            try:
-                files = [f for f in os.listdir(path)
-                         if os.path.isfile(os.path.join(path, f))]
-                if library in files:
-                    filename = os.path.join(path, library)
-                    if OffloadLibrary._check_k1om(filename):
-                        return filename
-            except:
-                pass
+        if os.path.isabs(library) and OffloadLibrary._check_k1om(abspath):
+            abspath = library
+        else:
+            for path in config._search_path.split(':'):
+                abspath = os.path.join(path, library)
+
+                if (os.path.isfile(abspath) and
+                    OffloadLibrary._check_k1om(abspath)):
+                    break
+            else:
+                return
+
+        return abspath
 
     def __init__(self, library, device=None):
         """Initialize this OffloadLibrary instance.  This function is not to be
@@ -126,4 +129,5 @@ class OffloadLibrary:
             funcptr = _pymic_impl_find_kernel(self._device_id,
                                               self._handle, attr)
             self._cache[attr] = funcptr
-        return (attr, funcptr, self._device)
+
+        return attr, funcptr, self._device, self
