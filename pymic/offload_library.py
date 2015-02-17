@@ -129,4 +129,5 @@ class OffloadLibrary:
             funcptr = _pymic_impl_find_kernel(self._device_id,
                                               self._handle, attr)
             self._cache[attr] = funcptr
-        return (attr, funcptr, self._device)
+
+        return attr, funcptr, self._device, self
