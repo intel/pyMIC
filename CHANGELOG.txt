@@ -1,11 +1,9 @@
-Next release
+Version 0.4
 ----------------------------
 - New low-level API to allocate, deallocate, and transfer data
   (see OffloadStream).
 - Support for in-place binary operators.
 - New internal design to handle offloads.
-
-
 
 Version 0.3
 ----------------------------
