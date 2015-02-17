@@ -65,16 +65,19 @@ class OffloadLibrary:
 
     @staticmethod
     def _find_library(library):
-        for path in config._search_path.split(":"):
-            try:
-                files = [f for f in os.listdir(path)
-                         if os.path.isfile(os.path.join(path, f))]
-                if library in files:
-                    filename = os.path.join(path, library)
-                    if OffloadLibrary._check_k1om(filename):
-                        return filename
-            except:
-                pass
+        if os.path.isabs(library):
+            abspath = library
+        else:
+            for path in config._search_path.split(':'):
+                abspath = os.path.join(path, library)
+
+                if os.path.isfile(abspath):
+                    break
+            else:
+                return
+
+        if OffloadLibrary._check_k1om(abspath):
+            return abspath
 
     def __init__(self, library, device=None):
         """Initialize this OffloadLibrary instance.  This function is not to be
