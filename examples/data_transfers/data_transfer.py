@@ -29,29 +29,36 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-import pymic as mic
-import numpy as np
+from __future__ import print_function
 
-# load the library with the kernel function (on the target)
-device = mic.devices[0]
-library = device.load_library(("libdouble_it.so",))
+import pymic
+import numpy 
+
+device = pymic.devices[0]
 stream = device.get_default_stream()
 
-na = np.arange(1, 33)
+a = numpy.arange(0.0, 16.0)
+b = numpy.empty_like(a)
 
-a = stream.bind(na)
+# determine size of the array in bytes and get pointer 
+nbytes = a.dtype.itemsize * a.size
+ptr_a_host = a.ctypes.data
 
-print "input:"
-print "--------------------------------------"
-print na
-print a.update_host()
-print
+# allocate buffer spaces in the target
+device_ptr_1 = stream.allocate_device_memory(nbytes)
+device_ptr_2 = stream.allocate_device_memory(nbytes)
 
-stream.invoke(library.doubleit_kernel, a)
+# transfer a into the first buffer, then copy buffer on the device
+stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes)
+stream.transfer_device2device(device_ptr_1, device_ptr_2, nbytes)
+
+print('Before transfer_device2host()')
+print(b)
+
+# transfer data back into 'b' array
+ptr_b_host = b.ctypes.data
+stream.transfer_device2host(device_ptr_2, ptr_b_host, nbytes)
 stream.sync()
 
-print "output:"
-print "--------------------------------------"
-a.update_host()
-stream.sync()
-print a
+print('After transfer_device2host()')
+print(b)

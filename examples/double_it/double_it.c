@@ -33,9 +33,12 @@
 PYMIC_KERNEL
 void doubleit_kernel(int argc, uintptr_t argptr[], size_t sizes[]) {
 	long int *array = (long int*) argptr[0];
+    printf("array=%p\n", array);
 	size_t ub = sizes[0] / sizeof(long int);
 	int i;
 	for (i = 0; i < ub; i++) {
 		array[i] *= 2;
+        printf("%d ", array[i]);
 	}
+    printf("\n");
 }

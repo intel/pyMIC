@@ -45,48 +45,31 @@
 
 namespace pymic {
 
-void target_invoke_kernel(int device, uintptr_t funcptr, std::vector<std::pair<char *, size_t> > arguments) {
+void target_invoke_kernel(const int device, const uintptr_t funcptr, const std::vector<std::pair<uintptr_t, size_t> >  & arguments) {
 	debug_enter();
-	int target = PYMIC_MAP_ANY_DEVICE(device);
-	
 	int argc = arguments.size();
 	uintptr_t *device_ptrs = new uintptr_t[argc];
 	size_t *sizes = new size_t[argc];
-	bool *present = new bool[argc];
 	int i = 0;
 		
-	// check if all buffers have been allocated on the target already
-	// if not, do copyin, copyout semantics
-	for (auto it = arguments.begin(); it != arguments.end(); ++it,++i) {
-		auto arg = *it;
-		present[i] = !!buffer_lookup_device_ptr(target, arg.first);
-		if (!present[i]) {
-			debug(100, "buffer with backing store %p not available on target", arg.first);
-			buffer_alloc_and_copy_to_target(target, arg.first, arg.second);
-		}
-	}	
-	
-	// construct the argument list with device pointers from the actual arguments
-	i = 0;
-	for (auto it = arguments.begin(); it != arguments.end(); ++it, ++i) {
-		auto arg = *it;
-		device_ptrs[i] = buffer_lookup_device_ptr(target, arg.first);
-		sizes[i] = arg.second;
-		debug(100, "invoke: argument %d: device ptr %p, size %ld", i, device_ptrs[i], sizes[i]);
-	}
-	
-#pragma offload target(mic:target) in(argc) in(device_ptrs:length(argc)) in(funcptr) in(sizes:length(argc))
+    for (auto it = arguments.begin(); it != arguments.end(); ++it, ++i) {
+        auto arg = *it;
+        // Do pointer translation
+#if PYMIC_USE_XSTREAM
+        // TODO: implement the proper xstream translation here
+#else
+        // The real device pointer is stored in the descriptor object.
+        buffer_descriptor * bd = reinterpret_cast<buffer_descriptor *>(arg.first);
+        device_ptrs[i] = bd->pointer;
+        assert(bd->size == arg.second);
+#endif    
+        sizes[i] = arg.second;
+    }
+    
+#pragma offload target(mic:device) in(argc) in(device_ptrs:length(argc)) in(funcptr) in(sizes:length(argc))
 	{
 		pymic_kernel_t kernel_ptr = reinterpret_cast<pymic_kernel_t>(funcptr);
 		kernel_ptr(argc, device_ptrs, sizes);
-	}
-	
-	// if we have copied any buffers with copyin/copyout retrieve them from the device
-	for (i = 0; i < argc; ++i) {
-		if (!present[i]) {
-			auto arg = arguments[i];
-			buffer_copy_from_target_and_release(target, arg.first, arg.second);
-		}
 	}
 	
 	delete[] device_ptrs;

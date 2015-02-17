@@ -115,5 +115,3 @@ def _map_data_types(dtype):
     """Map a (known) data type to an integer to be used in the native kernels
        that implement basic operations of OffloadArray."""
     return _data_type_map[dtype]
-    
-    

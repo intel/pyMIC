@@ -40,6 +40,8 @@
 #define DTYPE_FLOAT     1
 #define DTYPE_COMPLEX   2
 
+#define print printf
+
 PYMIC_KERNEL
 void pymic_offload_array_add(int argc, uintptr_t argptr[], size_t sizes[]) {
     /* pymic_offload_array_add(int n, type * x, int incx, type * y, 
@@ -53,7 +55,7 @@ void pymic_offload_array_add(int argc, uintptr_t argptr[], size_t sizes[]) {
 	int incy    = *(long int *) argptr[5];
 	int incr    = *(long int *) argptr[7];
 
-	i = ix = iy = ir = 0;		   
+    i = ix = iy = ir = 0;		   
     switch(dtype) {
     case DTYPE_INT:
         {
@@ -190,7 +192,7 @@ void pymic_offload_array_fill(int argc, uintptr_t argptr[], size_t sizes[]) {
 	
     int dtype = *(long int *) argptr[0];
 	int n     = *(long int *) argptr[1];
-
+    
     switch(dtype) {
     case DTYPE_INT:
         {

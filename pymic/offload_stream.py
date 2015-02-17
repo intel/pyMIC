@@ -27,16 +27,20 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
+from __future__ import print_function
+
 import numpy
 
 from offload_error import OffloadError
 
-from _pymicimpl import _pymic_impl_buffer_allocate
-from _pymicimpl import _pymic_impl_buffer_release
-from _pymicimpl import _pymic_impl_buffer_update_on_target
-from _pymicimpl import _pymic_impl_buffer_update_on_host
-from _pymicimpl import _pymic_impl_buffer_alloc_and_copy_to_target
-from _pymicimpl import _pymic_impl_buffer_copy_from_target_and_release
+from _pymicimpl import _pymic_impl_stream_create
+from _pymicimpl import _pymic_impl_stream_destroy
+from _pymicimpl import _pymic_impl_stream_allocate
+from _pymicimpl import _pymic_impl_stream_deallocate
+from _pymicimpl import _pymic_impl_stream_memcpy_h2d
+from _pymicimpl import _pymic_impl_stream_memcpy_d2h
+from _pymicimpl import _pymic_impl_stream_memcpy_d2d
+from _pymicimpl import _pymic_impl_stream_ptr_translate
 from _pymicimpl import _pymic_impl_invoke_kernel
 
 from _misc import _debug as debug
@@ -44,9 +48,6 @@ from _misc import _get_order as get_order
 from _tracing import _trace as trace
 
 import pymic
-
-
-streamId = {}
 
 
 class OffloadStream:
@@ -62,19 +63,20 @@ class OffloadStream:
         assert device is not None
         self._device = device
         self._device_id = device.device_id
-        
-        # generate a new ID for this stream (it's not really needed,
-        # but it's easier to talk about stream 1 :-))
-        lastId = streamId.get(self._device_id)
-        if lastId is None:
-            lastId = -1
-        lastId += 1
-        streamId[self._device_id] = lastId
-        self._stream_id = lastId
 
-    def __del__(self):
-        pass
+        # construct the stream
+        self._stream_id = _pymic_impl_stream_create(self._device_id, 'stream')
+        debug(1, 
+              'created stream 0x{0:x} for device {1}'.format(self._stream_id,
+                                                             self._device_id))
         
+    def __del__(self):
+        debug(1, 
+              'destroying stream 0x{0:0x} '
+              'for device {1}'.format(self._stream_id,
+                                      self._device_id))
+        _pymic_impl_stream_destroy(self._device_id, self._stream_id)
+    
     @trace
     def sync(self):
         """Wait for all outstanding requests in this OffloadStream to complete.
@@ -87,9 +89,8 @@ class OffloadStream:
 
            Returns
            -------
-           out : OffloadArray
-               The object instance of this OffloadArray.
-
+           n/a
+           
            See Also
            --------
            n/a
@@ -107,110 +108,362 @@ class OffloadStream:
     def __str__(self):
         return "stream({0}) for {1}".format(self._stream_id, str(self._device))
 
-    def _buffer_allocate(self, *arrays):
-        if len(arrays) == 0:
-            raise ValueError("no argument given")
-        # if called from wrapper, actual arguments are wrapped in an 
-        # extra tuple, so we unwrap them
-        if type(arrays[0]) == tuple:
-            arrays = arrays[0]
-        for array in arrays:
-            nbytes = int(array.nbytes)
-            debug(2, "(device {0}) allocating buffer with "
-                     "{1} byte(s)".format(self._device_id, nbytes))
-            _pymic_impl_buffer_allocate(self._device_id, array, nbytes)
-        return None
+    def allocate_device_memory(self, nbytes, alignment=64):
+        """Allocate device memory on device associated with the invoking
+           stream object.  Though it is part of the stream interface,
+           the operation is synchronous.  
+           
+           Caution: this is a low-level function, do not use it unless you
+                    have a very specific reason to do so.  Better use the 
+                    high-level interfaces of OffloadArray instead.
+           
+           Parameters
+           ----------
+           nbytes : int
+              Number of bytes to allocate
+           alignment : int
+              Alignment of the data on the target device.
+           
+           See Also
+           --------
+           deallocate_device_memory, transfer_host2device, 
+           transfer_device2host, transfer_device2device
 
-    def _buffer_release(self, *arrays):
-        if len(arrays) == 0:
-            raise ValueError("no argument given")
-        # if called from wrapper, actual arguments are wrapped in an 
-        # extra tuple, so we unwrap them
-        if type(arrays[0]) == tuple:
-            arrays = arrays[0]
-        for array in arrays:
-            nbytes = int(array.nbytes)
-            debug(2, "(device {0}) releasing buffer with "
-                     "{1} byte(s)".format(self._device_id, nbytes))
-            _pymic_impl_buffer_release(self._device_id, array, nbytes)
-        return None
+           Returns
+           -------
+           out : int
+              Fake pointer that identifies the allocated memory
 
-    def _buffer_update_on_target(self, *arrays):
-        if len(arrays) == 0:
-            raise ValueError("no argument given")
-        # if called from wrapper, actual arguments are wrapped in an 
-        # extra tuple, so we unwrap them
-        if type(arrays[0]) == tuple:
-            arrays = arrays[0]
-        for array in arrays:
-            nbytes = int(array.nbytes)
-            debug(1, "(host -> device {0}) transferring "
-                     "{1} byte(s)".format(self._device_id, nbytes))
-            _pymic_impl_buffer_update_on_target(self._device_id, array, nbytes)
-        return None
+           Examples
+           --------
+           >>> ptr = stream.allocate_device_memory(4096)
+           >>> print ptr
+           140297169571840
+        """
+    
+        device = self._device_id
+    
+        if nbytes <= 0:
+            raise ValueError('Cannot allocate negative amount of '
+                             'memory: {0}'.format(nbytes))
+        
+        device_ptr = _pymic_impl_stream_allocate(device, self._stream_id,
+                                                 nbytes, alignment)
+        debug(2, 'allocated {0} bytes on device {1} at 0x{2:x}'
+                 ', alignment {3}', 
+                 nbytes, device, device_ptr, alignment)
+            
+        return device_ptr
+        
+    def deallocate_device_memory(self, device_ptr):
+        """Deallocate device memory previously allocated through
+           allocate_device_memory.  Though it is part of the stream 
+           interface, the operation is synchronous. 
+           
+           Caution: this is a low-level function, do not use it unless you
+                    have a very specific reason to do so.  Better use the 
+                    high-level interfaces of OffloadArray instead.
+           
+           Parameters
+           ----------
+           device_ptr : int
+              Fake pointer of memory do deallocate
+           
+           See Also
+           --------
+           allocate_device_memory, transfer_host2device, 
+           transfer_device2host, transfer_device2device
 
-    def _buffer_update_on_host(self, *arrays):
-        if len(arrays) == 0:
-            raise ValueError("no argument given")
-        # if called from wrapper, actual arguments are wrapped in an 
-        # extra tuple, so we unwrap them
-        if type(arrays[0]) == tuple:
-            arrays = arrays[0]
-        for array in arrays:
-            nbytes = int(array.nbytes)
-            debug(1, "(device {0} -> host) transferring "
-                     "{1} byte(s)".format(self._device_id, nbytes))
-            _pymic_impl_buffer_update_on_host(self._device_id, array, nbytes)
+           Returns
+           -------
+           None
+           
+           Examples
+           --------
+           >>> ptr = stream.allocate_device_memory(4096)
+           >>> stream.deallocate_device_memory(ptr)
+        """
+        
+        device = self._device
+    
+        if device_ptr is None:
+            raise ValueError('Cannot deallocate None pointer')
+        
+        _pymic_impl_stream_deallocate(self._device_id, self._stream_id, 
+                                      device_ptr)
+        debug(2, 'deallocated pointer 0x{0:x} on device {1}}',
+                 device, device_ptr)
+        
         return None
+        
+    def transfer_host2device(self, host_ptr, device_ptr, 
+                             nbytes, offset_host=0, offset_device=0):
+        """Transfer data from a host memory location (identified by its
+           raw pointer (i.e., a C pointer) to a memory region (identified 
+           by its fake pointer) on the target device.  The operation is 
+           executed asynchronously with stream semantics.
+           
+           Caution: this is a low-level function, do not use it unless you
+                    have a very specific reason to do so.  Better use the 
+                    high-level interfaces of OffloadArray instead.
+           
+           Parameters
+           ----------
+           host_ptr : int
+              Pointer to the data on the host
+           device_ptr : int 
+              Fake pointer of the destination
+           nbytes : int 
+              Number of bytes to copy
+           offset_host : int, optional, default 0
+              Transfer offset (bytes) to be added to raw host pointer
+           offset_device : int, optional, default 0
+              Transfer offset (bytes) to be added to the address of the device
+              memory.
+           
+           See Also
+           --------
+           transfer_device2host, transfer_device2device, 
+           allocate_device_memory, deallocate_device_memory
 
-    def _copy_to_target(self, *arrays):
-        if len(arrays) == 0:
-            raise ValueError("no argument given")
-        # if called from wrapper, actual arguments are wrapped in an 
-        # extra tuple, so we unwrap them
-        if type(arrays[0]) == tuple:
-            arrays = arrays[0]
-        for array in arrays:
-            nbytes = int(array.nbytes)
-            debug(2, "(device {0}) allocating buffer with "
-                     "{1} byte(s)".format(self._device_id, nbytes))
-            debug(1, "(host -> device {0}) transferring "
-                     "{1} byte(s)".format(self._device_id, nbytes))
-            _pymic_impl_buffer_alloc_and_copy_to_target(self._device_id, 
-                                                        array, nbytes)
-        return None
+           Returns
+           -------
+           None
 
-    def _copy_from_target(self, *arrays):
-        if len(arrays) == 0:
-            raise ValueError("no argument given")
-        # if called from wrapper, actual arguments are wrapped in an 
-        # extra tuple, so we unwrap them
-        if type(arrays[0]) == tuple:
-            arrays = arrays[0]
-        for array in arrays:
-            nbytes = int(array.nbytes)
-            debug(1, "(device {0} -> host) transferring "
-                     "{1} byte(s)".format(self._device_id, nbytes))
-            debug(2, "(device {0}) releasing buffer with "
-                     "{1} byte(s)".format(self._device_id, nbytes))
-            _pymic_impl_buffer_copy_from_target_and_release(self._device_id, 
-                                                            array, nbytes)
-        return None
-
-    @staticmethod
-    def _convert_argument_to_array(argument):
-        """Internal helper function to convert scalar arguments to
-           single-element numpy.ndarray.
+           Examples
+           --------
+           >>> a = numpy.arange(0.0, 16.0)
+           >>> nbytes = a.dtype.itemsize * a.size
+           >>> ptr_a_host = a.ctypes.data
+           >>> device_ptr = stream.allocate_device_memory(nbytes)
+           >>> stream.transfer_host2device(ptr_a_host, device_ptr, nbytes)
+           >>> b = numpy.empty_like(a)
+           >>> print b
+           [  6.90762927e-310   7.73120247e-317   3.60667921e-322   
+              0.00000000e+000   0.00000000e+000   0.00000000e+000   
+              0.00000000e+000   0.00000000e+000   4.94065646e-324   
+              9.76815212e-317   7.98912845e-317   0.00000000e+000
+              5.53353523e-322   1.58101007e-322   0.00000000e+000   
+              7.38839996e-317]
+           # random data
+           >>> ptr_b_host = b.ctypes.data
+           >>> stream.transfer_device2host(device_ptr, ptr_b_host, nbytes)
+           >>> stream.sync()
+           >>> print b
+           [  0.   1.   2.   3.   4.   5.   6.   7.   8.   9.  10.  11.  
+             12.  13.  14.  15.]
         """
 
-        # convert the argument to a single-element array
-        if ((not isinstance(argument, numpy.ndarray)) and 
-                (not isinstance(argument, pymic.OffloadArray))):
-            cvtd = numpy.asarray(argument)
-            return cvtd
-        else:
-            return argument
+        if offset_host < 0:
+            raise ValueError("Negative offset passed for offset_host")
+        if offset_device < 0:
+            raise ValueError("Negative offset passed for offset_device")
+        if device_ptr is None:
+            raise ValueError('Invalid None device pointer')
+        if host_ptr is None:
+            raise ValueError('Invalid None host pointer')
+        if nbytes <= 0:
+            raise ValueError('Invalid byte count: {0}'.format(nbytes))
 
+        debug(1, '(host -> device {0}) transferring {1} bytes '
+                 '(host ptr 0x{2:x}, device ptr 0x{3:x}', 
+                 self._device_id, nbytes, host_ptr, device_ptr)
+        _pymic_impl_stream_memcpy_h2d(self._stream_id, host_ptr, device_ptr, 
+                                      nbytes, offset_host, offset_device)
+        return None
+
+    def transfer_device2host(self, device_ptr, host_ptr, 
+                             nbytes, offset_device=0, offset_host=0):
+        """Transfer data from a device memory location (identified by its 
+           fake pointer) to a host memory region identified by its raw pointer 
+           (i.e., a C pointer)on the target device. The operation is executed 
+           asynchronously with stream semantics.
+           
+           Caution: this is a low-level function, do not use it unless you
+                    have a very specific reason to do so.  Better use the 
+                    high-level interfaces of OffloadArray instead.
+           
+           Parameters
+           ----------
+           host_ptr : int
+              Pointer to the data on the host
+           device_ptr : int 
+              Fake pointer of the destination
+           nbytes : int 
+              Number of bytes to copy
+           offset_device : int, optional, default 0
+              Transfer offset (bytes) to be added to the address of the device
+              memory.
+           offset_host : int, optional, default 0
+              Transfer offset (bytes) to be added to raw host pointer
+           
+           See Also
+           --------
+           transfer_host2device, transfer_device2device,
+           allocate_device_memory, deallocate_device_memory
+
+           Returns
+           -------
+           None
+
+           Examples
+           --------
+           >>> a = numpy.arange(0.0, 16.0)
+           >>> nbytes = a.dtype.itemsize * a.size
+           >>> ptr_a_host = a.ctypes.data
+           >>> device_ptr = stream.allocate_device_memory(nbytes)
+           >>> stream.transfer_host2device(ptr_a_host, device_ptr, nbytes)
+           >>> b = numpy.empty_like(a)
+           >>> print b
+           [  6.90762927e-310   7.73120247e-317   3.60667921e-322   
+              0.00000000e+000   0.00000000e+000   0.00000000e+000   
+              0.00000000e+000   0.00000000e+000   4.94065646e-324   
+              9.76815212e-317   7.98912845e-317   0.00000000e+000
+              5.53353523e-322   1.58101007e-322   0.00000000e+000   
+              7.38839996e-317]
+           # random data
+           >>> ptr_b_host = b.ctypes.data
+           >>> stream.transfer_device2host(device_ptr, ptr_b_host, nbytes)
+           >>> stream.sync()
+           >>> print b
+           [  0.   1.   2.   3.   4.   5.   6.   7.   8.   9.  10.  11.  
+             12.  13.  14.  15.]
+        """
+
+        if offset_device < 0:
+            raise ValueError("Negative offset passed for offset_device")
+        if offset_host < 0:
+            raise ValueError("Negative offset passed for offset_host")
+        if device_ptr is None:
+            raise ValueError('Invalid None device pointer')
+        if host_ptr is None:
+            raise ValueError('Invalid None host pointer')
+        if nbytes <= 0:
+            raise ValueError('Invalid byte count: {0}'.format(nbytes))
+            
+        debug(1, '(device {0} -> host) transferring {1} bytes '
+                 '(device ptr 0x{2:x}, host ptr 0x{3:x}', 
+                 self._device_id, nbytes, device_ptr, host_ptr)
+        _pymic_impl_stream_memcpy_d2h(self._stream_id, device_ptr, host_ptr, 
+                                      nbytes, offset_device, offset_host)
+        return None
+
+    def transfer_device2device(self, device_ptr_src, device_ptr_dst, 
+                               nbytes, offset_device_src=0, 
+                               offset_device_dst=0):
+        """Transfer data from a device memory location (identified by its 
+           fake pointer) to another memory region on the same device. The 
+           operation is executed asynchronously with stream semantics.
+           
+           Caution: this is a low-level function, do not use it unless you
+                    have a very specific reason to do so.  Better use the 
+                    high-level interfaces of OffloadArray instead.
+           
+           Parameters
+           ----------
+           device_ptr_src : int
+              Fake pointer to the source memory location
+           device_ptr_dst : int 
+              Fake pointer to the destination memory location
+           nbytes : int 
+              Number of bytes to copy
+           offset_device_src : int, optional, default 0
+              Transfer offset (bytes) to be added to the address of the device
+              memory (source).
+           offset_device_dst : int, optional, default 0
+              Transfer offset (bytes) to be added to the address of the device
+              memory (destination).
+           
+           See Also
+           --------
+           transfer_host2device, allocate_device_memory, 
+           deallocate_device_memory
+
+           Returns
+           -------
+           None
+
+           Examples
+           --------
+           >>> a = numpy.arange(0.0, 16.0)
+           >>> nbytes = a.dtype.itemsize * a.size
+           >>> ptr_a_host = a.ctypes.data
+           >>> device_ptr_1 = stream.allocate_device_memory(nbytes)
+           >>> stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes)
+           >>> device_ptr_2 = stream.allocate_device_memory(nbytes)
+           >>> stream.transfer_device2device(device_ptr_1, device_ptr_2, 
+                                             nbytes)
+           >>> b = numpy.empty_like(a)
+           [  6.95303066e-310   6.83874600e-317   3.95252517e-322   
+              0.00000000e+000   9.31741387e+242   0.00000000e+000   
+              0.00000000e+000   0.00000000e+000   4.94065646e-324   
+              3.30519641e-317   1.72409659e+212   1.20070123e-089
+              5.05907223e-085   4.87883721e+199   0.00000000e+000   
+              6.78545805e-317] 
+           # random data
+           >>> print b
+           >>> ptr_b_host = b.ctypes.data
+           >>> stream.transfer_device2host(device_ptr_2, ptr_b_host, nbytes)
+           >>> stream.sync()
+           >>> print b
+           [  0.   1.   2.   3.   4.   5.   6.   7.   8.   9.  10.  11.  
+             12.  13.  14.  15.]
+        """
+
+        if offset_device_src < 0:
+            raise ValueError("Negative offset passed for offset_device_src")
+        if offset_device_dst < 0:
+            raise ValueError("Negative offset passed for offset_device_dst")
+        if device_ptr_src is None:
+            raise ValueError('Invalid None device pointer')
+        if device_ptr_dst is None:
+            raise ValueError('Invalid None host pointer')
+        if nbytes <= 0:
+            raise ValueError('Invalid byte count: {0}'.format(nbytes))
+        
+        debug(1, '(device {0} -> device {0}) transferring {1} bytes '
+                 '(source ptr 0x{2:x}, destination ptr 0x{3:x})', 
+                 self._device_id, nbytes, device_ptr_src, device_ptr_dst)
+        _pymic_impl_stream_memcpy_d2d(self._stream_id, 
+                                      device_ptr_src, device_ptr_dst, 
+                                      nbytes, offset_device_src, 
+                                      offset_device_dst)
+        return None
+            
+    def translate_device_pointer(self, device_ptr):
+        """Translate a fake pointer to a real raw pointer on the target device.
+           Though it is part of the stream interface, the operation is 
+           synchronous.
+           
+           Caution: this is a low-level function, do not use it unless you
+                    have a very specific reason to do so.  Better use the 
+                    high-level interfaces of OffloadArray instead.
+           
+           Parameters
+           ----------
+           device_ptr : int
+              Fake pointer to the memory location
+           
+           See Also
+           --------
+           allocate_device_memory, deallocate_device_memory
+
+           Returns
+           -------
+           out : int
+              Translated pointer 
+
+           Examples
+           --------
+           >>> device_ptr = stream.allocate_device_memory(nbytes)
+           >>> print device_ptr
+           139782444843008    # random data      
+           >>> translated = stream.translate_device_pointer(device_ptr)
+           >>> print translated
+           140498172420096    # random data
+        """
+        return _pymic_impl_stream_ptr_translate(device_ptr)
+        
     @trace
     def invoke(self, kernel, *args):
         """Invoke a native kernel on the target device by enqueuing a request
@@ -227,6 +480,9 @@ class OffloadStream:
            the argument is automatically transferred to the target device and
            transferred back after the kernel has finished.
 
+           All operations (copy in/copy out and invocation) are enqueued into
+           the stream object and complete asynchronously.
+           
            Parameters
            ----------
            kernel : kernel
@@ -259,13 +515,48 @@ class OffloadStream:
         if kernel[2] is not self._device:
             raise OffloadError("Cannot invoke kernel, "
                                "library not loaded on device")
-
-        converted = map(OffloadStream._convert_argument_to_array, args)
+        
+        # we store the device pointers as 64-bit integers in an ndarray
+        device_ptrs = numpy.empty((len(args),), dtype=numpy.int64)
+        sizes = numpy.empty((len(args),), dtype=numpy.int64)
+        copy_in_out = []
+        for i, a in enumerate(args):
+            if isinstance(a, pymic.OffloadArray):
+                device_ptrs[i] = a._device_ptr
+                sizes[i] = a.nbytes
+            elif isinstance(a, numpy.ndarray):
+                # allocate device buffer on the target of the invoke
+                # and mark the numpy.ndarray for copyin/copyout semantics
+                host_ptr = a.ctypes.data
+                nbytes = a.dtype.itemsize * a.size
+                dev_ptr = self.allocate_device_memory(nbytes)
+                copy_in_out.append((host_ptr, dev_ptr, nbytes, a))
+                device_ptrs[i] = dev_ptr
+                sizes[i] = nbytes
+            else:
+                # this is a hack, but let's wrap scalars as numpy arrays
+                cvtd = numpy.asarray(a)
+                host_ptr = cvtd.ctypes.data
+                nbytes = cvtd.dtype.itemsize * cvtd.size
+                dev_ptr = self.allocate_device_memory(nbytes)
+                copy_in_out.append((host_ptr, dev_ptr, nbytes, cvtd))
+                device_ptrs[i] = dev_ptr
+                sizes[i] = nbytes
         debug(1, "(device {0}, stream {1}) invoking kernel '{2}' "
                  "(pointer 0x{3:x}) with {4} "
-                 "argument(s)".format(self._device_id, self._stream_id, 
-                                      kernel[0], kernel[1], len(args)))
-        _pymic_impl_invoke_kernel(self._device_id, kernel[1], tuple(converted))
+                 "argument(s) ({5} w/ copyin/copyout)", 
+                 self._device_id, self._stream_id, kernel[0], kernel[1], 
+                 len(args), len(copy_in_out))
+        # iterate over the copyin arguments and transfer them
+        for c in copy_in_out:
+            self.transfer_host2device(c[0], c[1], c[2])
+        _pymic_impl_invoke_kernel(self._device_id, kernel[1], 
+                                  device_ptrs, sizes, len(args))
+        # iterate over the copyout arguments, transfer them back,
+        # and release buffers
+        for c in copy_in_out:
+            self.transfer_device2host(c[1], c[0], c[2])
+            self.deallocate_device_memory(c[1])
         return None
         
     @trace
@@ -276,6 +567,9 @@ class OffloadStream:
            Otherwise, the OffloadArray will be in unspecified state on
            the target device.  Data transfers to the host overwrite the
            data in the bound numpy.ndarray.
+           
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
 
            Parameters
            ----------
@@ -321,11 +615,10 @@ class OffloadStream:
         bound.array = array
 
         # allocate the buffer on the device (and update data)
+        bound._device_ptr = self.allocate_device_memory(bound.nbytes)
         if update_device:
-            self._copy_to_target(bound.array)
-        else:
-            self._buffer_allocate(bound.array)
-
+            bound.update_device()
+            
         return bound
 
     @trace
@@ -336,6 +629,9 @@ class OffloadStream:
            Otherwise, the OffloadArray will be in unspecified state on
            the target device.  Once the copy has been made, the original
            numpy.ndarray will not be modified by any data transfer operations.
+
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
 
            Parameters
            ----------
@@ -388,6 +684,9 @@ class OffloadStream:
            the host numpy.ndarray.  If set to False, the data transfer is
            avoided and the data in the host array is in undefined state.
 
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
+
            Parameters
            ----------
            shape       : int or tuple of int
@@ -439,6 +738,9 @@ class OffloadStream:
            set to False, the data transfer is avoided and the data in the host
            array is in undefined state.
 
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
+
            Parameters
            ----------
            other       : numpy.ndarray
@@ -483,6 +785,9 @@ class OffloadStream:
            transferred to the host numpy.ndarray.  If set to False, the
            data transfer is avoided and the data in the host array is in
            undefined state.
+
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
 
            Parameters
            ----------
@@ -536,6 +841,9 @@ class OffloadStream:
            set to False, the data transfer is avoided and the data in the host
            array is in undefined state.
 
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
+
            Parameters
            ----------
            other       : numpy.ndarray
@@ -586,6 +894,9 @@ class OffloadStream:
            data transfer is avoided and the data in the host array is in
            undefined state.
 
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
+
            Parameters
            ----------
            shape       : int or tuple of int
@@ -623,7 +934,6 @@ class OffloadStream:
                   [ 1.,  1.]])
         """
 
-
         array = pymic.OffloadArray(shape, dtype, order, device=self._device, 
                                    stream=self)
         array.one()
@@ -639,6 +949,9 @@ class OffloadStream:
            array is automatically transferred to the host numpy.ndarray.  If
            set to False, the data transfer is avoided and the data in the host
            array is in undefined state.
+
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
 
            Parameters
            ----------
@@ -690,6 +1003,9 @@ class OffloadStream:
            automatically transferred to the host numpy.ndarray.  If set to
            False, the data transfer is avoided and the data in the host array
            is in undefined state.
+
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
 
            Parameters
            ----------
@@ -745,6 +1061,9 @@ class OffloadStream:
            array is automatically transferred to the host numpy.ndarray.  If
            set to False, the data transfer is avoided and the data in the host
            array is in undefined state.
+
+           The operation is enqueued into the stream object and completes 
+           asynchronously.
 
            Parameters
            ----------

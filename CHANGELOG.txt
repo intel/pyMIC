@@ -1,6 +1,14 @@
+Next release
+----------------------------
+- New low-level API to allocate, deallocate, and transfer data
+  (see OffloadStream).
+- Support for in-place binary operators.
+- New internal design to handle offloads.
+
+
+
 Version 0.3
 ----------------------------
-
 - Improved handling of libraries and kernel invocation.
 - Trace collection (PYMIC_TRACE=1, PYMIC_TRACE_STACKS={none,compact,full}).
 - Replaced the device-centric API with a stream API.

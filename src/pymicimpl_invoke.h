@@ -37,7 +37,7 @@
 
 namespace pymic {
 
-void target_invoke_kernel(int, uintptr_t funcptr, std::vector<std::pair<char *, size_t> >);
+void target_invoke_kernel(const int, const uintptr_t, const std::vector< std::pair<uintptr_t, size_t> > & );
 
 } // namespace pymic
 

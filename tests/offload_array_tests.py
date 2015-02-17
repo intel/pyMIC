@@ -85,7 +85,7 @@ class OffloadArrayTest(unittest.TestCase):
         pattern = int(0xdeadbeefabbaabba)
         a_expect[:] = pattern
         offl_a = stream.bind(a)
-        stream.invoke(library.test_set_pattern, a, pattern)
+        stream.invoke(library.test_set_pattern, offl_a, pattern)
         offl_a.update_host()
         stream.sync()
 
@@ -400,6 +400,279 @@ class OffloadArrayTest(unittest.TestCase):
                         "{0} should be {1}".format(r, expect))
 
     @skipNoDevice
+    def test_op_iadd_scalar_int(self):
+        """Test __iadd__ operation of OffloadArray with scalar operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=int)
+        s = 1
+
+        old = numpy.empty_like(a)
+        old[:] = a[:]
+        expect = a + s
+        
+        offl_a = stream.bind(a)
+        offl_a += s
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old).all(),
+                        "Input array operand must be modified: "
+                        "{0} should be {1}".format(r, old))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_iadd_offload_array_int(self):
+        """Test __iadd__ operation of OffloadArray with OffloadArray 
+           operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=int)
+        o = a + 1
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a + o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a += offl_o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_iadd_array_int(self):
+        """Test __iadd__ operation of OffloadArray with array operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=int)
+        o = a + 1
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a + o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a += o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_iadd_scalar_float(self):
+        """Test __iadd__ operation of OffloadArray with scalar operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=float)
+        s = 1.3
+
+        old = numpy.empty_like(a)
+        old[:] = a[:]
+        expect = a + s
+        
+        offl_a = stream.bind(a)
+        offl_a += s
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old).all(),
+                        "Input array operand must be modified: "
+                        "{0} should be {1}".format(r, old))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_iadd_offload_array_float(self):
+        """Test __iadd__ operation of OffloadArray with OffloadArray 
+           operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=float)
+        o = a + 1.3
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a + o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a += offl_o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_iadd_array_float(self):
+        """Test __iadd__ operation of OffloadArray with array operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=float)
+        o = a + 1.3
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a + o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a += o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_iadd_scalar_complex(self):
+        """Test __iadd__ operation of OffloadArray with scalar operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=complex)
+        s = complex(1.2, -1.3)
+
+        old = numpy.empty_like(a)
+        old[:] = a[:]
+        expect = a + s
+        
+        offl_a = stream.bind(a)
+        offl_a += s
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old).all(),
+                        "Input array operand must be modified: "
+                        "{0} should be {1}".format(r, old))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_iadd_offload_array_complex(self):
+        """Test __iadd__ operation of OffloadArray with OffloadArray 
+           operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=complex)
+        o = a + complex(1.2, -1.3)
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a + o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a += offl_o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_iadd_array_complex(self):
+        """Test __iadd__ operation of OffloadArray with array operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=complex)
+        o = a + complex(1.2, -1.3)
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a + o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a += o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))                        
+
+    @skipNoDevice
     def test_op_sub_scalar_int(self):
         """Test __sub__ operation of OffloadArray with scalar operand."""
 
@@ -685,6 +958,279 @@ class OffloadArrayTest(unittest.TestCase):
                         "{0} should be {1}".format(r, expect))
 
     @skipNoDevice
+    def test_op_isub_scalar_int(self):
+        """Test __isub__ operation of OffloadArray with scalar operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=int)
+        s = 1
+
+        old = numpy.empty_like(a)
+        old[:] = a[:]
+        expect = a - s
+        
+        offl_a = stream.bind(a)
+        offl_a -= s
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old).all(),
+                        "Input array operand must be modified: "
+                        "{0} should be {1}".format(r, old))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_isub_offload_array_int(self):
+        """Test __isub__ operation of OffloadArray with OffloadArray 
+           operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=int)
+        o = a + 1
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a - o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a -= offl_o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_isub_array_int(self):
+        """Test __isub__ operation of OffloadArray with array operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=int)
+        o = a + 1
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a - o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a -= o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_isub_scalar_float(self):
+        """Test __isub__ operation of OffloadArray with scalar operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=float)
+        s = 1.3
+
+        old = numpy.empty_like(a)
+        old[:] = a[:]
+        expect = a - s
+        
+        offl_a = stream.bind(a)
+        offl_a -= s
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old).all(),
+                        "Input array operand must be modified: "
+                        "{0} should be {1}".format(r, old))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_isub_offload_array_float(self):
+        """Test __isub__ operation of OffloadArray with OffloadArray 
+           operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=float)
+        o = a + 1.3
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a - o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a -= offl_o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_isub_array_float(self):
+        """Test __isub__ operation of OffloadArray with array operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=float)
+        o = a + 1.3
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a - o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a -= o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_isub_scalar_complex(self):
+        """Test __isub__ operation of OffloadArray with scalar operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=complex)
+        s = complex(1.2, -1.3)
+
+        old = numpy.empty_like(a)
+        old[:] = a[:]
+        expect = a - s
+        
+        offl_a = stream.bind(a)
+        offl_a -= s
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old).all(),
+                        "Input array operand must be modified: "
+                        "{0} should be {1}".format(r, old))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_isub_offload_array_complex(self):
+        """Test __isub__ operation of OffloadArray with OffloadArray 
+           operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=complex)
+        o = a + complex(1.2, -1.3)
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a - o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a -= offl_o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_isub_array_complex(self):
+        """Test __isub__ operation of OffloadArray with array operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=complex)
+        o = a + complex(1.2, -1.3)
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a - o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a -= o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
     def test_op_mul_scalar_int(self):
         """Test __mul__ operation of OffloadArray with scalar operand."""
 
@@ -961,6 +1507,279 @@ class OffloadArrayTest(unittest.TestCase):
         self.assertEqual(r.dtype, a.dtype)
         self.assertTrue((a == old_a).all(),
                         "Input array operand 1 must not be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_imul_scalar_int(self):
+        """Test __imul__ operation of OffloadArray with scalar operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=int)
+        s = 2
+
+        old = numpy.empty_like(a)
+        old[:] = a[:]
+        expect = a * s
+        
+        offl_a = stream.bind(a)
+        offl_a *= s
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old).all(),
+                        "Input array operand must be modified: "
+                        "{0} should be {1}".format(r, old))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_imul_offload_array_int(self):
+        """Test __imul__ operation of OffloadArray with OffloadArray 
+           operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=int)
+        o = a + 1
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a * o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a *= offl_o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_imul_array_int(self):
+        """Test __imul__ operation of OffloadArray with array operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=int)
+        o = a + 1
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a * o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a *= o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_imul_scalar_float(self):
+        """Test __imul__ operation of OffloadArray with scalar operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=float)
+        s = 1.3
+
+        old = numpy.empty_like(a)
+        old[:] = a[:]
+        expect = a * s
+        
+        offl_a = stream.bind(a)
+        offl_a *= s
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old).all(),
+                        "Input array operand must be modified: "
+                        "{0} should be {1}".format(r, old))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_imul_offload_array_float(self):
+        """Test __imul__ operation of OffloadArray with OffloadArray 
+           operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=float)
+        o = a + 1.3
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a * o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a *= offl_o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_imul_array_float(self):
+        """Test __imul__ operation of OffloadArray with array operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=float)
+        o = a + 1.3
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a * o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a *= o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_imul_scalar_complex(self):
+        """Test __imul__ operation of OffloadArray with scalar operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=complex)
+        s = complex(1.2, -1.3)
+
+        old = numpy.empty_like(a)
+        old[:] = a[:]
+        expect = a * s
+        
+        offl_a = stream.bind(a)
+        offl_a *= s
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old).all(),
+                        "Input array operand must be modified: "
+                        "{0} should be {1}".format(r, old))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_imul_offload_array_complex(self):
+        """Test __imul__ operation of OffloadArray with OffloadArray 
+           operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=complex)
+        o = a + complex(1.2, -1.3)
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a * o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a *= offl_o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
+                        "{0} should be {1}".format(a, old_a))
+        self.assertTrue((o == old_o).all(),
+                        "Input array operand 2 must not be modified: "
+                        "{0} should be {1}".format(o, old_o))
+        self.assertTrue((r == expect).all(),
+                        "Array contains unexpected values: "
+                        "{0} should be {1}".format(r, expect))
+
+    @skipNoDevice
+    def test_op_imul_array_complex(self):
+        """Test __imul__ operation of OffloadArray with array operand."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(1, 4711 * 1024, dtype=complex)
+        o = a + complex(1.2, -1.3)
+
+        old_a = numpy.empty_like(a)
+        old_o = numpy.empty_like(o)
+        old_a[:] = a[:]
+        old_o[:] = o[:]
+        expect = a * o
+        
+        offl_a = stream.bind(a)
+        offl_o = stream.bind(o)
+        offl_a *= o
+        offl_a.update_host()
+        r = offl_a.array
+        stream.sync()
+
+        self.assertTrue((r != old_a).all(),
+                        "Array operand must be modified: "
                         "{0} should be {1}".format(a, old_a))
         self.assertTrue((o == old_o).all(),
                         "Input array operand 2 must not be modified: "
@@ -1384,7 +2203,7 @@ class OffloadArrayTest(unittest.TestCase):
         offl_a.update_host()
         stream.sync()
         self.assertTrue((a == 1).all(),
-                         "Array should be all one."  +str(a))
+                        "Array should be all one." + str(a))
 
     @skipNoDevice
     def test_op_one_float(self):
@@ -1398,7 +2217,7 @@ class OffloadArrayTest(unittest.TestCase):
         offl_a.update_host()
         stream.sync()
         self.assertTrue((a == 1.0).all(),
-                         "Array should be all one." +str(a))
+                        "Array should be all one." + str(a))
 
     @skipNoDevice
     def test_op_one_complex(self):
@@ -1412,7 +2231,7 @@ class OffloadArrayTest(unittest.TestCase):
         offl_a.update_host()
         stream.sync()
         self.assertTrue((a == complex(1.0, 0.0)).all(),
-                         "Array should be all one." + str(a))
+                        "Array should be all one." + str(a))
 
     @skipNoDevice
     def test_op_fill_int(self):

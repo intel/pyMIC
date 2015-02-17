@@ -62,6 +62,7 @@ class OffloadArray(object):
     device = None
     stream = None
     _library = None
+    _device_ptr = None
     
     def __init__(self, shape, dtype, order="C", 
                  alloc_arr=True, base=None, device=None, stream=None):
@@ -96,14 +97,14 @@ class OffloadArray(object):
                 if stream is None:
                     stream = self.stream
                 self.array = numpy.empty(self.shape, self.dtype, self.order)
-                stream._buffer_allocate(self.array)
+                self._device_ptr = stream.allocate_device_memory(self.nbytes)
 
         self._library = _offload_libraries[device.device_id]
         
     def __del__(self):
-        # deallocate storage in the target if this array goes away
+        # deallocate storage on the target if this array goes away
         if self.base is None:
-            self.stream._buffer_release(self.array)
+            self.stream.deallocate_device_memory(self._device_ptr)
         
     def __str__(self):
         return str(self.array)
@@ -133,7 +134,9 @@ class OffloadArray(object):
            --------
            update_host     
         """
-        self.stream._buffer_update_on_target(self.array)
+        host_ptr = self.array.ctypes.get_data()
+        self.stream.transfer_host2device(host_ptr, self._device_ptr, 
+                                         self.nbytes)
         return None
     
     @trace
@@ -141,6 +144,9 @@ class OffloadArray(object):
         """Update the associated numpy.ndarray on the host with the contents
            by copying the OffloadArray's buffer space from the device to the
            host.
+
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
 
            Parameters
            ----------
@@ -155,7 +161,9 @@ class OffloadArray(object):
            --------
            update_device
         """
-        self.stream._buffer_update_on_host(self.array)
+        host_ptr = self.array.ctypes.get_data()
+        self.stream.transfer_device2host(self._device_ptr, host_ptr, 
+                                         self.nbytes)
         return self
     
     def assign_stream(self, stream):
@@ -182,11 +190,16 @@ class OffloadArray(object):
         self.stream = stream
     
     def __add__(self, other):
-        """Add an array or scalar to an array."""
+        """Add an array or scalar to an array.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
 
         dt = map_data_types(self.dtype)
         n = int(self.size)
-        x = self.array
+        x = self
+        y = other
         incx = int(1)
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
@@ -196,7 +209,6 @@ class OffloadArray(object):
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
                                  "{0} != {1}".format(self.dtype, other.dtype))
-            y = other.array
             incy = int(1)
             incr = int(1)
         elif isinstance(other, numpy.ndarray):
@@ -207,7 +219,6 @@ class OffloadArray(object):
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
                                  "{0} != {1}".format(self.dtype, other.dtype))
-            y = other
             incy = int(1)
             incr = int(1)
         else:
@@ -215,21 +226,21 @@ class OffloadArray(object):
             if self.dtype != type(other):
                 raise ValueError("Data types do not match: "
                                  "{0} != {1}".format(self.dtype, type(other)))
-            y = other
             incy = int(0)
             incr = int(1)
         result = OffloadArray(self.shape, self.dtype, device=self.device, 
                               stream=self.stream)
         self.stream.invoke(self._library.pymic_offload_array_add,
-                           dt, n, x, incx, y, incy, result.array, incr)
+                           dt, n, x, incx, y, incy, result, incr)
         return result
 
-    def __sub__(self, other):
-        """Subtract an array or scalar from an array."""
-        
+    def __iadd__(self, other):
+        """Add an array or scalar to an array (in-place operation)."""
+
         dt = map_data_types(self.dtype)
         n = int(self.size)
-        x = self.array
+        x = self
+        y = other
         incx = int(1)
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
@@ -239,7 +250,46 @@ class OffloadArray(object):
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
                                  "{0} != {1}".format(self.dtype, other.dtype))
-            y = other.array
+            incy = int(1)
+        elif isinstance(other, numpy.ndarray):
+            if self.array.shape != other.shape:
+                raise ValueError("shapes of the arrays need to match: "
+                                 "{0} != {1}".format(self.array.shape, 
+                                                     other.shape))
+            if self.dtype != other.dtype:
+                raise ValueError("Data types do not match: "
+                                 "{0} != {1}".format(self.dtype, other.dtype))
+            incy = int(1)
+        else:
+            # scalar
+            if self.dtype != type(other):
+                raise ValueError("Data types do not match: "
+                                 "{0} != {1}".format(self.dtype, type(other)))
+            incy = int(0)
+        self.stream.invoke(self._library.pymic_offload_array_add,
+                           dt, n, x, incx, y, incy, x, incx)
+        return self
+    
+    def __sub__(self, other):
+        """Subtract an array or scalar from an array.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
+        
+        dt = map_data_types(self.dtype)
+        n = int(self.size)
+        x = self
+        y = other
+        incx = int(1)
+        if isinstance(other, OffloadArray):
+            if self.array.shape != other.array.shape:
+                raise ValueError("shapes of the arrays need to match: "
+                                 "{0} != {1}".format(self.array.shape, 
+                                                     other.shape))
+            if self.dtype != other.dtype:
+                raise ValueError("Data types do not match: "
+                                 "{0} != {1}".format(self.dtype, other.dtype))
             incy = int(1)
             incr = int(1)
         elif isinstance(other, numpy.ndarray):
@@ -250,7 +300,6 @@ class OffloadArray(object):
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
                                  "{0} != {1}".format(self.dtype, other.dtype))
-            y = other
             incy = int(1)
             incr = int(1)
         else:
@@ -258,21 +307,21 @@ class OffloadArray(object):
             if self.dtype != type(other):
                 raise ValueError("Data types do not match: "
                                  "{0} != {1}".format(self.dtype, type(other)))
-            y = other
             incy = int(0)
             incr = int(1)
         result = OffloadArray(self.shape, self.dtype, device=self.device, 
                               stream=self.stream)
         self.stream.invoke(self._library.pymic_offload_array_sub,
-                           dt, n, x, incx, y, incy, result.array, incr)
+                           dt, n, x, incx, y, incy, result, incr)
         return result
 
-    def __mul__(self, other):
-        """Multiply an array or a scalar with an array."""
-
+    def __isub__(self, other):
+        """Subtract an array or scalar from an array (in-place operation)."""
+        
         dt = map_data_types(self.dtype)
         n = int(self.size)
-        x = self.array
+        x = self
+        y = other
         incx = int(1)
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
@@ -282,7 +331,46 @@ class OffloadArray(object):
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
                                  "{0} != {1}".format(self.dtype, other.dtype))
-            y = other.array
+            incy = int(1)
+        elif isinstance(other, numpy.ndarray):
+            if self.array.shape != other.shape:
+                raise ValueError("shapes of the arrays need to match: "
+                                 "{0} != {1}".format(self.array.shape, 
+                                                     other.shape))
+            if self.dtype != other.dtype:
+                raise ValueError("Data types do not match: "
+                                 "{0} != {1}".format(self.dtype, other.dtype))
+            incy = int(1)
+        else:
+            # scalar
+            if self.dtype != type(other):
+                raise ValueError("Data types do not match: "
+                                 "{0} != {1}".format(self.dtype, type(other)))
+            incy = int(0)
+        self.stream.invoke(self._library.pymic_offload_array_sub,
+                           dt, n, x, incx, y, incy, x, incx)
+        return self
+
+    def __mul__(self, other):
+        """Multiply an array or a scalar with an array.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
+
+        dt = map_data_types(self.dtype)
+        n = int(self.size)
+        x = self
+        y = other
+        incx = int(1)
+        if isinstance(other, OffloadArray):
+            if self.array.shape != other.array.shape:
+                raise ValueError("shapes of the arrays need to match: "
+                                 "{0} != {1}".format(self.array.shape, 
+                                                     other.shape))
+            if self.dtype != other.dtype:
+                raise ValueError("Data types do not match: "
+                                 "{0} != {1}".format(self.dtype, other.dtype))
             incy = int(1)
             incr = int(1)
         elif isinstance(other, numpy.ndarray):
@@ -293,7 +381,6 @@ class OffloadArray(object):
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
                                  "{0} != {1}".format(self.dtype, other.dtype))
-            y = other
             incy = int(1)
             incr = int(1)
         else:
@@ -301,14 +388,49 @@ class OffloadArray(object):
             if self.dtype != type(other):
                 raise ValueError("Data types do not match: "
                                  "{0} != {1}".format(self.dtype, type(other)))
-            y = other
             incy = int(0)
             incr = int(1)
         result = OffloadArray(self.shape, self.dtype, device=self.device, 
                               stream=self.stream)
         self.stream.invoke(self._library.pymic_offload_array_mul,
-                           dt, n, x, incx, y, incy, result.array, incr)
+                           dt, n, x, incx, y, incy, result, incr)
         return result
+
+    def __imul__(self, other):
+        """Multiply an array or a scalar with an array (in-place operation)."""
+        
+        dt = map_data_types(self.dtype)
+        n = int(self.size)
+        x = self
+        y = other
+        incx = int(1)
+        if isinstance(other, OffloadArray):
+            if self.array.shape != other.array.shape:
+                raise ValueError("shapes of the arrays need to match: "
+                                 "{0} != {1}".format(self.array.shape, 
+                                                     other.shape))
+            if self.dtype != other.dtype:
+                raise ValueError("Data types do not match: "
+                                 "{0} != {1}".format(self.dtype, other.dtype))
+            incy = int(1)
+        elif isinstance(other, numpy.ndarray):
+            if self.array.shape != other.shape:
+                raise ValueError("shapes of the arrays need to match: "
+                                 "{0} != {1}".format(self.array.shape, 
+                                                     other.shape))
+            if self.dtype != other.dtype:
+                raise ValueError("Data types do not match: "
+                                 "{0} != {1}".format(self.dtype, other.dtype))
+            incy = int(1)
+        else:
+            # scalar
+            if self.dtype != type(other):
+                raise ValueError("Data types do not match: "
+                                 "{0} != {1}".format(self.dtype, type(other)))
+            incy = int(0)
+        self.stream.invoke(self._library.pymic_offload_array_mul,
+                           dt, n, x, incx, y, incy, x, incx)
+        return self
 
     def fill(self, value):
         """Fill an array with the specified value.
@@ -340,7 +462,11 @@ class OffloadArray(object):
         return self    
     
     def fillfrom(self, array):
-        """Fill an array from a numpy.ndarray."""
+        """Fill an array from a numpy.ndarray.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
         
         if not isinstance(array, numpy.ndarray):
             raise TypeError("only numpy.ndarray supported")
@@ -419,11 +545,15 @@ class OffloadArray(object):
         
     def __abs__(self):
         """Return a new OffloadArray with the absolute values of the elements 
-           of `self`."""
+           of `self`.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
         
         dt = map_data_types(self.dtype)
         n = int(self.array.size)
-        x = self.array
+        x = self
         if dt == 2:  # complex data
             result = self.stream.empty(self.shape, dtype=numpy.float, 
                                        order=self.order, update_host=False)
@@ -434,11 +564,15 @@ class OffloadArray(object):
         return result
         
     def __pow__(self, other):
-        """Element-wise pow() function."""
+        """Element-wise pow() function.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
         
         dt = map_data_types(self.dtype)
         n = int(self.size)
-        x = self.array
+        x = self
         incx = int(1)
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
@@ -473,11 +607,15 @@ class OffloadArray(object):
         result = OffloadArray(self.shape, self.dtype, device=self.device, 
                               stream=self.stream)
         self.stream.invoke(self._library.pymic_offload_array_pow,
-                           dt, n, x, incx, y, incy, result.array, incr)
+                           dt, n, x, incx, y, incy, result, incr)
         return result
         
     def reverse(self):
-        """Return a new OffloadArray with all elements in reverse order."""
+        """Return a new OffloadArray with all elements in reverse order.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
         
         if len(self.shape) > 1:
             raise ValueError("Multi-dimensional arrays cannot be revered.")
@@ -491,7 +629,11 @@ class OffloadArray(object):
 
     def reshape(self, *shape):
         """Assigns a new shape to an existing OffloadArray without changing
-           the data of it."""
+           the data of it.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
         
         if isinstance(shape[0], tuple) or isinstance(shape[0], list):
             shape = tuple(shape[0])
@@ -510,11 +652,19 @@ class OffloadArray(object):
                             False, self, device=self.device)
 
     def ravel(self):
-        """Return a flattened array."""
+        """Return a flattened array.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
         return self.reshape(self.size)
 
     def __setslice__(self, i, j, sequence):
-        """Overwrite this OffloadArray with slice coming from another array."""
+        """Overwrite this OffloadArray with slice coming from another array.
+        
+           The operation is enqueued into the array's default stream object 
+           and completes asynchronously.
+        """
         # TODO: raise errors here: shape/size/data data type
 
         lb = min(i, self.size)

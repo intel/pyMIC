@@ -39,12 +39,20 @@ namespace pymic {
 uintptr_t buffer_lookup_device_ptr(int, void*);
 uintptr_t buffer_lookup_device_ptr(int, uintptr_t);
 
-void buffer_allocate(int, char*, size_t);
-void buffer_release(int, char*, size_t);
-void buffer_update_on_target(int, char*, size_t);
-void buffer_update_on_host(int, char*, size_t);
-void buffer_alloc_and_copy_to_target(int, char*, size_t);
-void buffer_copy_from_target_and_release(int, char*, size_t);
+unsigned char * buffer_allocate(int, size_t, size_t);
+void buffer_release(int, unsigned char *);
+void buffer_copy_to_target(int, unsigned char *, unsigned char *, 
+                           size_t, size_t, size_t);
+void buffer_copy_to_host(int, unsigned char *, unsigned char *, 
+                         size_t, size_t, size_t);
+void buffer_copy_on_device(int, unsigned char *, unsigned char *, 
+                         size_t, size_t, size_t);
+uintptr_t buffer_translate_pointer(unsigned char *);
+
+struct buffer_descriptor {
+    uintptr_t pointer;
+    size_t size;
+};
 
 } // namespace pymic
 

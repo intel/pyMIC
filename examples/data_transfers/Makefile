@@ -26,54 +26,12 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
-
+ 
 .PHONY: all clean realclean
 
-ifeq ($(debug),0)
-DEBUG=
-else
-DEBUG=-DDEBUG
-endif
+all: 
 
-PYMIC_OBJECTS=pymicimpl_interface.o pymicimpl_buffers.o pymicimpl_invoke.o pymicimpl_misc.o
-
-PYTHON_INCLUDES=-I/usr/include/python2.7 -I/usr/lib64/python2.7/site-packages/numpy/core/include
-
-CC_MIC=icc
-CFLAGS_MIC=-I../include -fPIC -shared -mmic -g -O2 -o
-CXX=icpc
-CXXFLAGS=$(DEBUG) -offload=mandatory -std=c++11 -Wall -g -O3 -fPIC -I. -I../include $(PYTHON_INCLUDES)
-LD=icpc
-LDFLAGS=-shared -offload-option,mic,link,"--no-undefined"
-
-all: ../pymic/_pymicimpl.so _pymicimpl.so ../pymic/liboffload_array.so liboffload_array.so
-
-_pymicimpl.so: $(PYMIC_OBJECTS) $(XSTREAM_OBJECTS)
-	$(LD) $(LDFLAGS) -o $@ $(PYMIC_OBJECTS) $(XSTREAM_OBJECTS)
-	
-../pymic/_pymicimpl.so: _pymicimpl.so
-	cp _pymicimpl.so ../pymic/_pymicimpl.so
-	chmod a+rX ../pymic/_pymicimpl.so
-
-pymicimpl_interface.cc: debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_buffers.h pymicimpl_invoke.h pymicimpl_misc.h
-pymicimpl_buffers.cc:   debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_buffers.h 
-pymicimpl_invoke.cc:    debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_invoke.h pymicimpl_buffers.h 
-pymicimpl_misc.cc:      debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h 
-
-
-liboffload_array.so: offload_array.c
-	$(CC_MIC) $(CFLAGS_MIC) $@ $< -lm
-	chmod a+rX liboffload_array.so
-
-offload_array.c: ../include/pymic_kernel.h
-	
-../pymic/liboffload_array.so: liboffload_array.so
-	cp liboffload_array.so ../pymic/liboffload_array.so
-	chmod a+rX ../pymic/liboffload_array.so
-	
 clean:
-	rm -f *.o
-
+	
 realclean: clean
-	rm -f *.bak *~
-	rm -f *.so
+	rm -f *~

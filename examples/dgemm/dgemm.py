@@ -44,9 +44,8 @@ library = device.load_library("libdgemm.so")
 stream = device.get_default_stream()
 
 # sizes of the matrices
-m = 4096
-n = 4096
-k = 4096
+ds = 4096
+m, n, k = ds, ds, ds
 if len(sys.argv) > 1:
     sz = int(sys.argv[1])
     m, n, k = sz, sz, sz

@@ -84,15 +84,17 @@ PyObject* throw_exception(const char* format, ...) {
     return exception;
 }
 
+
 PYMIC_INTERFACE 
 PyObject* pymic_impl_offload_number_of_devices(PyObject* self, PyObject* args) {
 	debug_enter();
 	if (!PyArg_ParseTuple(args, ""))
 		return NULL;
-	int no_of_devs = get_number_of_devices();
+    size_t no_of_devs = 0;
+	no_of_devs = get_number_of_devices();
 	debug(10, "detected %d devices", no_of_devs);
 	debug_leave();
-	return Py_BuildValue("I", no_of_devs);
+	return Py_BuildValue("I", static_cast<int>(no_of_devs));
 }
 
 PYMIC_INTERFACE
@@ -156,6 +158,175 @@ PyObject* pymic_impl_unload_library(PyObject* self, PyObject* args) {
 	Py_RETURN_NONE;
 }
 
+
+PYMIC_INTERFACE
+PyObject * pymic_impl_stream_create(PyObject * self, PyObject * args) {
+    debug_enter();
+    int lowest, greatest;
+    int device;
+    char * name;
+    
+	if (! PyArg_ParseTuple(args, "is", &device, &name))
+		return NULL;
+
+    // in the native implementation, we make everything synchronous and
+    // we use the same stream (= device id)
+    debug(10, "using default stream for device %d", device);
+        
+    debug_leave();
+    return Py_BuildValue("k", static_cast<uintptr_t>(device));
+}
+
+
+PYMIC_INTERFACE
+PyObject * pymic_impl_stream_destroy(PyObject * self, PyObject * args) {
+    debug_enter();
+    int device;
+    uintptr_t stream_id;
+
+	if (! PyArg_ParseTuple(args, "ik", &device, &stream_id))
+		return NULL;
+    
+    debug_leave();
+    Py_RETURN_NONE;
+}
+
+
+PYMIC_INTERFACE
+PyObject * pymic_impl_stream_allocate(PyObject * self, PyObject * args) {
+    debug_enter();
+    int device;
+    uintptr_t stream_id;
+    size_t size;
+    int alignment;
+    unsigned char * device_ptr;
+
+ 	if (! PyArg_ParseTuple(args, "ikki", &device, &stream_id, &size, &alignment))
+		return NULL;
+    device_ptr = buffer_allocate(device, size, alignment);
+    
+    debug(10, "allocated %ld bytes on device %d with pointer %p",
+          size, device, device_ptr);
+    debug_leave();
+	return Py_BuildValue("k", reinterpret_cast<uintptr_t>(device_ptr));
+}
+
+
+PYMIC_INTERFACE
+PyObject * pymic_impl_stream_deallocate(PyObject * self, PyObject * args) {
+    debug_enter();
+    int device;
+    uintptr_t stream_id;
+    unsigned char * device_ptr;
+
+ 	if (! PyArg_ParseTuple(args, "ikk", &device, &stream_id, &device_ptr))
+		return NULL;
+    buffer_release(device, device_ptr);
+
+    debug(10, "deallocated pointer %p on device %d",
+          device_ptr, device);
+    debug_leave();
+	Py_RETURN_NONE;
+}
+
+
+PYMIC_INTERFACE
+PyObject * pymic_impl_stream_memcpy_h2d(PyObject * self, PyObject * args) {
+    debug_enter();
+    uintptr_t host_ptr;
+    uintptr_t device_ptr;
+    size_t size;
+    size_t offset_host;
+    size_t offset_device;
+    uintptr_t stream_id;
+    unsigned char * host_mem;
+    unsigned char * dev_mem;
+    
+ 	if (! PyArg_ParseTuple(args, "kkkkkk", &stream_id, &host_ptr, &device_ptr, 
+                           &size, &offset_host, &offset_device))
+		return NULL;
+    host_mem = reinterpret_cast<unsigned char *>(host_ptr);
+    dev_mem = reinterpret_cast<unsigned char *>(device_ptr);
+
+    int device = static_cast<int>(stream_id);
+    buffer_copy_to_target(device, host_mem, dev_mem, 
+                          size, offset_host, offset_device);
+
+    debug_leave();
+    Py_RETURN_NONE;
+}
+
+
+PYMIC_INTERFACE
+PyObject * pymic_impl_stream_memcpy_d2h(PyObject * self, PyObject * args) {
+    debug_enter();
+    uintptr_t host_ptr;
+    uintptr_t device_ptr;
+    size_t size;
+    size_t offset_host;
+    size_t offset_device;
+    uintptr_t stream_id;
+    unsigned char * host_mem;
+    unsigned char * dev_mem;
+    
+ 	if (! PyArg_ParseTuple(args, "kkkkkk", &stream_id, &device_ptr, &host_ptr,  
+                           &size, &offset_device, &offset_host))
+		return NULL;
+    dev_mem = reinterpret_cast<unsigned char *>(device_ptr);
+    host_mem = reinterpret_cast<unsigned char *>(host_ptr);
+    
+    int device = static_cast<int>(stream_id);
+    buffer_copy_to_host(device, dev_mem, host_mem, 
+                        size, offset_device, offset_host);
+
+    debug_leave();
+    Py_RETURN_NONE;
+}
+
+
+PYMIC_INTERFACE
+PyObject * pymic_impl_stream_memcpy_d2d(PyObject * self, PyObject * args) {
+    debug_enter();
+    uintptr_t src;
+    uintptr_t dst;
+    size_t size;
+    size_t offset_device_src;
+    size_t offset_device_dst;
+    uintptr_t stream_id;
+    unsigned char * src_mem;
+    unsigned char * dst_mem;
+    
+ 	if (! PyArg_ParseTuple(args, "kkkkkk", &stream_id, &src, &dst,  
+                           &size, &offset_device_src, &offset_device_dst))
+		return NULL;
+    src_mem = reinterpret_cast<unsigned char *>(src);
+    dst_mem = reinterpret_cast<unsigned char *>(dst);
+    
+    int device = static_cast<int>(stream_id);
+    buffer_copy_on_device(device, src_mem, dst_mem, 
+                          size, offset_device_src, offset_device_dst);
+
+    debug_leave();
+    Py_RETURN_NONE;
+}
+
+
+PYMIC_INTERFACE
+PyObject * pymic_impl_stream_ptr_translate(PyObject * self, PyObject * args) {
+    debug_enter();
+    uintptr_t device_ptr;
+    uintptr_t translated;
+    
+ 	if (! PyArg_ParseTuple(args, "k", &device_ptr))
+		return NULL;
+
+    translated = buffer_translate_pointer(reinterpret_cast<unsigned char *>(device_ptr));
+
+    debug_leave();
+    return Py_BuildValue("k", translated);
+}
+
+
 PYMIC_INTERFACE
 PyObject* pymic_impl_find_kernel(PyObject* self, PyObject* args) {
     int device;
@@ -179,212 +350,71 @@ PyObject* pymic_impl_find_kernel(PyObject* self, PyObject* args) {
     return Py_BuildValue("k", funcptr);
 }
 
-PYMIC_INTERFACE
-PyObject* pymic_impl_buffer_allocate(PyObject* self, PyObject* args) {
-	int device;
-	char *payload = NULL;
-	size_t size = 0;
-	PyArrayObject *array = NULL;
-	debug_enter();
-	if (!PyArg_ParseTuple(args, "iOI", &device, &array, &size)) 
-		return NULL;
-	if (!PyArray_Check(array)) 
-		return NULL;
-	payload = PyArray_BYTES(array);
-	debug(10, "(CPU->MIC %d) allocating buffer with %d bytes with array %p, backing store at %p", 
-	      device, size, (void*) array, (void*) payload);
-	buffer_allocate(device, payload, size);
-	Py_INCREF(array);
-	debug_leave();
-	Py_RETURN_NONE;
-}
 
-PYMIC_INTERFACE
-PyObject* pymic_impl_buffer_release(PyObject* self, PyObject* args) {
-	int device;
-	char *payload = NULL;
-	size_t size = 0;
-	PyArrayObject *array = NULL;
-	debug_enter();
-	if (!PyArg_ParseTuple(args, "iOI", &device, &array, &size)) 
-		return NULL;
-	if (!PyArray_Check(array)) 
-		return NULL;
-	payload = PyArray_BYTES(array);
-	debug(10, "(CPU->MIC %d) releasing buffer with %d bytes with array %p, backing store at %p", 
-	      device, size, (void*) array, (void*) payload);
-	buffer_release(device, payload, size);
-	Py_DECREF(array);
-	debug_leave();
-	Py_RETURN_NONE;
-}
-
-PYMIC_INTERFACE
-PyObject* pymic_impl_buffer_update_on_target(PyObject* self, PyObject* args) {
-	int device;
-	char *payload = NULL;
-	size_t size = 0;
-	PyArrayObject *array = NULL;
-	debug_enter();
-	if (!PyArg_ParseTuple(args, "iOI", &device, &array, &size)) 
-		return NULL;
-	if (!PyArray_Check(array)) 
-		return NULL;
-	payload = PyArray_BYTES(array);
-	debug(10, "(CPU->MIC %d) updating buffer with %d bytes with array %p, backing store at %p", 
-	      device, size, (void*) array, (void*) payload);
-	buffer_update_on_target(device, payload, size);
-	debug_leave();
-	Py_RETURN_NONE;
-}
-
-PYMIC_INTERFACE
-PyObject* pymic_impl_buffer_update_on_host(PyObject* self, PyObject* args) {
-	int device;
-	char *payload = NULL;
-	size_t size = 0;
-	PyArrayObject *array = NULL;
-	debug_enter();
-	if (!PyArg_ParseTuple(args, "iOI", &device, &array, &size)) 
-		return NULL;
-	if (!PyArray_Check(array)) 
-		return NULL;
-	payload = PyArray_BYTES(array);
-	debug(10, "(MIC %d->CPU) updating buffer with %d bytes with array %p, backing store at %p", 
-	      device, size, (void*) array, (void*) payload);
-	buffer_update_on_host(device, payload, size);
-	debug_leave();
-	Py_RETURN_NONE;
-}
-
-PYMIC_INTERFACE
-PyObject* pymic_impl_buffer_alloc_and_copy_to_target(PyObject* self, PyObject* args) {
-	int device;
-	char *payload = NULL;
-	size_t size = 0;
-	PyArrayObject *array = NULL;
-	debug_enter();
-	if (!PyArg_ParseTuple(args, "iOI", &device, &array, &size)) 
-		return NULL;
-	if (!PyArray_Check(array)) 
-		return NULL;
-	payload = PyArray_BYTES(array);
-	debug(10, "(CPU->MIC %d) copying buffer with %d bytes with array %p, backing store at %p", 
-	      device, size, (void*) array, (void*) payload);
-	buffer_alloc_and_copy_to_target(device, payload, size);
-	Py_INCREF(array);
-	debug_leave();
-	Py_RETURN_NONE;
-}
-
-PYMIC_INTERFACE
-PyObject* pymic_impl_buffer_copy_from_target_and_release(PyObject* self, PyObject* args) {
-	int device;
-	char *payload = NULL;
-	size_t size = 0;
-	PyArrayObject *array = NULL;
-	debug_enter();
-	if (!PyArg_ParseTuple(args, "iOI", &device, &array, &size)) 
-		return NULL;
-	if (!PyArray_Check(array)) 
-		return NULL;
-	payload = PyArray_BYTES(array);
-	debug(10, "(MIC %d->CPU) copying buffer with %d bytes with array %p, backing store at %p", 
-	      device, size, (void*) array, (void*) payload);
-	buffer_copy_from_target_and_release(device, payload, size);
-	Py_DECREF(array);
-	debug_leave();
-	Py_RETURN_NONE;
-}
-
-PYMIC_INTERFACE
-PyObject* pymic_impl_invoke_kernel(PyObject* self, PyObject* args) {
-	int device;
+PyObject * pymic_impl_invoke_kernel(PyObject * self, PyObject * args) {
+    int device;
     uintptr_t funcptr = 0;
-	PyObject* varargs = NULL;
-	int varargc = 0;
-	debug_enter();
-	
-	if (! PyArg_ParseTuple(args, "ikO", &device, &funcptr, &varargs))
-		return NULL;
-	
-	if (!PyTuple_Check(varargs)) 
-		return NULL;
-	varargc = PyTuple_Size(varargs);
-	debug(100, "kernel %x: %d extra argument%s", funcptr, varargc, ((varargc != 1) ? "s" : ""));
-	
-	// retrieve payload and size information from the arguments
-	std::vector<std::pair<char *,size_t> > arguments;
-	for (int i = 0; i < varargc; ++i) {
-        // we expect different kinds of array: numpy.ndarray or OffloadArray
-        PyObject* array_obj = PyTuple_GetItem(varargs, i);
-		debug(100, "retrieving extra argument %d gave %p", i, array_obj);
+    PyObject * argv = NULL;
+    PyObject * argsz = NULL;
+    int argc = 0;
+    debug_enter();
 
-		if (PyArray_Check(array_obj)) {
-            debug(100, "argument %d is numpy.ndarray", i);
-            // if this a numpy.ndarray, we can directly use it
-			PyArrayObject* array = reinterpret_cast<PyArrayObject*>(array_obj);
-			char *payload = PyArray_BYTES(array);
-			size_t size = PyArray_NBYTES(array);
-			arguments.push_back(std::pair<char *, int>(payload, size));
-		}
-        else {
-            // this is an OffloadArray, we have to get the ndarray first
-            // TODO: we might want to do some safety checks here
-            PyObject* array = PyObject_GetAttrString(array_obj, "array");
-            if (!array)
-                return NULL;
-            if(PyArray_Check(array)) {
-                debug(100, "argument %d is OffloadArray w/ encapsulated numpy.ndarray", i);
-                PyArrayObject* nparray = reinterpret_cast<PyArrayObject*>(array);
-                char* payload = PyArray_BYTES(nparray);
-                size_t size = PyArray_NBYTES(nparray);
-                arguments.push_back(std::pair<char *, int>(payload, size));
-            }
-            else {
-                debug(100, "unrecognized argument object for argument %d, bailing out", i);
-                return NULL;
-            }
-        }
-	}
-	
-	// invoke the kernel on the remote side
+    if (! PyArg_ParseTuple(args, "ikOOi", &device, &funcptr,
+                           &argv, &argsz, &argc))
+    return NULL;
+
+    // retrieve device pointers from the argument list
+    std::vector< std::pair<uintptr_t, size_t> > arguments;
+    if (!PyArray_Check(argv))
+        return NULL;
+    if (!PyArray_Check(argsz))
+        return NULL;
+    PyArrayObject * array_argv = reinterpret_cast<PyArrayObject *>(argv);
+    PyArrayObject * array_argsz = reinterpret_cast<PyArrayObject *>(argsz);
+    uintptr_t * ptrs = reinterpret_cast<uintptr_t *>(PyArray_BYTES(array_argv));
+    uintptr_t * sizes = reinterpret_cast<uintptr_t *>(PyArray_BYTES(array_argsz));
+    for (int i = 0; i < argc; ++i) {
+        uintptr_t dev_ptr = ptrs[i];
+        size_t size = sizes[i];
+        arguments.push_back(std::pair<uintptr_t, size_t>(dev_ptr, size));
+    }
+
+    // invoke the kernel on the remote side
     target_invoke_kernel(device, funcptr, arguments);
-	
-	debug_leave();
-	Py_RETURN_NONE;
+
+    debug_leave();
+    Py_RETURN_NONE;
 }
 
-
-PYMIC_INTERFACE
-PyObject* pymic_impl_test(PyObject* self, PyObject* args) {
-	Py_RETURN_NONE;
-}
 
 // these are the mappings from the Python interface to the C entry points
 static PyMethodDef methods[] = {
-	// generic support functions
-	PYMIC_ENTRYPOINT(pymic_impl_offload_number_of_devices, "Determine the number of offload devices available."),
-	PYMIC_ENTRYPOINT(pymic_impl_load_library, "Load a library with kernels to the target."),
-	PYMIC_ENTRYPOINT(pymic_impl_unload_library, "Unload a loaded library with kernels on the target."),
-	PYMIC_ENTRYPOINT(pymic_impl_find_kernel, "Find a kernel by its name in a loaded library."),
-	
-	// data management functions
-	PYMIC_ENTRYPOINT(pymic_impl_buffer_allocate, "Allocate a buffer on the target device."),
-	PYMIC_ENTRYPOINT(pymic_impl_buffer_release, "Release (deallocate) a buffer on the target device."),
-	PYMIC_ENTRYPOINT(pymic_impl_buffer_update_on_target, "Update an existing buffer with data from the host."),
-	PYMIC_ENTRYPOINT(pymic_impl_buffer_update_on_host, "Update an existing buffer with data from the target."),
-	PYMIC_ENTRYPOINT(pymic_impl_buffer_alloc_and_copy_to_target, "Create a new buffer on the target and copy data to it."),
-	PYMIC_ENTRYPOINT(pymic_impl_buffer_copy_from_target_and_release, "Copy data from target to host and release buffer."),
-	
-	// kernel invocation
-	PYMIC_ENTRYPOINT(pymic_impl_invoke_kernel, "Invoke a kernel and pass additional data to target."),
-	
-	PYMIC_ENTRYPOINT(pymic_impl_test, "Test function for some testing"),
-	
-	// these are the entries points that need to be refactored
-	PYMIC_ENTRYPOINT_TERMINATOR
+    // generic support functions
+    PYMIC_ENTRYPOINT(pymic_impl_offload_number_of_devices, "Determine the number of offload devices available."),
+    PYMIC_ENTRYPOINT(pymic_impl_load_library, "Load a library with kernels to the target."),
+    PYMIC_ENTRYPOINT(pymic_impl_unload_library, "Unload a loaded library with kernels on the target."),
+
+    // stream functions
+    PYMIC_ENTRYPOINT(pymic_impl_stream_create, "Create a stream and return its ID."),
+    PYMIC_ENTRYPOINT(pymic_impl_stream_destroy, "Destroy a stream with ID on a device."),
+
+    // new data management functions
+    PYMIC_ENTRYPOINT(pymic_impl_stream_allocate, "Allocate device memory"),
+    PYMIC_ENTRYPOINT(pymic_impl_stream_deallocate, "Deallocate device memory"),
+    PYMIC_ENTRYPOINT(pymic_impl_stream_memcpy_h2d, "Copy from device to host"),
+    PYMIC_ENTRYPOINT(pymic_impl_stream_memcpy_d2h, "Copy from device to host"),
+    PYMIC_ENTRYPOINT(pymic_impl_stream_memcpy_d2d, "Copy from device to device"),
+    PYMIC_ENTRYPOINT(pymic_impl_stream_ptr_translate, "Pointer translation"),
+
+    // kernel invocation
+    PYMIC_ENTRYPOINT(pymic_impl_find_kernel, "Find a kernel by its name in a loaded library."),
+    PYMIC_ENTRYPOINT(pymic_impl_invoke_kernel, "Invoke a kernel and pass additional data to target."),
+
+    // these are the entries points that need to be refactored
+    PYMIC_ENTRYPOINT_TERMINATOR
 };
+
+
 
 extern "C" 
 void init_pymicimpl() {

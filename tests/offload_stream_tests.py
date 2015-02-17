@@ -200,3 +200,80 @@ class OffloadStreamTests(unittest.TestCase):
         self.assertEqual(r[0], sum(a))
         self.assertEqual(offl_a.dtype, a.dtype)
         self.assertEqual(offl_a.shape, a.shape)
+
+    @skipNoDevice
+    def test_lowlevel_transfers(self):
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+
+        a = numpy.arange(0.0, 16.0)
+        b = numpy.empty_like(a)
+
+        a_expect = numpy.empty_like(a)
+        a_expect[:] = a[:]
+        b_expect = numpy.empty_like(a)
+        b_expect[:] = a[:]
+
+        nbytes = a.dtype.itemsize * a.size
+        ptr_a_host = a.ctypes.data
+        ptr_b_host = b.ctypes.data
+
+        device_ptr_1 = stream.allocate_device_memory(nbytes)
+        device_ptr_2 = stream.allocate_device_memory(nbytes)
+
+        stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes)
+        stream.transfer_device2device(device_ptr_1, device_ptr_2, nbytes)
+
+        stream.transfer_device2host(device_ptr_2, ptr_b_host, nbytes)
+        stream.sync()
+
+        self.assertTrue((a == a_expect).all(), 
+                        "Wrong contents of array: "
+                        "{0} should be {1}".format(b, b_expect))
+        self.assertTrue((b == b_expect).all(), 
+                        "Wrong contents of array: "
+                        "{0} should be {1}".format(b, b_expect))
+
+    @skipNoDevice
+    def test_lowlevel_transfers_offsets(self):
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        a = numpy.arange(0.0, 32.0)
+        b = numpy.empty_like(a)
+
+        a_expect = numpy.empty_like(a)
+        a_expect[:] = a[:]
+        b_expect = numpy.empty_like(a)
+        b_expect[0:a.size / 2] = a[a.size / 2:]
+        b_expect[a.size / 2:] = a[0:a.size / 2]
+
+        nbytes = a.dtype.itemsize * a.size
+        ptr_a_host = a.ctypes.data
+        ptr_b_host = b.ctypes.data
+
+        device_ptr_1 = stream.allocate_device_memory(nbytes)
+        device_ptr_2 = stream.allocate_device_memory(nbytes)
+
+        stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes / 2, 
+                                    offset_host=0, offset_device=nbytes / 2)
+        stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes / 2, 
+                                    offset_host=nbytes / 2, offset_device=0)
+
+        for i in xrange(0, 4):                            
+            stream.transfer_device2device(device_ptr_1, device_ptr_2, 
+                                          nbytes / 4,
+                                          offset_device_src=i * (nbytes / 4), 
+                                          offset_device_dst=(3 - i) *
+                                                            (nbytes / 4))
+        for i in xrange(0, 4):
+            stream.transfer_device2host(device_ptr_2, ptr_b_host, nbytes / 4,
+                                        offset_device=i * (nbytes / 4), 
+                                        offset_host=(3 - i) * (nbytes / 4))
+        stream.sync()
+
+        self.assertTrue((a == a_expect).all(), 
+                        "Wrong contents of array: "
+                        "{0} should be {1}".format(b, b_expect))
+        self.assertTrue((b == b_expect).all(), 
+                        "Wrong contents of array: "
+                        "{0} should be {1}".format(b, b_expect))

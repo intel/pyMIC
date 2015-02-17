@@ -52,10 +52,11 @@
 
 namespace pymic {
 
+#if ! PYMIC_USE_XSTREAM
 int get_number_of_devices() {
 	return _Offload_number_of_devices();
 }
-
+#endif
 
 void target_load_library(int device, const std::string &filename, 
                              std::string &tempname, uintptr_t &handle) {

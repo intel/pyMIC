@@ -38,10 +38,15 @@
 
 namespace pymic {
 
+#if ! PYMIC_USE_XSTREAM
 int get_number_of_devices();
+#endif
+
 void target_load_library(int device, const std::string &, 
                               std::string &, uintptr_t &);
+
 void target_unload_library(int device, const std::string &, uintptr_t);
+
 uintptr_t find_kernel(int device, uintptr_t handle, const std::string &kernel_name);
 
 struct internal_exception : public std::exception {

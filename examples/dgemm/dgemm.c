@@ -47,8 +47,8 @@ void dgemm_kernel(int argc, uintptr_t argptr[], size_t sizes[]) {
 	double alpha = *(double*) argptr[6];
 	double beta = *(double*) argptr[7];
 	
-	// just some debugging
 #if 0
+	// just some debugging
 	printf("m=%d n=%d k=%d alpha=%lf beta=%lf\n", m, n, k, alpha, beta);
 	for (i = 0; i < m*k; i++) {
 		printf("%lf %s", A[i], (i % k == (k-1)) ? "\n" : "");

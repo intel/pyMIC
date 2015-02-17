@@ -166,7 +166,7 @@ if config._trace_level >= 1:
             tend = timeit.default_timer()
             stack_info = _stack_walk_func()
             _trace_database.register(funcname, tstart, tend,
-                                          args, kwargs, stack_info)
+                                     args, kwargs, stack_info)
             return rv
         return wrapper
 

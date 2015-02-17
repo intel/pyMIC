@@ -66,7 +66,7 @@ def number_of_devices():
 class OffloadDevice:
     def __init__(self, device_id):
         self.device_id = device_id
-        self.default_stream = OffloadStream(self)
+        self.default_stream = OffloadStream(device=self)
 
     def __eq__(self, other):
         return self.device_id == other.device_id
@@ -92,7 +92,7 @@ class OffloadDevice:
         if self.device_id == any:
             return -1
         else:
-            return int(self.device_id)
+            return int(self.device_id)        
 
     def get_default_stream(self):
         """Return the default stream for the current device.
@@ -176,7 +176,7 @@ def _init_devices():
     """
     no_of_devices = number_of_devices()
     debug(5, "found {0} device(s)", no_of_devices)
-    device_dict = {any: OffloadDevice(any)}
+    device_dict = {}
     for d in range(0, no_of_devices):
         device_dict[d] = OffloadDevice(d)
     return device_dict

@@ -29,29 +29,44 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-import pymic as mic
-import numpy as np
+from __future__ import print_function
 
-# load the library with the kernel function (on the target)
-device = mic.devices[0]
-library = device.load_library(("libdouble_it.so",))
+import pymic
+import numpy 
+
+device = pymic.devices[0]
 stream = device.get_default_stream()
 
-na = np.arange(1, 33)
+a = numpy.arange(0.0, 32.0)
+b = numpy.empty_like(a)
 
-a = stream.bind(na)
+# determine size of the array in bytes and get pointer 
+nbytes = a.dtype.itemsize * a.size
+ptr_a_host = a.ctypes.data
+ptr_b_host = b.ctypes.data
 
-print "input:"
-print "--------------------------------------"
-print na
-print a.update_host()
-print
+# allocate buffer spaces in the target
+device_ptr_1 = stream.allocate_device_memory(nbytes)
+device_ptr_2 = stream.allocate_device_memory(nbytes)
 
-stream.invoke(library.doubleit_kernel, a)
+# transfer a into the first buffer and shuffle a bit
+stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes/2, 
+                            offset_host=0, offset_device=nbytes/2)
+stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes/2, 
+                            offset_host=nbytes/2, offset_device=0)
+
+# do some more shuffling on the target
+for i in xrange(0, 4):                            
+    stream.transfer_device2device(device_ptr_1, device_ptr_2, nbytes/4,
+                                  offset_device_src=i*(nbytes/4), 
+                                  offset_device_dst=(3-i)*(nbytes/4))
+
+# transfer data back into 'b' array and shuffle everything even more
+for i in xrange(0, 4):
+    stream.transfer_device2host(device_ptr_2, ptr_b_host, nbytes/4,
+                                offset_device=i*(nbytes/4), 
+                                offset_host=(3-i)*(nbytes/4))
 stream.sync()
 
-print "output:"
-print "--------------------------------------"
-a.update_host()
-stream.sync()
-print a
+# print the result of all the shuffling
+print(b)
