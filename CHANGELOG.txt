@@ -1,3 +1,7 @@
+Next Version:
+----------------------------
+- Added smart pointers to make handling of fake pointers easier
+
 Version 0.4
 ----------------------------
 - New low-level API to allocate, deallocate, and transfer data
