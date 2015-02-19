@@ -42,18 +42,11 @@ from _pymicimpl import _pymic_impl_unload_library
 from _pymicimpl import _pymic_impl_find_kernel
 
 
-class OffloadLibrary:
+class OffloadLibrary(object):
     """Manages loaded shared-object libraries with offload code on
        target devices.  For each kernel of the library, the instance
        provides an attribute that can be used with invoke
     """
-
-    _library = None
-    _tempfile = None
-    _handle = None
-    _device = None
-    _device_id = None
-    _cache = {}
 
     @staticmethod
     def _check_k1om(library):
@@ -92,6 +85,8 @@ class OffloadLibrary:
         self._device = device
         self._device_id = device._map_dev_id()
         self.unloader = _pymic_impl_unload_library
+
+        self._cache = {}
 
         # locate the library on the host file system
         debug(5, "searching for {0} in {1}", library, config._search_path)
