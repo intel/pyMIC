@@ -191,7 +191,7 @@ class OffloadStream:
         
         _pymic_impl_stream_deallocate(self._device_id, self._stream_id, 
                                       device_ptr)
-        debug(2, 'deallocated pointer 0x{0:x} on device {1}}',
+        debug(2, 'deallocated pointer {0} on device {1}}',
                  device, device_ptr)
         
         return None
@@ -266,7 +266,7 @@ class OffloadStream:
             raise ValueError('Invalid byte count: {0}'.format(nbytes))
 
         debug(1, '(host -> device {0}) transferring {1} bytes '
-                 '(host ptr 0x{2:x}, device ptr 0x{3:x}', 
+                 '(host ptr 0x{2:x}, device ptr {3}', 
                  self._device_id, nbytes, host_ptr, device_ptr)
         _pymic_impl_stream_memcpy_h2d(self._stream_id, host_ptr, device_ptr, 
                                       nbytes, offset_host, offset_device)
@@ -342,7 +342,7 @@ class OffloadStream:
             raise ValueError('Invalid byte count: {0}'.format(nbytes))
             
         debug(1, '(device {0} -> host) transferring {1} bytes '
-                 '(device ptr 0x{2:x}, host ptr 0x{3:x}', 
+                 '(device ptr {2}, host ptr 0x{3:x}', 
                  self._device_id, nbytes, device_ptr, host_ptr)
         _pymic_impl_stream_memcpy_d2h(self._stream_id, device_ptr, host_ptr, 
                                       nbytes, offset_device, offset_host)
@@ -422,7 +422,7 @@ class OffloadStream:
             raise ValueError('Invalid byte count: {0}'.format(nbytes))
         
         debug(1, '(device {0} -> device {0}) transferring {1} bytes '
-                 '(source ptr 0x{2:x}, destination ptr 0x{3:x})', 
+                 '(source ptr {2}, destination ptr {3})', 
                  self._device_id, nbytes, device_ptr_src, device_ptr_dst)
         _pymic_impl_stream_memcpy_d2d(self._stream_id, 
                                       device_ptr_src, device_ptr_dst, 
