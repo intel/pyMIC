@@ -34,8 +34,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef void (*pymic_kernel_t)(int argc, uintptr_t argptr[], size_t sizes[]);
-
 #ifdef __cplusplus
 #define PYMIC_KERNEL extern "C" __attribute__ ((visibility("default")))
 #else
