@@ -63,6 +63,7 @@ class OffloadArray(object):
     stream = None
     _library = None
     _device_ptr = None
+    _nbytes = None
     
     def __init__(self, shape, dtype, order="C", 
                  alloc_arr=True, base=None, device=None, stream=None):
@@ -88,7 +89,7 @@ class OffloadArray(object):
             shape = (shape,)
         self.size = size
         self.shape = shape
-        self.nbytes = self.dtype.itemsize * self.size
+        self._nbytes = self.dtype.itemsize * self.size
         
         if base is not None:
             self.array = base.array.reshape(shape)
@@ -97,7 +98,7 @@ class OffloadArray(object):
                 if stream is None:
                     stream = self.stream
                 self.array = numpy.empty(self.shape, self.dtype, self.order)
-                self._device_ptr = stream.allocate_device_memory(self.nbytes)
+                self._device_ptr = stream.allocate_device_memory(self._nbytes)
 
         self._library = _offload_libraries[device.device_id]
         
@@ -136,7 +137,7 @@ class OffloadArray(object):
         """
         host_ptr = self.array.ctypes.get_data()
         self.stream.transfer_host2device(host_ptr, self._device_ptr, 
-                                         self.nbytes)
+                                         self._nbytes)
         return None
     
     @trace
@@ -163,7 +164,7 @@ class OffloadArray(object):
         """
         host_ptr = self.array.ctypes.get_data()
         self.stream.transfer_device2host(self._device_ptr, host_ptr, 
-                                         self.nbytes)
+                                         self._nbytes)
         return self
     
     def assign_stream(self, stream):
@@ -450,7 +451,7 @@ class OffloadArray(object):
            zero
         """
         if self.dtype != type(value):
-            raise ValueError("Data type do not match: "
+            raise ValueError("Data types do not match: "
                              "{0} != {1}".format(self.dtype, type(value)))
 
         dt = map_data_types(self.dtype)
@@ -459,6 +460,7 @@ class OffloadArray(object):
 
         self.stream.invoke(self._library.pymic_offload_array_fill, 
                            dt, n, x, value)
+                           
         return self    
     
     def fillfrom(self, array):
@@ -470,13 +472,16 @@ class OffloadArray(object):
         
         if not isinstance(array, numpy.ndarray):
             raise TypeError("only numpy.ndarray supported")
-        
+        if self.dtype is not array.dtype:
+            raise ValueError("Data types do not match: "
+                             "{0} != {1}".format(self.dtype, type(array)))
         if self.shape != array.shape:
             raise TypeError("shapes of arrays to not match")
 
-        # update the host part of the buffer and then update the device
-        self.array[:] = array[:]
-        self.update_device()
+        # copy data directly into the offload buffer
+        nbytes = self._nbytes
+        cptr = array.ctypes.data
+        self.stream.transfer_host2device(cptr, self._device_ptr, nbytes)
         
         return self
     
@@ -678,5 +683,6 @@ class OffloadArray(object):
             offl_sequence = self.stream.bind(sequence)
             self.stream.invoke(self._library.pymic_offload_array_setslice, 
                                dt, lb, ub, self, offl_sequence)
+            self.stream.sync()
         else:
             self.fill(sequence)

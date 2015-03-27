@@ -80,16 +80,14 @@ class OffloadStreamTests(unittest.TestCase):
         d = 0.0
         ival = numpy.empty((2,), dtype=int)
         dval = numpy.empty((2,), dtype=float)
-        argc = numpy.empty((1,), dtype=int)
         device = pymic.devices[0]
         library = get_library(device, "libtests.so")
         stream = device.get_default_stream()
         stream.invoke(library.test_offload_stream_kernel_scalars, 
-                      a, b, c, d, ival, dval, argc)
+                      a, b, c, d, ival, dval)
         stream.sync()
         self.assertEqual((ival[0], ival[1]), (42, 0))
         self.assertEqual((dval[0], dval[1]), (42.0, 0.0))
-        self.assertEqual(argc[0], 7)
 
     @skipNoDevice
     def test_invoke_kernel_arrays_int(self):
@@ -98,7 +96,6 @@ class OffloadStreamTests(unittest.TestCase):
 
         a = numpy.arange(0, 4711 * 1024, dtype=int)
         b = numpy.arange(0, 4096, dtype=int)
-        c = numpy.empty((2,), dtype=int)
         d = 13
         m = 7
 
@@ -110,7 +107,7 @@ class OffloadStreamTests(unittest.TestCase):
         library = get_library(device, "libtests.so")
         stream = device.get_default_stream()
         stream.invoke(library.test_offload_stream_kernel_arrays_int, 
-                      a, b, c, d, m)
+                      a, b, a.size, b.size, d, m)
         stream.sync()
 
         self.assertTrue((a == a_expect).all(), 
@@ -119,11 +116,6 @@ class OffloadStreamTests(unittest.TestCase):
         self.assertTrue((a == a_expect).all(), 
                         "Wrong contents of array: "
                         "{0} should be {1}".format(b, b_expect))
-        self.assertTrue((c == c_expect).all(),
-                        "Wrong number of array elements ({0} should be "
-                        "{1}, {2} should be {3}".format(c[0], c[1], 
-                                                        c_expect[0], 
-                                                        c_expect[1]))
 
     @skipNoDevice
     def test_invoke_kernel_arrays_float(self):
@@ -132,7 +124,6 @@ class OffloadStreamTests(unittest.TestCase):
 
         a = numpy.arange(0.0, 4711.0 * 1024, dtype=float)
         b = numpy.arange(0.0, 4096.0, dtype=float)
-        c = numpy.empty((2,), dtype=int)
         p = 1.5
         s = 0.5
 
@@ -144,7 +135,7 @@ class OffloadStreamTests(unittest.TestCase):
         library = get_library(device, "libtests.so")
         stream = device.get_default_stream()
         stream.invoke(library.test_offload_stream_kernel_arrays_float, 
-                      a, b, c, p, s)
+                      a, b, a.size, b.size, p, s)
         stream.sync()
 
         self.assertTrue((a == a_expect).all(), 
@@ -153,11 +144,6 @@ class OffloadStreamTests(unittest.TestCase):
         self.assertTrue((a == a_expect).all(), 
                         "Wrong contents of array: "
                         "{0} should be {1}".format(b, b_expect))
-        self.assertTrue((c == c_expect).all(),
-                        "Wrong number of array elements ({0} should be "
-                        "{1}, {2} should be {3}".format(c[0], c[1], 
-                                                        c_expect[0], 
-                                                        c_expect[1]))
 
     @skipNoDevice
     def test_bind_int(self):
@@ -173,7 +159,8 @@ class OffloadStreamTests(unittest.TestCase):
         a[:] = pattern
         offl_a = stream.bind(a)
         offl_r = stream.bind(r)
-        stream.invoke(library.test_check_pattern, offl_a, offl_r, pattern)
+        stream.invoke(library.test_check_pattern, 
+                      offl_a, offl_a.size, offl_r, pattern)
         offl_r.update_host()
         stream.sync()
 
@@ -193,7 +180,7 @@ class OffloadStreamTests(unittest.TestCase):
 
         offl_a = stream.bind(a)
         offl_r = stream.bind(r)
-        stream.invoke(library.test_sum_float, offl_a, offl_r)
+        stream.invoke(library.test_sum_float, offl_a, offl_a.size, offl_r)
         offl_r.update_host()
         stream.sync()
 

@@ -41,7 +41,18 @@
 #include "pymicimpl_common.h"
 #include "pymicimpl_misc.h"
 #include "pymicimpl_buffers.h"
-#include "pymicimpl_invoke.h"
+
+#if PYMIC_USE_XSTREAM
+#include <libxstream.h>
+#endif
+
+#if PYMIC_USE_XSTREAM
+#include "libxstream.h"
+#endif
+
+#if PYMIC_USE_XSTREAM
+#include "libxstream.h"
+#endif
 
 #include "debug.h"
 
@@ -91,11 +102,19 @@ PyObject* pymic_impl_offload_number_of_devices(PyObject* self, PyObject* args) {
 	if (!PyArg_ParseTuple(args, ""))
 		return NULL;
     size_t no_of_devs = 0;
+#if PYMIC_USE_XSTREAM
+    if (libxstream_get_ndevices(&no_of_devs)) {
+        // TODO: error handling
+        printf("WOOOPS: error case at %s:%d\n", __FILE__, __LINE__);
+    }
+#else
 	no_of_devs = get_number_of_devices();
+#endif
 	debug(10, "detected %d devices", no_of_devs);
 	debug_leave();
 	return Py_BuildValue("I", static_cast<int>(no_of_devs));
 }
+
 
 PYMIC_INTERFACE
 PyObject* pymic_impl_load_library(PyObject* self, PyObject* args) {
@@ -169,12 +188,26 @@ PyObject * pymic_impl_stream_create(PyObject * self, PyObject * args) {
 	if (! PyArg_ParseTuple(args, "is", &device, &name))
 		return NULL;
 
+#if PYMIC_USE_XSTREAM
+    libxstream_stream * stream = NULL;
+    uintptr_t stream_id = 0;
+    if (libxstream_stream_create(&stream, device, 0, 0, name) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+    stream_id = reinterpret_cast<uintptr_t>(stream);
+#endif
+
     // in the native implementation, we make everything synchronous and
     // we use the same stream (= device id)
     debug(10, "using default stream for device %d", device);
         
     debug_leave();
+#if PYMIC_USE_XSTREAM
+    return Py_BuildValue("k", static_cast<uintptr_t>(stream_id));
+#else    
     return Py_BuildValue("k", static_cast<uintptr_t>(device));
+#endif
 }
 
 
@@ -183,9 +216,39 @@ PyObject * pymic_impl_stream_destroy(PyObject * self, PyObject * args) {
     debug_enter();
     int device;
     uintptr_t stream_id;
+    libxstream_stream * stream = NULL;
 
 	if (! PyArg_ParseTuple(args, "ik", &device, &stream_id))
 		return NULL;
+#if PYMIC_USE_XSTREAM
+    stream = reinterpret_cast<libxstream_stream *>(stream_id);
+    if (libxstream_stream_destroy(stream) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+#endif    
+    
+    debug_leave();
+    Py_RETURN_NONE;
+}
+
+
+PYMIC_INTERFACE
+PyObject * pymic_impl_stream_sync(PyObject * self, PyObject * args) {
+    debug_enter();
+    int device;
+    uintptr_t stream_id;
+    libxstream_stream * stream = NULL;
+
+	if (! PyArg_ParseTuple(args, "ik", &device, &stream_id))
+		return NULL;
+#if PYMIC_USE_XSTREAM
+    stream = reinterpret_cast<libxstream_stream *>(stream_id);
+    if (libxstream_stream_sync(stream) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+#endif    
     
     debug_leave();
     Py_RETURN_NONE;
@@ -197,13 +260,18 @@ PyObject * pymic_impl_stream_allocate(PyObject * self, PyObject * args) {
     debug_enter();
     int device;
     uintptr_t stream_id;
+    void * stream = NULL;
     size_t size;
     int alignment;
     unsigned char * device_ptr;
 
  	if (! PyArg_ParseTuple(args, "ikki", &device, &stream_id, &size, &alignment))
 		return NULL;
-    device_ptr = buffer_allocate(device, size, alignment);
+#if PYMIC_USE_XSTREAM
+    stream = reinterpret_cast<void *>(stream_id);
+#endif
+    
+    device_ptr = buffer_allocate(device, stream, size, alignment);
     
     debug(10, "allocated %ld bytes on device %d with pointer %p",
           size, device, device_ptr);
@@ -217,11 +285,15 @@ PyObject * pymic_impl_stream_deallocate(PyObject * self, PyObject * args) {
     debug_enter();
     int device;
     uintptr_t stream_id;
+    void * stream = NULL;
     unsigned char * device_ptr;
 
  	if (! PyArg_ParseTuple(args, "ikk", &device, &stream_id, &device_ptr))
 		return NULL;
-    buffer_release(device, device_ptr);
+#if PYMIC_USE_XSTREAM
+    stream = reinterpret_cast<void *>(stream_id);
+#endif
+    buffer_release(device, stream, device_ptr);
 
     debug(10, "deallocated pointer %p on device %d",
           device_ptr, device);
@@ -238,18 +310,21 @@ PyObject * pymic_impl_stream_memcpy_h2d(PyObject * self, PyObject * args) {
     size_t size;
     size_t offset_host;
     size_t offset_device;
+    int device;
     uintptr_t stream_id;
+    void * stream = NULL;
     unsigned char * host_mem;
     unsigned char * dev_mem;
     
- 	if (! PyArg_ParseTuple(args, "kkkkkk", &stream_id, &host_ptr, &device_ptr, 
+ 	if (! PyArg_ParseTuple(args, "ikkkkkk", &device, &stream_id, &host_ptr, &device_ptr, 
                            &size, &offset_host, &offset_device))
 		return NULL;
     host_mem = reinterpret_cast<unsigned char *>(host_ptr);
     dev_mem = reinterpret_cast<unsigned char *>(device_ptr);
-
-    int device = static_cast<int>(stream_id);
-    buffer_copy_to_target(device, host_mem, dev_mem, 
+#if PYMIC_USE_XSTREAM
+    stream = reinterpret_cast<void *>(stream_id);
+#endif
+    buffer_copy_to_target(device, stream, host_mem, dev_mem, 
                           size, offset_host, offset_device);
 
     debug_leave();
@@ -265,18 +340,22 @@ PyObject * pymic_impl_stream_memcpy_d2h(PyObject * self, PyObject * args) {
     size_t size;
     size_t offset_host;
     size_t offset_device;
+    int device;
     uintptr_t stream_id;
+    void * stream = NULL;
     unsigned char * host_mem;
     unsigned char * dev_mem;
     
- 	if (! PyArg_ParseTuple(args, "kkkkkk", &stream_id, &device_ptr, &host_ptr,  
+ 	if (! PyArg_ParseTuple(args, "ikkkkkk", &device, &stream_id, &device_ptr, &host_ptr,  
                            &size, &offset_device, &offset_host))
 		return NULL;
     dev_mem = reinterpret_cast<unsigned char *>(device_ptr);
     host_mem = reinterpret_cast<unsigned char *>(host_ptr);
+#if PYMIC_USE_XSTREAM
+    stream = reinterpret_cast<void *>(stream_id);
+#endif    
     
-    int device = static_cast<int>(stream_id);
-    buffer_copy_to_host(device, dev_mem, host_mem, 
+    buffer_copy_to_host(device, stream, dev_mem, host_mem, 
                         size, offset_device, offset_host);
 
     debug_leave();
@@ -292,18 +371,22 @@ PyObject * pymic_impl_stream_memcpy_d2d(PyObject * self, PyObject * args) {
     size_t size;
     size_t offset_device_src;
     size_t offset_device_dst;
+    int device;
     uintptr_t stream_id;
+    void * stream = NULL;
     unsigned char * src_mem;
     unsigned char * dst_mem;
     
- 	if (! PyArg_ParseTuple(args, "kkkkkk", &stream_id, &src, &dst,  
+ 	if (! PyArg_ParseTuple(args, "ikkkkkk", &device, &stream_id, &src, &dst,  
                            &size, &offset_device_src, &offset_device_dst))
 		return NULL;
     src_mem = reinterpret_cast<unsigned char *>(src);
     dst_mem = reinterpret_cast<unsigned char *>(dst);
+#if PYMIC_USE_XSTREAM
+    stream = reinterpret_cast<void *>(stream_id);
+#endif    
     
-    int device = static_cast<int>(stream_id);
-    buffer_copy_on_device(device, src_mem, dst_mem, 
+    buffer_copy_on_device(device, stream, src_mem, dst_mem, 
                           size, offset_device_src, offset_device_dst);
 
     debug_leave();
@@ -328,7 +411,7 @@ PyObject * pymic_impl_stream_ptr_translate(PyObject * self, PyObject * args) {
 
 
 PYMIC_INTERFACE
-PyObject* pymic_impl_find_kernel(PyObject* self, PyObject* args) {
+PyObject * pymic_impl_find_kernel(PyObject* self, PyObject* args) {
     int device;
     uintptr_t funcptr = 0;
     uintptr_t handle = 0;
@@ -353,16 +436,95 @@ PyObject* pymic_impl_find_kernel(PyObject* self, PyObject* args) {
 
 PyObject * pymic_impl_invoke_kernel(PyObject * self, PyObject * args) {
     int device;
+    uintptr_t stream_id;
+    libxstream_stream * stream;
     uintptr_t funcptr = 0;
-    PyObject * argv = NULL;
-    PyObject * argsz = NULL;
+    PyObject * argd = NULL;    // dimensionality of the arguments
+    PyObject * argt = NULL;    // types of the arguments (int, double, complex)
+    PyObject * argv = NULL;    // values of the arguments (host/device pointers)
+    PyObject * argsz = NULL;   // number of bytes for the argument
     int argc = 0;
     debug_enter();
 
-    if (! PyArg_ParseTuple(args, "ikOOi", &device, &funcptr,
-                           &argv, &argsz, &argc))
-    return NULL;
+    if (! PyArg_ParseTuple(args, "ikkOOOOi", &device, &stream_id, &funcptr,
+                           &argd, &argt, &argv, &argsz, &argc))
+        return NULL;
 
+#if PYMIC_USE_XSTREAM
+    stream = reinterpret_cast<libxstream_stream *>(stream_id);
+    if (!PyArray_Check(argd))
+        return NULL;
+    if (!PyArray_Check(argv))
+        return NULL;
+    if (!PyArray_Check(argsz))
+        return NULL;
+
+    PyArrayObject * array_argd = reinterpret_cast<PyArrayObject *>(argd);
+    PyArrayObject * array_argt = reinterpret_cast<PyArrayObject *>(argt);
+    PyArrayObject * array_argv = reinterpret_cast<PyArrayObject *>(argv);
+    PyArrayObject * array_argsz = reinterpret_cast<PyArrayObject *>(argsz);
+    uintptr_t * dims = reinterpret_cast<uintptr_t *>(PyArray_BYTES(array_argd));
+    int64_t * types = reinterpret_cast<int64_t *>(PyArray_BYTES(array_argt));
+    uintptr_t * ptrs = reinterpret_cast<uintptr_t *>(PyArray_BYTES(array_argv));
+    int64_t * sizes = reinterpret_cast<int64_t *>(PyArray_BYTES(array_argsz));
+
+    // generate the proper function signature for this kernel
+    libxstream_argument * signature = NULL;
+    libxstream_fn_signature(&signature);
+    for (int i = 0; i < argc; ++i) {
+        uintptr_t dim = dims[i];
+        int64_t type = types[i];
+        uintptr_t ptr = ptrs[i];
+        size_t size = static_cast<size_t>(sizes[i]);
+        libxstream_type scalar_type;
+        size_t scalar_size = 1;
+        switch (dim) {
+        case 0: // argument is a scalar value
+            // in case of a scalar value, the ptr is a host pointer
+            switch(type) {
+            case dtype_int:
+                scalar_type = LIBXSTREAM_TYPE_I64;
+                break;
+            case dtype_float:
+                scalar_type = LIBXSTREAM_TYPE_F64;
+                break;
+            case dtype_complex:
+                scalar_type = LIBXSTREAM_TYPE_C64;
+                break;
+            case dtype_uint64:
+                scalar_type = LIBXSTREAM_TYPE_U64;
+                break;
+            default:
+                printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+                throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+                break;
+            }
+            if (libxstream_fn_input(signature, i, reinterpret_cast<void *>(ptr), scalar_type, dim, NULL) != LIBXSTREAM_ERROR_NONE) {
+                printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+                throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+            };
+            break;
+        case 1: // argument is an array
+            // in case of an array, the ptr is a fake pointer
+            if (libxstream_fn_inout(signature, i, reinterpret_cast<void *>(ptr), LIBXSTREAM_TYPE_BYTE, dim, &size) != LIBXSTREAM_ERROR_NONE) {
+                printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+                throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+            }
+            break;
+        default:
+            // TODO: throw Python exception
+            throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+            return NULL;
+        }
+    }
+    
+    // invoke function and clear function signature
+    if (libxstream_fn_call(reinterpret_cast<libxstream_function>(funcptr), signature, 
+                           stream, LIBXSTREAM_CALL_DEFAULT | LIBXSTREAM_CALL_NATIVE) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+#else
     // retrieve device pointers from the argument list
     std::vector< std::pair<uintptr_t, size_t> > arguments;
     if (!PyArray_Check(argv))
@@ -381,6 +543,7 @@ PyObject * pymic_impl_invoke_kernel(PyObject * self, PyObject * args) {
 
     // invoke the kernel on the remote side
     target_invoke_kernel(device, funcptr, arguments);
+#endif
 
     debug_leave();
     Py_RETURN_NONE;
@@ -397,6 +560,7 @@ static PyMethodDef methods[] = {
     // stream functions
     PYMIC_ENTRYPOINT(pymic_impl_stream_create, "Create a stream and return its ID."),
     PYMIC_ENTRYPOINT(pymic_impl_stream_destroy, "Destroy a stream with ID on a device."),
+    PYMIC_ENTRYPOINT(pymic_impl_stream_sync, "Wait for all outstanding requests in the queue."),
 
     // new data management functions
     PYMIC_ENTRYPOINT(pymic_impl_stream_allocate, "Allocate device memory"),

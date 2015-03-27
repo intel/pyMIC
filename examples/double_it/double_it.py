@@ -47,7 +47,7 @@ print na
 print a.update_host()
 print
 
-stream.invoke(library.doubleit_kernel, a)
+stream.invoke(library.doubleit_kernel, a, a.size)
 stream.sync()
 
 print "output:"

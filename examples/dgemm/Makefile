@@ -33,7 +33,6 @@ all: libdgemm.so
 
 libdgemm.so: dgemm.c
 	icc -I../../include -I$(MKLROOT)/include -fPIC -shared -mmic -g -O2 -L$(MKLROOT)/lib/mic -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -o $@ $<
-	chmod a+rX libdgemm.so
 
 clean:
 	rm -f libdgemm.so

@@ -129,7 +129,8 @@ class OffloadDevice:
            --------
            get_default_stream
         """
-        return OffloadStream(self)
+        raise NotImplementedError('This function has been disabled.')
+        # return OffloadStream(self)
 
     @trace    
     def load_library(self, *libraries, **kwargs):

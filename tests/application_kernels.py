@@ -96,7 +96,7 @@ class ApplicationKernelTests(unittest.TestCase):
         library = get_library(device, "libtests.so")
     
         m, n, k = size, size, size
-        alpha, beta = complex(1.2, 1.4), complex(1.5, 1.7)
+        alpha, beta = complex(1.2, 0.5j), complex(0.5, 0.6j)
         numpy.random.seed(20)
         ar = numpy.random.random(m * k).reshape((m, k))
         aj = numpy.random.random(m * k).reshape((m, k))
@@ -116,7 +116,6 @@ class ApplicationKernelTests(unittest.TestCase):
         offl_a = stream.bind(a)
         offl_b = stream.bind(b)
         offl_c = stream.bind(c)
-        
         stream.invoke(library.test_kernel_zgemm,
                       offl_a, offl_b, offl_c, 
                       m, n, k, alpha, beta)
@@ -144,9 +143,10 @@ def _add_tests_gemm(size):
     test_method_zgemm.__name__ = 'test_zgemm_{0}'.format(size)
 
 
-# for size in xrange(8, 128, 8):
-    # _add_tests_gemm(size)
-# for size in xrange(256, 4096, 256):
-    # _add_tests_gemm(size)
+#for size in xrange(8, 128, 8):
+#    _add_tests_gemm(size)
+#for size in xrange(256, 4096, 256):
+#    _add_tests_gemm(size)
 _add_tests_gemm(1024)
 _add_tests_gemm(256)
+

@@ -39,6 +39,6 @@ clean:
 	
 realclean: clean
 	rm -f *~
-	rm -f _pyMICimpl.so
+	rm -f _pymicimpl.so
 	rm -f liboffload_array.so
  

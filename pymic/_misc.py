@@ -107,7 +107,8 @@ _data_type_map = {
     # Numpy dtypes
     numpy.dtype(numpy.int64): 0,
     numpy.dtype(numpy.float64): 1,
-    numpy.dtype(numpy.complex128): 2
+    numpy.dtype(numpy.complex128): 2,
+    numpy.dtype(numpy.uint64) : 3
 }
 
 
@@ -115,3 +116,66 @@ def _map_data_types(dtype):
     """Map a (known) data type to an integer to be used in the native kernels
        that implement basic operations of OffloadArray."""
     return _data_type_map[dtype]
+
+
+class _DeviceSmartPtr:
+    """Smart pointer to store the fake pointer and perform pointer
+       translation and offset computation."""
+
+    _stream = None
+    _device = None
+    _device_ptr = None
+    _sticky = False
+    _allocated = False
+    _offset = 0
+       
+    def __init__(self, stream, device, device_ptr, sticky):
+        """Initialize the fake pointer with the data coming from
+           OffloadStream.allocate_device_memory."""
+        assert stream != None
+        assert device != None
+        assert device_ptr != None
+        self._stream = stream
+        self._device = device
+        self._device_ptr = device_ptr
+        self._sticky = sticky
+    
+    def __str__(self): 
+        """Pretty print the value of this fake pointer."""
+        return '0x{0:x}+{1}'.format(self._device_ptr, self._offset)
+    
+    def __del__(self):
+        if self._allocated and not self._sticky:
+            self._stream.deallocate_device_memory(self)
+    
+    def __add__(self, offset):
+        """Add an offset to the fake pointer."""
+        if not isinstance(offset, int):
+            raise ValueError('Only int offsets allowed for fake pointers.')
+        new = _DeviceSmartPtr(self._stream, self._device, self._device_ptr, 
+                       self._sticky)
+        new._offset = self._offset + offset
+        return new
+
+    def __iadd__(self, offset):
+        """And an offset to the fake pointer (in-place operation)."""
+        if not isinstance(offset, int):
+            raise ValueError('Only int offsets allowed for fake pointers.')
+        self._offset += offset
+        return self
+    
+    def __sub__(self, offset):
+        """Substract an offset to the fake pointer."""
+        if not isinstance(offset, int):
+            raise ValueError('Only int offsets allowed for fake pointers.')
+        new = _DeviceSmartPtr(self._stream, self._device, self._device_ptr, 
+                       self._sticky)
+        new._offset = self._offset - offset
+        return new
+
+    def __isub__(self):
+        """Substract an offset to the fake pointer (in-place operation)."""
+        if not isinstance(offset, int):
+            raise ValueError('Only int offsets allowed for fake pointers.')
+        self._offset -= offset
+        return self

@@ -28,26 +28,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
 
-#include <unordered_map>
- 
-#include <sys/mman.h>
+#include <stdio.h>
  
 #include "pymicimpl_config.h"
 #include "pymicimpl_common.h"
 #include "pymicimpl_buffers.h"
 #include "pymicimpl_misc.h"
 
+#if PYMIC_USE_XSTREAM
+#include "libxstream.h"
+#endif
+
 #include "debug.h"
  
 namespace pymic {
 
 
-unsigned char * buffer_allocate(int device, size_t size, size_t alignment) {
+unsigned char * buffer_allocate(int device, void * stream, size_t size, size_t alignment) {
 	debug_enter();
-	uintptr_t host_ptr;
+	uintptr_t host_ptr = 0;
 	uintptr_t device_ptr = 0;
-    unsigned char * dummy;
+    unsigned char * dummy = NULL;
     
+#if PYMIC_USE_XSTREAM
+    void * memory = NULL;
+    if (libxstream_mem_allocate(device, &memory, size, alignment) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+    dummy = static_cast<unsigned char *>(memory);
+#else    
     // We fake the allocation by allocating a descriptor in the host memory
     // and let LEO use it as the host part of the device allocation
     dummy = static_cast<unsigned char *>(mmap(0, std::max(size, sizeof(buffer_descriptor)), 
@@ -64,17 +74,24 @@ unsigned char * buffer_allocate(int device, size_t size, size_t alignment) {
     buffer_descriptor * bd = reinterpret_cast<buffer_descriptor *>(dummy);
     bd->pointer = device_ptr;
     bd->size = size;
+#endif
 	
     debug_leave();
     return dummy;
 }
 
 
-void buffer_release(int device, unsigned char * dummy) {
+void buffer_release(int device, void * stream, unsigned char * dummy) {
 	debug_enter();
 	uintptr_t host_ptr = reinterpret_cast<uintptr_t>(dummy);
     size_t size;
     
+#if PYMIC_USE_XSTREAM    
+    if (libxstream_mem_deallocate(device, dummy) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+#else    
     buffer_descriptor * bd = reinterpret_cast<buffer_descriptor *>(dummy);
     size = bd->size;
 
@@ -82,73 +99,93 @@ void buffer_release(int device, unsigned char * dummy) {
     
 	debug(100, "%s: removing device pointer for host pointer 0x%lx", 
 	      __FUNCTION__, host_ptr);
-
-	debug_leave();
-    
     munmap(const_cast<unsigned char *>(dummy), size);
+#endif
+    
     debug_leave();
 }
 
 
-void buffer_copy_to_target(int device, unsigned char * src, 
-                          unsigned char * dst, size_t size, 
-                          size_t offset_host, size_t offset_device) {
+void buffer_copy_to_target(int device, void * stream, 
+                           unsigned char * src, unsigned char * dst, size_t size, 
+                           size_t offset_host, size_t offset_device) {
 	debug_enter();
 	uintptr_t hptr = reinterpret_cast<uintptr_t>(src);
     uintptr_t dptr = *reinterpret_cast<uintptr_t *>(dst);
 
     unsigned char * src_offs = src + offset_host;
     unsigned char * dst_offs = dst + offset_device;
-    
+
+    debug(100, "%s: transferring %ld bytes from host pointer 0x%lp into device pointer 0x%lx",
+          __FUNCTION__, size, hptr, dptr);
+
+#if PYMIC_USE_XSTREAM
+    if (libxstream_memcpy_h2d(src_offs, dst_offs, size, static_cast<libxstream_stream *>(stream)) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+#else    
     buffer_descriptor *bd = reinterpret_cast<buffer_descriptor *>(dst);
     
-    debug(100, "%s: transfering %ld bytes from host pointer 0x%lp into device pointer 0x%lx",
-          __FUNCTION__, size, hptr, dptr);
 
 #pragma offload_transfer target(mic:device) \
         in(src_offs:length(size) into(dst_offs) alloc_if(0) free_if(0))
+#endif
 
 	// we do not need to update the buffer map here, the buffers stay in their current state
 	debug_leave();
 }
 
 
-void buffer_copy_to_host(int device, unsigned char * src, 
-                         unsigned char * dst, size_t size,
+void buffer_copy_to_host(int device, void * stream, 
+                         unsigned char * src, unsigned char * dst, size_t size,
                          size_t offset_device, size_t offset_host) {
 	debug_enter();
 
 	uintptr_t hptr = reinterpret_cast<uintptr_t>(dst);
     uintptr_t dptr = *reinterpret_cast<uintptr_t *>(src);
     
-    unsigned char * src_offs = src + offset_host;
-    unsigned char * dst_offs = dst + offset_device;
+    unsigned char * src_offs = src + offset_device;
+    unsigned char * dst_offs = dst + offset_host;
     
-    debug(100, "%s: transfering %ld bytes from device pointer 0x%lp into host pointer 0x%lx",
+    debug(100, "%s: transferring %ld bytes from device pointer 0x%lp into host pointer 0x%lx",
           __FUNCTION__, size, dptr, hptr);
-
+#if PYMIC_USE_XSTREAM
+    if (libxstream_memcpy_d2h(src_offs, dst_offs, size, static_cast<libxstream_stream *>(stream)) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+#else 
 #pragma offload_transfer target(mic:device) \
         out(src_offs:length(size) into(dst_offs) alloc_if(0) free_if(0))
+#endif
 
     // we do not need to update the buffer map here, the buffers stay in their current state
 	debug_leave();
 }
 
 
-void buffer_copy_on_device(int device, unsigned char * src, 
-                           unsigned char * dst, size_t size,
+void buffer_copy_on_device(int device, void * stream, 
+                           unsigned char * src, unsigned char * dst, size_t size,
                            size_t offset_device_src, size_t offset_device_dst) {
 	debug_enter();
 
+#if PYMIC_USE_XSTREAM
+    unsigned char * src_ptr = src + offset_device_src;
+    unsigned char * dst_ptr = dst + offset_device_dst;
+    if (libxstream_memcpy_d2d(src_ptr, dst_ptr, size, static_cast<libxstream_stream *>(stream)) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+#else          
     buffer_descriptor *bd_src = reinterpret_cast<buffer_descriptor *>(src);
     buffer_descriptor *bd_dst = reinterpret_cast<buffer_descriptor *>(dst);
     
-    uintptr_t src_ptr = bd_dst->pointer + offset_device_src;
-    uintptr_t dst_ptr = bd_src->pointer + offset_device_dst;
-    
     debug(100, "%s: copying %ld bytes from device pointer 0x%lx to device pointer 0x%lx",
           __FUNCTION__, size, bd_src->pointer, bd_dst->pointer);
-          
+
+          uintptr_t src_ptr = bd_dst->pointer + offset_device_src;
+    uintptr_t dst_ptr = bd_src->pointer + offset_device_dst;
 #pragma offload target(mic:device) in(size) in(src_ptr) in(dst_ptr)
     {
         // TODO: we might want to execute this statement in parallel 
@@ -157,6 +194,7 @@ void buffer_copy_on_device(int device, unsigned char * src,
                reinterpret_cast<void *>(dst_ptr), 
                size);
     }
+#endif
 
     // we do not need to update the buffer map here, the buffers stay in their current state
 	debug_leave();

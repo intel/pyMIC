@@ -33,7 +33,6 @@ all: libsvd.so
 
 libsvd.so: svd.c
 	icc -I../../include -I$(MKLROOT)/include -fopenmp -fPIC -shared -mmic -g -O2 -L$(MKLROOT)/lib/mic -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -o $@ $<
-	chmod a+rX libsvd.so
 
 clean:
 	rm -f libsvd.so

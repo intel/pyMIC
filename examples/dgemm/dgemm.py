@@ -89,6 +89,7 @@ print("checksum:", np.sum(Cm))
 print()
 print()
 
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 # invoke the offloaded dgemm
 c[:] = 0.0
 offl_c.update_device()
@@ -98,6 +99,7 @@ stream.invoke(library.dgemm_kernel,
               m, n, k, alpha, beta)
 stream.sync()
 np_mic_end = time.time()
+print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
 # print the output of the offloaded MxM
 print("offloading computed:")
@@ -119,3 +121,11 @@ print("MxM (numpy)           {0:>6.3} sec    "
       "{1:>6.3} GFLOPS".format(np_mxm_time, flops / np_mxm_time))
 print("MxM (offload)         {0:>6.3} sec    "
       "{1:>6.3} GFLOPS".format(np_mic_time, flops / np_mic_time))
+
+print()
+sum1 = np.sum(Cm)
+sum2 = np.sum(offl_c.array)
+if sum1 != sum2:
+    print('Validation failed: ', sum1, '!=', sum2, 'diff', abs(sum1-sum2))
+else:
+    print('Validation succeeded: ', sum1, '==', sum2)

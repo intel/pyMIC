@@ -35,6 +35,7 @@ from offload_error import OffloadError
 
 from _pymicimpl import _pymic_impl_stream_create
 from _pymicimpl import _pymic_impl_stream_destroy
+from _pymicimpl import _pymic_impl_stream_sync
 from _pymicimpl import _pymic_impl_stream_allocate
 from _pymicimpl import _pymic_impl_stream_deallocate
 from _pymicimpl import _pymic_impl_stream_memcpy_h2d
@@ -45,6 +46,8 @@ from _pymicimpl import _pymic_impl_invoke_kernel
 
 from _misc import _debug as debug
 from _misc import _get_order as get_order
+from _misc import _DeviceSmartPtr as SmartPtr
+from _misc import _map_data_types as map_data_types
 from _tracing import _trace as trace
 
 import pymic
@@ -95,7 +98,8 @@ class OffloadStream:
            --------
            n/a
         """
-        pass
+        _pymic_impl_stream_sync(self._device_id, self._stream_id)
+        return None
 
     def __eq__(self, other):
         return (self._device == other.device and 
@@ -108,7 +112,7 @@ class OffloadStream:
     def __str__(self):
         return "stream({0}) for {1}".format(self._stream_id, str(self._device))
 
-    def allocate_device_memory(self, nbytes, alignment=64):
+    def allocate_device_memory(self, nbytes, alignment=64, sticky=False):
         """Allocate device memory on device associated with the invoking
            stream object.  Though it is part of the stream interface,
            the operation is synchronous.  
@@ -152,8 +156,8 @@ class OffloadStream:
         debug(2, 'allocated {0} bytes on device {1} at 0x{2:x}'
                  ', alignment {3}', 
                  nbytes, device, device_ptr, alignment)
-            
-        return device_ptr
+               
+        return SmartPtr(self, device, device_ptr, sticky)
         
     def deallocate_device_memory(self, device_ptr):
         """Deallocate device memory previously allocated through
@@ -188,11 +192,15 @@ class OffloadStream:
     
         if device_ptr is None:
             raise ValueError('Cannot deallocate None pointer')
+        if not isinstance(device_ptr, SmartPtr):
+            raise ValueError('Wrong argument, no device pointer given')
+        # TODO: add more safety checks here (e.g., pointer from right device 
+        #       and stream)
         
         _pymic_impl_stream_deallocate(self._device_id, self._stream_id, 
-                                      device_ptr)
-        debug(2, 'deallocated pointer {0} on device {1}}',
-                 device, device_ptr)
+                                      device_ptr._device_ptr)
+        debug(2, 'deallocated pointer {0} on device {1}',
+                 device_ptr, device)
         
         return None
         
@@ -254,6 +262,10 @@ class OffloadStream:
              12.  13.  14.  15.]
         """
 
+        if not isinstance(device_ptr, SmartPtr):
+            raise ValueError('Wrong argument, no device pointer given')
+        # TODO: add more safety checks here (e.g., pointer from right device 
+        #       and stream)
         if offset_host < 0:
             raise ValueError("Negative offset passed for offset_host")
         if offset_device < 0:
@@ -264,11 +276,18 @@ class OffloadStream:
             raise ValueError('Invalid None host pointer')
         if nbytes <= 0:
             raise ValueError('Invalid byte count: {0}'.format(nbytes))
-
+        if device_ptr._offset != 0:
+            if offset_device != 0:
+                raise ValueError('Offset cannot be non-zero if fake pointer'
+                                 'has an offset.')
+            offset_device = device_ptr._offset
+            
         debug(1, '(host -> device {0}) transferring {1} bytes '
                  '(host ptr 0x{2:x}, device ptr {3}', 
                  self._device_id, nbytes, host_ptr, device_ptr)
-        _pymic_impl_stream_memcpy_h2d(self._stream_id, host_ptr, device_ptr, 
+        device_ptr = device_ptr._device_ptr
+        _pymic_impl_stream_memcpy_h2d(self._device_id, self._stream_id, 
+                                      host_ptr, device_ptr, 
                                       nbytes, offset_host, offset_device)
         return None
 
@@ -330,6 +349,10 @@ class OffloadStream:
              12.  13.  14.  15.]
         """
 
+        if not isinstance(device_ptr, SmartPtr):
+            raise ValueError('Wrong argument, no device pointer given')
+        # TODO: add more safety checks here (e.g., pointer from right device 
+        #       and stream)
         if offset_device < 0:
             raise ValueError("Negative offset passed for offset_device")
         if offset_host < 0:
@@ -340,11 +363,18 @@ class OffloadStream:
             raise ValueError('Invalid None host pointer')
         if nbytes <= 0:
             raise ValueError('Invalid byte count: {0}'.format(nbytes))
+        if device_ptr._offset != 0:
+            if offset_device != 0:
+                raise ValueError('Offset cannot be non-zero if fake pointer'
+                                 'has an offset.')
+            offset_device = device_ptr._offset
             
         debug(1, '(device {0} -> host) transferring {1} bytes '
-                 '(device ptr {2}, host ptr 0x{3:x}', 
+                 '(device ptr {2}, host ptr 0x{3:x})', 
                  self._device_id, nbytes, device_ptr, host_ptr)
-        _pymic_impl_stream_memcpy_d2h(self._stream_id, device_ptr, host_ptr, 
+        device_ptr = device_ptr._device_ptr
+        _pymic_impl_stream_memcpy_d2h(self._device_id, self._stream_id, 
+                                      device_ptr, host_ptr, 
                                       nbytes, offset_device, offset_host)
         return None
 
@@ -410,6 +440,14 @@ class OffloadStream:
              12.  13.  14.  15.]
         """
 
+        if not isinstance(device_ptr_src, SmartPtr):
+            raise ValueError('Wrong argument, no device pointer given')
+        # TODO: add more safety checks here (e.g., pointer from right device 
+        #       and stream)
+        if not isinstance(device_ptr_dst, SmartPtr):
+            raise ValueError('Wrong argument, no device pointer given')
+        # TODO: add more safety checks here (e.g., pointer from right device 
+        #       and stream)
         if offset_device_src < 0:
             raise ValueError("Negative offset passed for offset_device_src")
         if offset_device_dst < 0:
@@ -421,10 +459,12 @@ class OffloadStream:
         if nbytes <= 0:
             raise ValueError('Invalid byte count: {0}'.format(nbytes))
         
+        device_ptr_src = device_ptr_src._device_ptr
+        device_ptr_dst = device_ptr_dst._device_ptr
         debug(1, '(device {0} -> device {0}) transferring {1} bytes '
                  '(source ptr {2}, destination ptr {3})', 
                  self._device_id, nbytes, device_ptr_src, device_ptr_dst)
-        _pymic_impl_stream_memcpy_d2d(self._stream_id, 
+        _pymic_impl_stream_memcpy_d2d(self._device_id, self._stream_id, 
                                       device_ptr_src, device_ptr_dst, 
                                       nbytes, offset_device_src, 
                                       offset_device_dst)
@@ -462,7 +502,11 @@ class OffloadStream:
            >>> print translated
            140498172420096    # random data
         """
-        return _pymic_impl_stream_ptr_translate(device_ptr)
+        if not isinstance(device_ptr, SmartPtr):
+            raise ValueError('Wrong argument, no device pointer given')
+        # TODO: add more safety checks here (e.g., pointer from right device 
+        #       and stream)
+        return _pymic_impl_stream_ptr_translate(device_ptr._device_ptr)
         
     @trace
     def invoke(self, kernel, *args):
@@ -516,42 +560,54 @@ class OffloadStream:
             raise OffloadError("Cannot invoke kernel, "
                                "library not loaded on device")
         
+        # determine the types of the arguments (scalar vs arrays);
         # we store the device pointers as 64-bit integers in an ndarray
-        device_ptrs = numpy.empty((len(args),), dtype=numpy.int64)
-        sizes = numpy.empty((len(args),), dtype=numpy.int64)
+        arg_dims = numpy.empty((len(args),), dtype=numpy.int64)
+        arg_type = numpy.empty((len(args),), dtype=numpy.int64)
+        arg_ptrs = numpy.empty((len(args),), dtype=numpy.int64)
+        arg_size = numpy.empty((len(args),), dtype=numpy.int64)
         copy_in_out = []
+        scalars = []
         for i, a in enumerate(args):
             if isinstance(a, pymic.OffloadArray):
-                device_ptrs[i] = a._device_ptr
-                sizes[i] = a.nbytes
+                # get the device pointer of the OffloadArray and
+                # pass it to the kernel
+                arg_dims[i] = 1
+                arg_type[i] = map_data_types(a.dtype)
+                arg_ptrs[i] = a._device_ptr._device_ptr # fake pointer
+                arg_size[i] = a._nbytes
             elif isinstance(a, numpy.ndarray):
                 # allocate device buffer on the target of the invoke
                 # and mark the numpy.ndarray for copyin/copyout semantics
-                host_ptr = a.ctypes.data
+                host_ptr = a.ctypes.data # raw C pointer to host data
                 nbytes = a.dtype.itemsize * a.size
-                dev_ptr = self.allocate_device_memory(nbytes)
+                dev_ptr = self.allocate_device_memory(nbytes) 
                 copy_in_out.append((host_ptr, dev_ptr, nbytes, a))
-                device_ptrs[i] = dev_ptr
-                sizes[i] = nbytes
+                arg_dims[i] = 1
+                arg_type[i] = map_data_types(a.dtype)
+                arg_ptrs[i] = dev_ptr._device_ptr    # fake pointer
+                arg_size[i] = nbytes
             else:
                 # this is a hack, but let's wrap scalars as numpy arrays
-                cvtd = numpy.asarray(a)
-                host_ptr = cvtd.ctypes.data
+                cvtd = numpy.asarray(a) 
+                host_ptr = cvtd.ctypes.data  # raw C pointer to host data 
                 nbytes = cvtd.dtype.itemsize * cvtd.size
-                dev_ptr = self.allocate_device_memory(nbytes)
-                copy_in_out.append((host_ptr, dev_ptr, nbytes, cvtd))
-                device_ptrs[i] = dev_ptr
-                sizes[i] = nbytes
-        debug(1, "(device {0}, stream {1}) invoking kernel '{2}' "
+                scalars.append(cvtd)
+                arg_dims[i] = 0
+                arg_type[i] = map_data_types(cvtd.dtype)
+                arg_ptrs[i] = host_ptr
+                arg_size[i] = nbytes
+        debug(1, "(device {0}, stream 0x{1:x}) invoking kernel '{2}' "
                  "(pointer 0x{3:x}) with {4} "
-                 "argument(s) ({5} w/ copyin/copyout)", 
+                 "argument(s) ({5} copy-in/copy-out, {6} scalars)", 
                  self._device_id, self._stream_id, kernel[0], kernel[1], 
-                 len(args), len(copy_in_out))
+                 len(args), len(copy_in_out), len(scalars))
         # iterate over the copyin arguments and transfer them
         for c in copy_in_out:
             self.transfer_host2device(c[0], c[1], c[2])
-        _pymic_impl_invoke_kernel(self._device_id, kernel[1], 
-                                  device_ptrs, sizes, len(args))
+        _pymic_impl_invoke_kernel(self._device_id, self._stream_id, kernel[1], 
+                                  arg_dims, arg_type, arg_ptrs, arg_size, 
+                                  len(args))
         # iterate over the copyout arguments, transfer them back,
         # and release buffers
         for c in copy_in_out:
@@ -615,7 +671,7 @@ class OffloadStream:
         bound.array = array
 
         # allocate the buffer on the device (and update data)
-        bound._device_ptr = self.allocate_device_memory(bound.nbytes)
+        bound._device_ptr = self.allocate_device_memory(bound._nbytes)
         if update_device:
             bound.update_device()
             

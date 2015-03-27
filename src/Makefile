@@ -32,19 +32,23 @@
 ifeq ($(debug),0)
 DEBUG=
 else
-DEBUG=-DDEBUG
+# DEBUG=-DDEBUG
 endif
 
-PYMIC_OBJECTS=pymicimpl_interface.o pymicimpl_buffers.o pymicimpl_invoke.o pymicimpl_misc.o
+PYMIC_OBJECTS=pymicimpl_interface.o pymicimpl_buffers.o pymicimpl_misc.o
+XSTREAM_OBJECTS=libxstream/src/libxstream.o libxstream/src/libxstream_capture.o \
+                libxstream/src/libxstream_event.o libxstream/src/libxstream_stream.o \
+				libxstream/src/libxstream_alloc.o libxstream/src/libxstream_argument.o \
+				libxstream/src/libxstream_context.o libxstream/src/libxstream_offload.o
 
-PYTHON_INCLUDES=-I/usr/include/python2.7 -I/usr/lib64/python2.7/site-packages/numpy/core/include
+PYTHON_INCLUDES+=-I/usr/include/python2.7 -I/usr/lib64/python2.7/site-packages/numpy/core/include
 
 CC_MIC=icc
-CFLAGS_MIC=-I../include -fPIC -shared -mmic -g -O2 -o
+CFLAGS_MIC=-DPYMIC_USE_XSTREAM=1 -I../include -fPIC -shared -mmic -g -O2 -o
 CXX=icpc
-CXXFLAGS=$(DEBUG) -offload=mandatory -std=c++11 -Wall -g -O3 -fPIC -I. -I../include $(PYTHON_INCLUDES)
+CXXFLAGS=$(DEBUG) -DNDEBUG -DPYMIC_USE_XSTREAM=1 -DLIBXSTREAM_EXPORTED -offload=mandatory -Wall -pthread -g -O2 -ansi-alias -fPIC -I. -I../include -I./libxstream/include $(PYTHON_INCLUDES)
 LD=icpc
-LDFLAGS=-shared -offload-option,mic,link,"--no-undefined"
+LDFLAGS=-shared -pthread -offload-option,mic,link,"--no-undefined"
 
 all: ../pymic/_pymicimpl.so _pymicimpl.so ../pymic/liboffload_array.so liboffload_array.so
 
@@ -55,9 +59,8 @@ _pymicimpl.so: $(PYMIC_OBJECTS) $(XSTREAM_OBJECTS)
 	cp _pymicimpl.so ../pymic/_pymicimpl.so
 	chmod a+rX ../pymic/_pymicimpl.so
 
-pymicimpl_interface.cc: debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_buffers.h pymicimpl_invoke.h pymicimpl_misc.h
+pymicimpl_interface.cc: debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_buffers.h pymicimpl_misc.h
 pymicimpl_buffers.cc:   debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_buffers.h 
-pymicimpl_invoke.cc:    debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_invoke.h pymicimpl_buffers.h 
 pymicimpl_misc.cc:      debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h 
 
 

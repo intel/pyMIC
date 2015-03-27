@@ -32,11 +32,18 @@
 #define PYMIC_MISC_H
 
 #include <string>
-#include <cstdint>
+#include <stdint.h>
 
 #include <exception>
 
 namespace pymic {
+
+enum dtype {
+    dtype_int     = 0,
+    dtype_float   = 1,
+    dtype_complex = 2,
+    dtype_uint64  = 3,
+};
 
 #if ! PYMIC_USE_XSTREAM
 int get_number_of_devices();

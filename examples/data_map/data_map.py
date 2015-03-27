@@ -29,11 +29,15 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-import pymic as mic
-import numpy as np
+import pymic
+import time
 
-device = mic.devices[0]
+device = pymic.devices[0]
 stream = device.get_default_stream()
 
-a = stream.zeros((8, 8))
+a = stream.zeros((8, 8), dtype=float)
 stream.sync()
+#stream.transfer_device2host(a._device_ptr, a.array.ctypes.data, 512)
+#stream.sync()
+print(a)
+

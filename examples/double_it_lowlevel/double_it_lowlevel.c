@@ -27,19 +27,17 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
- 
-#ifndef PYMIC_INVOKE_H
-#define PYMIC_INVOKE_H
 
-#include <string>
-#include <vector>
-#include <utility>
+#include <pymic_kernel.h>
 
-namespace pymic {
+PYMIC_KERNEL
+void doubleit_kernel(int argc, uintptr_t argptr[], size_t sizes[]) {
+    int n  = *((long int *) argptr[0]);
+	long int * array = * (long int **) argptr[1];
 
-void target_invoke_kernel(const int, const uintptr_t, const std::vector< std::pair<uintptr_t, size_t> > & );
-
-} // namespace pymic
-
-#endif 
+	int i;
+	for (i = 0; i < n; i++) {
+		array[i] *= 2;
+	}
+}
 

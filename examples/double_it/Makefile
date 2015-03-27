@@ -33,7 +33,6 @@ all: libdouble_it.so
 
 libdouble_it.so: double_it.c
 	icc -fPIC -I../../include -shared -mmic -g -O2 -o $@ $<
-	chmod a+rX libdouble_it.so
 
 clean:
 	rm -f libdouble_it.so

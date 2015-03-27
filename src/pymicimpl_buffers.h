@@ -32,21 +32,24 @@
 #define PYMIC_BUFFERS_H
 
 #include <cstddef>
-#include <cstdint>
+#include <stdint.h>
 
 namespace pymic {
 
 uintptr_t buffer_lookup_device_ptr(int, void*);
 uintptr_t buffer_lookup_device_ptr(int, uintptr_t);
 
-unsigned char * buffer_allocate(int, size_t, size_t);
-void buffer_release(int, unsigned char *);
-void buffer_copy_to_target(int, unsigned char *, unsigned char *, 
+unsigned char * buffer_allocate(int, void *, size_t, size_t);
+void buffer_release(int, void *, unsigned char *);
+void buffer_copy_to_target(int, void *, 
+                           unsigned char *, unsigned char *, 
                            size_t, size_t, size_t);
-void buffer_copy_to_host(int, unsigned char *, unsigned char *, 
+void buffer_copy_to_host(int, void *, 
+                         unsigned char *, unsigned char *, 
                          size_t, size_t, size_t);
-void buffer_copy_on_device(int, unsigned char *, unsigned char *, 
-                         size_t, size_t, size_t);
+void buffer_copy_on_device(int, void *, 
+                           unsigned char *, unsigned char *, 
+                           size_t, size_t, size_t);
 uintptr_t buffer_translate_pointer(unsigned char *);
 
 struct buffer_descriptor {

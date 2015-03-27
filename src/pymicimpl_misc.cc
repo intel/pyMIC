@@ -29,12 +29,12 @@
  */
 
 #pragma offload_attribute(push, target(mic))
-	#include <string>
-	#include <unordered_map>
+#include <string>
 #pragma offload_attribute(pop)
 
-#include <cstdio>
-#include <cstring>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #include <dlfcn.h>
 
 #include <sys/types.h>

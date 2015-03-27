@@ -29,9 +29,7 @@
  */
 
 #include <pymic_kernel.h>
-
 #include <stdlib.h>
- 
 #include <mkl.h>
 
 PYMIC_KERNEL
@@ -41,48 +39,29 @@ void empty(int argc, uintptr_t argptr[], size_t sizes[]) {
         // do nothing
     }
 }
- 
+
 PYMIC_KERNEL
-void dgemm_kernel(int argc, uintptr_t argptr[], size_t sizes[]) {
-	int i;
-
-	double *A = (double*) argptr[0];
-	double *B = (double*) argptr[1];
-	double *C = (double*) argptr[2];
-
-	int m = *(long int*) argptr[3];
-	int n = *(long int*) argptr[4];
-	int k = *(long int*) argptr[5];
-	
-	double alpha = *(double*) argptr[6];
-	double beta = *(double*) argptr[7];
-	
-	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-	            m, n, k, alpha, A, k, B, n, beta, C, n);
+void dgemm_kernel(double * A, double * B, double * C,
+                  const long int* m, const long int* n, const long int* k,
+                  const double* alpha, const double* beta) {
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                *m, *n, *k, *alpha, A, *k, B, *n, *beta, C, *n);
 }
 
 PYMIC_KERNEL
-void svd_reconstruct(int argc, uintptr_t argptr[], size_t sizes[]) {
-	int i;
+void svd_reconstruct(const double* U, const double* sigma, const double* V, double* res, 
+                     const long int* x, const long int* y, const long int* z) {
 
-	double *U     = (double*) argptr[0];
-	double *sigma = (double*) argptr[1];
-	double *V     = (double*) argptr[2];
-    double *res   = (double*) argptr[3];
-
-	int x = *(long int*) argptr[4];
-	int y = *(long int*) argptr[5];
-	int z = *(long int*) argptr[6];
-	
-    double *tmp   = (double*) malloc(sizeof(double) * x * z);
+    /* allocate temporary storage */
+    double* tmp   = (double*)malloc(sizeof(double) * (*x) * (*z));
     
     /* tmp = U * sigma*/
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                x, z, z, 1.0, U, z, sigma, z, 0.0, tmp, z);
+                *x, *z, *z, 1.0, U, *z, sigma, *z, 0.0, tmp, *z);
     
     /* res = tmp * V */
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                x, y, z, 1.0, tmp, z, V, y, 0.0, res, y);
+                *x, *y, *z, 1.0, tmp, *z, V, *y, 0.0, res, *y);
     
     free(tmp);
 }

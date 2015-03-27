@@ -29,16 +29,11 @@
  */
 
 #include <pymic_kernel.h>
- 
+
 PYMIC_KERNEL
-void doubleit_kernel(int argc, uintptr_t argptr[], size_t sizes[]) {
-	long int *array = (long int*) argptr[0];
-    printf("array=%p\n", array);
-	size_t ub = sizes[0] / sizeof(long int);
-	int i;
-	for (i = 0; i < ub; i++) {
-		array[i] *= 2;
-        printf("%d ", array[i]);
-	}
-    printf("\n");
+void doubleit_kernel(long int* array, const long int* n) {
+    int i;
+    for (i = 0; i < (*n); i++) {
+        array[i] *= 2;
+    }
 }

@@ -27,55 +27,10 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
- 
-#include <cstddef> 
-#include <unordered_map>
-#include <string>
-
-#include "pymicimpl_config.h"
-#include "pymicimpl_common.h"
-#include "pymicimpl_misc.h"
-#include "pymicimpl_invoke.h"
-#include "pymicimpl_buffers.h"
 
 #include <pymic_kernel.h>
-
-#include "debug.h"
-#include <assert.h>
-
-namespace pymic {
-
-void target_invoke_kernel(const int device, const uintptr_t funcptr, const std::vector<std::pair<uintptr_t, size_t> >  & arguments) {
-	debug_enter();
-	int argc = arguments.size();
-	uintptr_t *device_ptrs = new uintptr_t[argc];
-	size_t *sizes = new size_t[argc];
-	int i = 0;
-		
-    for (auto it = arguments.begin(); it != arguments.end(); ++it, ++i) {
-        auto arg = *it;
-        // Do pointer translation
-#if PYMIC_USE_XSTREAM
-        // TODO: implement the proper xstream translation here
-#else
-        // The real device pointer is stored in the descriptor object.
-        buffer_descriptor * bd = reinterpret_cast<buffer_descriptor *>(arg.first);
-        device_ptrs[i] = bd->pointer;
-        assert(bd->size == arg.second);
-#endif    
-        sizes[i] = arg.second;
-    }
-    
-#pragma offload target(mic:device) in(argc) in(device_ptrs:length(argc)) in(funcptr) in(sizes:length(argc))
-	{
-		pymic_kernel_t kernel_ptr = reinterpret_cast<pymic_kernel_t>(funcptr);
-		kernel_ptr(argc, device_ptrs, sizes);
-	}
-	
-	delete[] device_ptrs;
-	delete[] sizes;
-	
-	debug_leave();
+ 
+PYMIC_KERNEL
+void empty_kernel(void) {
+    /* this is an empty kernel */
 }
-
-} // namespace pymic

@@ -1,6 +1,11 @@
 export PYMIC_BASE=`pwd`
 export MIC_ENV_PREFIX=PYMIC
 export PYMIC_LD_LIBRARY_PATH=$MIC_LD_LIBRARY_PATH
-export PYMIC_LIBRARY_PATH=$PYMIC_BASE/examples/double_it/:$PYMIC_BASE/examples/dgemm/:$PYMIC_BASE/examples/svd:$PYMIC_BASE/pymic:$PYMIC_BASE/benchmarks:$PYMIC_BASE/tests
+export PYMIC_LIBRARY_PATH=''
+for ex in $(find $PYMIC_BASE/examples -maxdepth 1 -mindepth 1 -name \* -type d -print); do
+    export PYMIC_LIBRARY_PATH=$ex:$PYMIC_LIBRARY_PATH
+done
+export PYMIC_LIBRARY_PATH=$PYMIC_LIBRARY_PATH$PYMIC_BASE/pymic
+export PYMIC_LIBRARY_PATH=$PYMIC_LIBRARY_PATH:$PYMIC_BASE/tests
 export MIC_LD_LIBRARY_PATH=$MIC_LD_LIBRARY_PATH:$PYMIC_BASE/pymic
 export PYTHONPATH=$PYTHONPATH:$PYMIC_BASE

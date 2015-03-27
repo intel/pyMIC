@@ -1,0 +1,20 @@
+My Amplifier*
+My Inspector*
+bin
+build
+tmp
+README.tex
+*.stackdump
+*.opensdf
+*.user
+*.log
+*.exe
+*.dll
+*.ilk
+*.sdf
+*.pdb
+*.suo
+*.exp
+*.lib
+*.obj
+*.o

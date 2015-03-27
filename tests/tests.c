@@ -34,141 +34,92 @@
 #include <mkl.h>
 
 PYMIC_KERNEL
-void test_offload_stream_empty(int argc, uintptr_t argptr[], size_t sizes[]) {
+void test_offload_stream_empty(void) {
     // do nothing
 }
 
 PYMIC_KERNEL
-void test_offload_stream_kernel_scalars(int argc, uintptr_t argptr[], size_t sizes[]) {
-    int a             = *(long int*) argptr[0];
-    double b          = *(double*)   argptr[1];
-    int c             = *(long int*) argptr[2];
-    double d          = *(int*)      argptr[3];
-    
-    long int* ival    = (long int*)  argptr[4];
-    double* dval      = (double*)    argptr[5];
-    long int* count   = (long int*)  argptr[6];
-    
-    ival[0] = a;
-    ival[1] = c;
-    dval[0] = b;
-    dval[1] = d;
-    count[0] = argc;
+void test_offload_stream_kernel_scalars(const long int *a, 
+                                        const double *b, 
+                                        const long int *c, 
+                                        const double *d, 
+                                        long int *ival, 
+                                        double *dval) {
+    ival[0] = *a;
+    ival[1] = *c;
+    dval[0] = *b;
+    dval[1] = *d;
 }
 
 PYMIC_KERNEL
-void test_offload_stream_kernel_arrays_int(int argc, uintptr_t argptr[], size_t sizes[]) {
+void test_offload_stream_kernel_arrays_int(long int *a, long int *b, 
+                                           const long int *na, 
+                                           const long int *nb,
+                                           const long int *d, 
+                                           const long int *m) {
     size_t i;
-
-    long int*  a = (long int *) argptr[0];
-    long int*  b = (long int *) argptr[1];
-    long int*  c = (long int *) argptr[2];
-
-    long int   d = *(long int *) argptr[3];
-    long int   m = *(long int *) argptr[4];
-    
-    c[0] = sizes[0] / sizeof(long int);
-    c[1] = sizes[1] / sizeof(long int);
-
-    for (i = 0; i < (sizes[0] / sizeof(long int)); i++) {
-        a[i] = a[i] / d;
+    for (i = 0; i < *na; i++) {
+        a[i] = a[i] / *d;
     }
-
-    for (i = 0; i < (sizes[1] / sizeof(long int)); i++) {
-        b[i] = b[i] % m;
+    for (i = 0; i < *nb; i++) {
+        b[i] = b[i] % *m;
     }
 }
 
 PYMIC_KERNEL
-void test_offload_stream_kernel_arrays_float(int argc, uintptr_t argptr[], size_t sizes[]) {
+void test_offload_stream_kernel_arrays_float(double *a, double *b, 
+                                             long int *na, long int *nb, 
+                                             double *p, double *s) {
     size_t i;
-
-    double*    a = (double *)   argptr[0];
-    double*    b = (double *)   argptr[1];
-    long int*  c = (long int *) argptr[2];
-
-    double   p = *(double *) argptr[3];
-    double   s = *(double *) argptr[4];
-    
-    c[0] = sizes[0] / sizeof(double);
-    c[1] = sizes[1] / sizeof(double);
-
-    for (i = 0; i < (sizes[0] / sizeof(double)); i++) {
-        a[i] = a[i] + p;
+    for (i = 0; i < *na; i++) {
+        a[i] = a[i] + *p;
     }
-
-    for (i = 0; i < (sizes[1] / sizeof(double)); i++) {
-        b[i] = b[i] - s;
+    for (i = 0; i < *nb; i++) {
+        b[i] = b[i] - *s;
     }
 }
 
 PYMIC_KERNEL
-void test_check_pattern(int argc, uintptr_t argptr[], size_t sizes[]) {
+void test_check_pattern(const long int *a, const long int *n, 
+                        long int *r, const uint64_t *pattern) {
     size_t i;
-    
-    long int* a       = (long int*) argptr[0];
-    long int* r       = (long int*) argptr[1];
-    
-    long int  pattern = *(long int*) argptr[2];
-    
-    r[0] = 0;
-    for (i = 0; i < sizes[0] / sizeof(long int); i++) {
-        r[0] += a[i] == pattern;
+    long int cnt = 0;
+    for (i = 0; i < *n; i++) {
+        cnt += ((uint64_t) a[i]) == *pattern;
+    }
+    r[0] = cnt;
+}
+
+PYMIC_KERNEL
+void test_set_pattern(long int *a, long int *n, long int *pattern) {
+    size_t i;
+    for (i = 0; i < *n; i++) {
+        a[i] = *pattern;
     }
 }
 
 PYMIC_KERNEL
-void test_set_pattern(int argc, uintptr_t argptr[], size_t sizes[]) {
+void test_sum_float(const double *a, long int *n, double *r) {
     size_t i;
-    
-    long int* a       = (long int*) argptr[0];
-
-    long int  pattern = *(long int*) argptr[1];
-    
-    for (i = 0; i < sizes[0] / sizeof(long int); i++) {
-        a[i] = pattern;
-    }
-}
-
-PYMIC_KERNEL
-void test_sum_float(int argc, uintptr_t argptr[], size_t sizes[]) {
-    size_t i;
-    
-    double *a = (double*) argptr[0];
-    double *r = (double*) argptr[1];
-    
     r[0] = 0.0;
-    for (i = 0; i < sizes[0] / sizeof(double); i++) {
+    for (i = 0; i < *n; i++) {
         r[0] += a[i];
     }
 }
 
 PYMIC_KERNEL
-void test_kernel_dgemm(int argc, uintptr_t argptr[], size_t sizes[]) {
-	double *     A = (double *)    argptr[0];
-	double *     B = (double *)    argptr[1];
-	double *     C = (double *)    argptr[2];
-	int          m = *(long int *) argptr[3];
-	int          n = *(long int *) argptr[4];
-	int          k = *(long int *) argptr[5];
-	double   alpha = *(double *)   argptr[6];
-	double   beta  = *(double *)   argptr[7];
-
+void test_kernel_dgemm(const double *A, const double *B, double *C, 
+                       const long int *m, const long int *n, const long int *k,
+                       const double *alpha, const double *beta) {
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                m, n, k, alpha, A, k, B, n, beta, C, n);
+                *m, *n, *k, *alpha, A, *k, B, *n, *beta, C, *n);
 }
 
 PYMIC_KERNEL
-void test_kernel_zgemm(int argc, uintptr_t argptr[], size_t sizes[]) {
-	double complex *     A =  (double complex *) argptr[0];
-	double complex *     B =  (double complex *) argptr[1];
-	double complex *     C =  (double complex *) argptr[2];
-	int                  m = *(long int *)       argptr[3];
-	int                  n = *(long int *)       argptr[4];
-	int                  k = *(long int *)       argptr[5];
-	double complex * alpha =  (double complex *) argptr[6];
-	double complex * beta  =  (double complex *) argptr[7];
-
+void test_kernel_zgemm(const double complex *A, const double complex *B, 
+                       double complex *C, const long int *m, const long int *n, 
+                       const long int *k, const double complex *alpha, 
+                       const double complex *beta) {
     cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                m, n, k, alpha, A, k, B, n, beta, C, n);
+                *m, *n, *k, alpha, A, *k, B, *n, beta, C, *n);
 }

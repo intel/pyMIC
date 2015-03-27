@@ -1,6 +1,9 @@
-Next Version:
+Version 0.5
 ----------------------------
-- Added smart pointers to make handling of fake pointers easier
+- Introduced new kernel API that avoids insane pointer unpacking.
+- pyMIC now uses libxstreams as the offload back-end
+  (https://github.com/hfp/libxstream).
+- Added smart pointers to make handling of fake pointers easier.
 
 Version 0.4
 ----------------------------

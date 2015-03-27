@@ -67,7 +67,8 @@ class OffloadArrayTest(unittest.TestCase):
         offl_a = stream.bind(a)
         r = numpy.empty((1,), dtype=int)
         offl_r = stream.bind(r)
-        stream.invoke(library.test_check_pattern, offl_a, offl_r, pattern)
+        stream.invoke(library.test_check_pattern, 
+                      offl_a, offl_a.size, offl_r, pattern)
         offl_r.update_host()
         stream.sync()
 
@@ -85,7 +86,7 @@ class OffloadArrayTest(unittest.TestCase):
         pattern = int(0xdeadbeefabbaabba)
         a_expect[:] = pattern
         offl_a = stream.bind(a)
-        stream.invoke(library.test_set_pattern, offl_a, pattern)
+        stream.invoke(library.test_set_pattern, offl_a, offl_a.size, pattern)
         offl_a.update_host()
         stream.sync()
 
@@ -108,7 +109,8 @@ class OffloadArrayTest(unittest.TestCase):
         offl_r = stream.bind(r)
         a[:] = pattern
         offl_a.update_device()
-        stream.invoke(library.test_check_pattern, offl_a, offl_r, pattern)
+        stream.invoke(library.test_check_pattern,
+                      offl_a, offl_a.size, offl_r, pattern)
         offl_r.update_host()
         stream.sync()
 

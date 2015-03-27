@@ -34,34 +34,32 @@
 #include <mkl.h>
 
 PYMIC_KERNEL 
-void kernel_underscores(int argc, uintptr_t argptr[], size_t sizes[]) {
+void kernel_underscores(void) {
     // do nothing
 }
 
 PYMIC_KERNEL
-void a(int argc, uintptr_t argptr[], size_t sizes[]) {
+void a(void) {
     // do nothing
 }
 
 PYMIC_KERNEL
-void bb(int argc, uintptr_t argptr[], size_t sizes[]) {
+void bb(void) {
     // do nothing
 }
 
 PYMIC_KERNEL
-void _bb(int argc, uintptr_t argptr[], size_t sizes[]) {
+void _bb(void) {
     // do nothing
 }
 
 PYMIC_KERNEL
-void a123(int argc, uintptr_t argptr[], size_t sizes[]) {
+void a123(void) {
     // do nothing
 }
 
 PYMIC_KERNEL
-void test_offload_library_get(int argc, uintptr_t argptr[], size_t sizes[]) {
-    uintptr_t * pointers = (uintptr_t *) argptr[0];
-    
+void test_offload_library_get(uintptr_t *pointers) {
     pointers[0] = (uintptr_t) kernel_underscores;
     pointers[1] = (uintptr_t) a;
     pointers[2] = (uintptr_t) bb;
