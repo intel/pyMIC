@@ -27,7 +27,9 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
 
-.PHONY: all clean realclean tests tarball
+.PHONY: all clean realclean tests tarball docs
+
+default: all
 
 all:
 	make -C src all
@@ -56,8 +58,16 @@ realclean:
 	make -C examples realclean
 	make -C benchmarks realclean
 	make -C tests realclean
+	rm -f README.html README.pdf CHANGELOG.html CHANGELOG.pdf
 
 tarball: all
 	make -C examples realclean
 	tar cfj pymic-`date +%F`.tbz2 ../pymic/{README.txt,pymic,include,examples}
 
+docs: README.html CHANGELOG.html
+
+README.html: README.md
+	pandoc --from=markdown_github --to=html -o README.html README.md
+
+CHANGELOG.html: CHANGELOG.md
+	pandoc --from=markdown_github --to=html -o CHANGELOG.html CHANGELOG.md

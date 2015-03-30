@@ -72,3 +72,9 @@ dgemm_c.x
 # IDEA specific ignores
 .idea/workspace.xml
 .idea/tasks.xml
+
+# Ignores for the docs
+README.html
+README.pdf
+CHANGELOG.html
+CHANGELOG.pdf
