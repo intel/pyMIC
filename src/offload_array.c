@@ -46,10 +46,10 @@
 
 
 PYMIC_KERNEL
-void pymic_offload_array_add(const long int *dtype, const long int *n,
-                             const void *x_, const long int *incx,
-                             const void *y_, const long int *incy,
-                             void *r_, const long int *incr) {
+void pymic_offload_array_add(const int64_t *dtype, const int64_t *n,
+                             const void *x_, const int64_t *incx,
+                             const void *y_, const int64_t *incy,
+                             void *r_, const int64_t *incr) {
     /* pymic_offload_array_add(int n, type  *x, int incx, type  *y,
                          int incy, type  *r, int incr) */
 
@@ -58,9 +58,9 @@ void pymic_offload_array_add(const long int *dtype, const long int *n,
     switch(*dtype) {
     case DTYPE_INT:
         {
-            const long int *x = (const long int*)x_;
-            const long int *y = (const long int*)y_;
-            long int *r = (long int*)r_;
+            const int64_t *x = (const int64_t *)x_;
+            const int64_t *y = (const int64_t *)y_;
+            int64_t *r = (int64_t *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] + y[iy];
             }
@@ -68,9 +68,9 @@ void pymic_offload_array_add(const long int *dtype, const long int *n,
         break;
     case DTYPE_FLOAT:
         {
-            const double *x = (const double*)x_;
-            const double *y = (const double*)y_;
-            double *r = (double*)r_;
+            const double *x = (const double *)x_;
+            const double *y = (const double *)y_;
+            double *r = (double *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] + y[iy];
             }
@@ -78,9 +78,9 @@ void pymic_offload_array_add(const long int *dtype, const long int *n,
         break;
     case DTYPE_COMPLEX:
         {
-            const double complex *x = (const double complex*)x_;
-            const double complex *y = (const double complex*)y_;
-            double complex *r = (double complex*)r_;
+            const double complex *x = (const double complex *)x_;
+            const double complex *y = (const double complex *)y_;
+            double complex *r = (double complex *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] + y[iy];
             }
@@ -91,10 +91,10 @@ void pymic_offload_array_add(const long int *dtype, const long int *n,
 
 
 PYMIC_KERNEL
-void pymic_offload_array_sub(const long int *dtype, const long int *n,
-                             const void *x_, const long int *incx,
-                             const void *y_, const long int *incy,
-                             void *r_, const long int *incr) {
+void pymic_offload_array_sub(const int64_t *dtype, const int64_t *n,
+                             const void *x_, const int64_t *incx,
+                             const void *y_, const int64_t *incy,
+                             void *r_, const int64_t *incr) {
     /* pymic_offload_array_sub(int dtype, int n, type  *x, int incx, type  *y,
                          int incy, type  *result, int incr) */
 
@@ -103,9 +103,9 @@ void pymic_offload_array_sub(const long int *dtype, const long int *n,
     switch(*dtype) {
     case DTYPE_INT:
         {
-            const long int *x = (const long int*)x_;
-            const long int *y = (const long int*)y_;
-            long int *r = (long int*)r_;
+            const int64_t *x = (const int64_t *)x_;
+            const int64_t *y = (const int64_t *)y_;
+            int64_t *r = (int64_t *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] - y[iy];
             }
@@ -115,7 +115,7 @@ void pymic_offload_array_sub(const long int *dtype, const long int *n,
         {
             const double *x = (const double *)x_;
             const double *y = (const double *)y_;
-            double *r = (double*)r_;
+            double *r = (double *)r_;
              for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] - y[iy];
             }
@@ -136,10 +136,10 @@ void pymic_offload_array_sub(const long int *dtype, const long int *n,
 
 
 PYMIC_KERNEL
-void pymic_offload_array_mul(const long int *dtype, const long int *n,
-                             const void *x_, const long int *incx,
-                             const void *y_, const long int *incy,
-                             void *r_, const long int *incr) {
+void pymic_offload_array_mul(const int64_t *dtype, const int64_t *n,
+                             const void *x_, const int64_t *incx,
+                             const void *y_, const int64_t *incy,
+                             void *r_, const int64_t *incr) {
     /* pymic_offload_array_mul(int dtype, int n, type  *x, int incx, type  *y,
                          int incy, type  *result, int incr) */
     size_t i, ix, iy, ir;
@@ -147,9 +147,9 @@ void pymic_offload_array_mul(const long int *dtype, const long int *n,
     switch(*dtype) {
     case DTYPE_INT:
         {
-            const long int *x = (const long int*)x_;
-            const long int *y = (const long int*)y_;
-            long int *r = (long int*)r_;
+            const int64_t *x = (const int64_t *)x_;
+            const int64_t *y = (const int64_t *)y_;
+            int64_t *r = (int64_t *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] * y[iy];
             }
@@ -157,9 +157,9 @@ void pymic_offload_array_mul(const long int *dtype, const long int *n,
         break;
     case DTYPE_FLOAT:
         {
-            const double *x = (const double*)x_;
-            const double *y = (const double*)y_;
-            double *r = (double*)r_;
+            const double *x = (const double *)x_;
+            const double *y = (const double *)y_;
+            double *r = (double *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] * y[iy];
             }
@@ -167,9 +167,9 @@ void pymic_offload_array_mul(const long int *dtype, const long int *n,
         break;
     case DTYPE_COMPLEX:
         {
-            const double complex *x = (const double complex*)x_;
-            const double complex *y = (const double complex*)y_;
-            double complex *r = (double complex*)r_;
+            const double complex *x = (const double complex *)x_;
+            const double complex *y = (const double complex *)y_;
+            double complex *r = (double complex *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] * y[iy];
             }
@@ -180,7 +180,7 @@ void pymic_offload_array_mul(const long int *dtype, const long int *n,
 
 
 PYMIC_KERNEL
-void pymic_offload_array_fill(const long int *dtype, const long int *n,
+void pymic_offload_array_fill(const int64_t *dtype, const int64_t *n,
                               void *ptr, ...) {
     /* pymic_offload_array_fill(int dtype, int n,
                                 type  *x, type value) */
@@ -192,8 +192,8 @@ void pymic_offload_array_fill(const long int *dtype, const long int *n,
     switch(*dtype) {
     case DTYPE_INT:
         {
-            long int  *x  = (long int*)ptr;
-            long int   v  = *(const long int*)data;
+            int64_t  *x  = (int64_t *)ptr;
+            int64_t   v  = *(const int64_t *)data;
             for (i = 0; i < *n; i++) {
                 x[i] = v;
             }
@@ -201,8 +201,8 @@ void pymic_offload_array_fill(const long int *dtype, const long int *n,
         break;
     case DTYPE_FLOAT:
         {
-            double  *x  = (double*)ptr;
-            double   v  = *(const double*)data;
+            double  *x  = (double *)ptr;
+            double   v  = *(const double *)data;
             for (i = 0; i < *n; i++) {
                 x[i] = v;
             }
@@ -210,8 +210,8 @@ void pymic_offload_array_fill(const long int *dtype, const long int *n,
         break;
     case DTYPE_COMPLEX:
         {
-            double complex  *x  = (double complex*)ptr;
-            double complex   v  = *(const double complex*)data;
+            double complex  *x  = (double complex *)ptr;
+            double complex   v  = *(const double complex *)data;
             for (i = 0; i < *n; i++) {
                 x[i] = v;
             }
@@ -222,15 +222,15 @@ void pymic_offload_array_fill(const long int *dtype, const long int *n,
 
 
 PYMIC_KERNEL
-void pymic_offload_array_fillfrom(void *dst, const void *src, const long int *nbytes) {
+void pymic_offload_array_fillfrom(void *dst, const void *src, const int64_t *nbytes) {
     /* pymic_offload_array_fillfrom(type  *dst, type  *src, int nbytes) */
     memcpy(dst, src, *nbytes);
 }
 
 
 PYMIC_KERNEL
-void pymic_offload_array_setslice(const long int *dtype,
-                                  const long int *lower, const long int *upper,
+void pymic_offload_array_setslice(const int64_t *dtype,
+                                  const int64_t *lower, const int64_t *upper,
                                   void *dst, const void *src) {
     /* pymic_offload_array_setslice(int lower, int upper,
                                     type  *dst, type  *src) */
@@ -253,7 +253,7 @@ void pymic_offload_array_setslice(const long int *dtype,
 
 
 PYMIC_KERNEL
-void pymic_offload_array_abs(const long int *dtype, const long int *n,
+void pymic_offload_array_abs(const int64_t *dtype, const int64_t *n,
                              const void *x_, void *r_) {
     /* pymic_offload_array_abs(int dtype, int n,
                                type  *x, type  *result) */
@@ -261,8 +261,8 @@ void pymic_offload_array_abs(const long int *dtype, const long int *n,
     switch(*dtype) {
     case DTYPE_INT:
         {
-            const long int *x = (const long int*)x_;
-            long int *r = (long int*)r_;
+            const int64_t *x = (const int64_t *)x_;
+            int64_t *r = (int64_t *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = labs(x[i]);
             }
@@ -270,8 +270,8 @@ void pymic_offload_array_abs(const long int *dtype, const long int *n,
         break;
     case DTYPE_FLOAT:
         {
-            const double *x = (const double*)x_;
-            double *r = (double*)r_;
+            const double *x = (const double *)x_;
+            double *r = (double *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = fabs(x[i]);
             }
@@ -279,8 +279,8 @@ void pymic_offload_array_abs(const long int *dtype, const long int *n,
         break;
     case DTYPE_COMPLEX:
         {
-            const double complex *x = (const double complex*)x_;
-            double *r = (double*)r_;
+            const double complex *x = (const double complex *)x_;
+            double *r = (double *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = cabs(x[i]);
             }
@@ -291,19 +291,19 @@ void pymic_offload_array_abs(const long int *dtype, const long int *n,
 
 
 PYMIC_KERNEL
-void pymic_offload_array_pow(const long int *dtype, const long int *n,
-                             const void *x_, const long int *incx,
-                             const void *y_, const long int *incy,
-                             void *r_, const long int *incr) {
+void pymic_offload_array_pow(const int64_t *dtype, const int64_t *n,
+                             const void *x_, const int64_t *incx,
+                             const void *y_, const int64_t *incy,
+                             void *r_, const int64_t *incr) {
     /* pymic_offload_array_pow(int dtype, int n, type  *x, int incx, type  *y,
                                int incy, type  *result, int incr) */
     size_t i, ix, iy, ir;
     switch(*dtype) {
     case DTYPE_INT:
         {
-            const long int *x = (const long int*)x_;
-            const long int *y = (const long int*)y_;
-            long int *r = (long int*)r_;
+            const int64_t *x = (const int64_t *)x_;
+            const int64_t *y = (const int64_t *)y_;
+            int64_t *r = (int64_t *)r_;
             i = ix = iy = ir = 0;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 size_t j;
@@ -316,9 +316,9 @@ void pymic_offload_array_pow(const long int *dtype, const long int *n,
         break;
     case DTYPE_FLOAT:
         {
-            const double *x = (const double*)x_;
-            const double *y = (const double*)y_;
-            double *r = (double*)r_;
+            const double *x = (const double *)x_;
+            const double *y = (const double *)y_;
+            double *r = (double *)r_;
             i = ix = iy = ir = 0;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = pow(x[ix], y[iy]);
@@ -327,9 +327,9 @@ void pymic_offload_array_pow(const long int *dtype, const long int *n,
         break;
     case DTYPE_COMPLEX:
         {
-            const double complex *x = (const double complex*)x_;
-            const double complex *y = (const double complex*)y_;
-            double complex *r = (double complex*)r_;
+            const double complex *x = (const double complex *)x_;
+            const double complex *y = (const double complex *)y_;
+            double complex *r = (double complex *)r_;
             i = ix = iy = ir = 0;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = cpow(x[ix], y[iy]);
@@ -341,7 +341,7 @@ void pymic_offload_array_pow(const long int *dtype, const long int *n,
 
 
 PYMIC_KERNEL
-void pymic_offload_array_reverse(const long int *dtype, const long int *n,
+void pymic_offload_array_reverse(const int64_t *dtype, const int64_t *n,
                                  const void *x_, void *r_) {
     /* pymic_offload_array_dreverse(int dtype, int n,
                                     type  *x, type  *result) */
@@ -349,8 +349,8 @@ void pymic_offload_array_reverse(const long int *dtype, const long int *n,
     switch(*dtype) {
     case DTYPE_INT:
         {
-            const long int *x = (const long int*)x_;
-            long int *r = (long int*)r_;
+            const int64_t *x = (const int64_t *)x_;
+            int64_t *r = (int64_t *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = x[*n - i - 1];
             }
@@ -358,8 +358,8 @@ void pymic_offload_array_reverse(const long int *dtype, const long int *n,
         break;
     case DTYPE_FLOAT:
         {
-            const double *x = (const double*)x_;
-            double *r = (double*)r_;
+            const double *x = (const double *)x_;
+            double *r = (double *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = x[*n - i - 1];
             }
@@ -367,8 +367,8 @@ void pymic_offload_array_reverse(const long int *dtype, const long int *n,
         break;
     case DTYPE_COMPLEX:
         {
-            const double complex *x = (const double complex*)x_;
-            double complex *r = (double complex*)r_;
+            const double complex *x = (const double complex *)x_;
+            double complex *r = (double complex *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = x[*n - i - 1];
             }
