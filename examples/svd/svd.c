@@ -30,6 +30,7 @@
 
 #include <pymic_kernel.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <mkl.h>
 
 PYMIC_KERNEL
@@ -41,27 +42,35 @@ void empty(int argc, uintptr_t argptr[], size_t sizes[]) {
 }
 
 PYMIC_KERNEL
-void dgemm_kernel(double * A, double * B, double * C,
-                  const long int* m, const long int* n, const long int* k,
-                  const double* alpha, const double* beta) {
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                *m, *n, *k, *alpha, A, *k, B, *n, *beta, C, *n);
-}
-
-PYMIC_KERNEL
-void svd_reconstruct(const double* U, const double* sigma, const double* V, double* res, 
-                     const long int* x, const long int* y, const long int* z) {
-
-    /* allocate temporary storage */
-    double* tmp   = (double*)malloc(sizeof(double) * (*x) * (*z));
+void dgemm_kernel(const double *A, const int64_t *trA, 
+                  const double *B, const int64_t *trB,
+                  double *C,
+                  const int64_t *m, const int64_t *n, const int64_t *k,
+                  const double *alpha, const double *beta) {
+    int i;
     
-    /* tmp = U * sigma*/
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                *x, *z, *z, 1.0, U, *z, sigma, *z, 0.0, tmp, *z);
+    int lda, ldb;
+    int transA, transB;
     
-    /* res = tmp * V */
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                *x, *y, *z, 1.0, tmp, *z, V, *y, 0.0, res, *y);
+    /* check if we need to transpose A */
+    lda = *k;
+    transA = CblasNoTrans;
+    if (*trA) {
+        lda = *m;
+        transA = CblasTrans;
+    }
     
-    free(tmp);
+    /* check if we need to transpose B */
+    ldb = *n;
+    transB = CblasNoTrans;
+    if (*trB) {
+        ldb = *k;
+        transB = CblasTrans;
+    }
+    
+    cblas_dgemm(CblasRowMajor, transA, transB,
+                (int) *m, (int) *n, (int) *k, 
+                *alpha, A, lda, 
+                B, ldb, 
+                *beta, C, (int) *n);
 }

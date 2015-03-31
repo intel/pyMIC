@@ -58,7 +58,7 @@ def write_image(image, file):
     """Write an image as JPEG to disk"""
     
     # convert back to RGB and save
-    # print "Saving file '{0}'".format(file)
+    print("Saving file '{0}'".format(file))
     image = image.convert("RGB")
     image.save(file)
     
@@ -70,13 +70,17 @@ def compute_svd(image):
     mtx.shape = (image.size[1], image.size[0])
     mtx = np.matrix(mtx)
     
+
     # run the SVD and return the matrixes: U, sigma, V
     print("Computing SVD")
-    return np.linalg.svd(mtx)
+    U, sigma, V = np.linalg.svd(mtx)
+    return U, sigma, V
 
 
 def reconstruct_image(U, sigma, V):
     """Reconstruct the image from the SVD data"""
+    
+    print("Reconstructing image on the host")
     
     # reconstruction of the image data
     reconstructed = U * sigma * V
@@ -85,10 +89,12 @@ def reconstruct_image(U, sigma, V):
     image = Image.fromarray(reconstructed)
     return image
     
-
+    
 def reconstruct_image_dgemm(U, sigma, V):
     """Reconstruct the image from the SVD data (using plain dgemm on MIC)"""
     
+    print("Reconstructing image on the coprocessor")
+
     # create offload buffers
     offl_tmp = stream.empty((U.shape[0], U.shape[1]), 
                             dtype=float, update_host=False)
@@ -97,45 +103,25 @@ def reconstruct_image_dgemm(U, sigma, V):
     offl_U = stream.bind(U)
     offl_sigma = stream.bind(sigma)
     offl_V = stream.bind(V)
-        
+    
     alpha = 1.0
     beta = 0.0
     
     # tmp = U * sigma 
+    transA = int(not U.flags.c_contiguous)
+    transB = int(not sigma.flags.c_contiguous)
     m, k, n = U.shape[0], U.shape[1], sigma.shape[1]
     stream.invoke(library.dgemm_kernel,
-                  offl_U, offl_sigma, offl_tmp, 
+                  offl_U, transA, offl_sigma, transB, offl_tmp, 
                   m, n, k, alpha, beta)
-
+    
     # res = tmp * V 
     m, k, n = offl_tmp.shape[0], offl_tmp.shape[1], V.shape[1]
+    transA = int(not offl_tmp.array.flags.c_contiguous)
+    transB = int(not V.flags.c_contiguous)
     stream.invoke(library.dgemm_kernel,
-                  offl_tmp, offl_V, offl_res, 
+                  offl_tmp, transA, offl_V, transB, offl_res, 
                   m, n, k, alpha, beta)
-    res = offl_res.update_host().array
-    stream.sync()
-
-    image = Image.fromarray(res)
-    return image
-
-    
-def reconstruct_image_svd(U, sigma, V):
-    """Reconstruct the image from the SVD data (using a special SVD kernel)"""
-    
-    # create offload buffers
-    offl_res = stream.empty((U.shape[0], V.shape[1]), 
-                            dtype=float, update_host=False)
-    offl_U = stream.bind(U)
-    offl_sigma = stream.bind(sigma)
-    offl_V = stream.bind(V)
-    
-    # dimensions of the matrixes
-    x, y, z = U.shape[0], V.shape[1], sigma.shape[0]
-    
-    # perform the complete offload
-    stream.invoke(library.svd_reconstruct,
-                  offl_U, offl_sigma, offl_V, offl_res,
-                  x, y, z)
     res = offl_res.update_host().array
     stream.sync()
     
@@ -144,11 +130,12 @@ def reconstruct_image_svd(U, sigma, V):
 
     
 # low man's command-line parsing
-if len(sys.argv) != 3:
-    print("Usage: {0} input.jpg output".format(sys.argv[0]))
+if len(sys.argv) != 4:
+    print("Usage: {0} input.jpg compression output".format(sys.argv[0]))
     quit()
 filename = sys.argv[1]
-output = sys.argv[2]
+compression = int(sys.argv[2])
+output = sys.argv[3]
 
 # read image and create SVD
 image = read_image(filename)
@@ -158,26 +145,17 @@ U, S, V = compute_svd(image)
 stream.invoke(library.empty)
 stream.sync()
 
-# reconstruct some images (host)
-for i in xrange(1, 20, 1):
-    Uc = np.matrix(U[:, :i])
-    Sc = np.diag(S[:i])
-    Vc = np.matrix(V[:i, :]) 
-    recon = reconstruct_image(Uc, Sc, Vc)
-    write_image(recon, "host_{0}_{1:04}.jpg".format(output, i))
-
-# simple dgemm offload
-for i in xrange(1, 20, 1):
-    Uc = np.matrix(U[:, :i])
-    Sc = np.diag(S[:i])
-    Vc = np.matrix(V[:i, :])
-    recon = reconstruct_image_dgemm(Uc, Sc, Vc)
-    write_image(recon, "dgemm_{0}_{1:04}.jpg".format(output, i))
-
-# special SVD reconstruction kernel
-for i in xrange(1, 20, 1):
-    Uc = np.matrix(U[:, :i])
-    Sc = np.diag(S[:i])
-    Vc = np.matrix(V[:i, :])
-    recon = reconstruct_image_svd(Uc, Sc, Vc)
-    write_image(recon, "svd_{0}_{1:04}.jpg".format(output, i))
+# reconstruct a compressed image (host)
+Uc = np.matrix(U[:, :compression])
+Sc = np.diag(S[:compression])
+Vc = np.matrix(V[:compression, :]) 
+recon = reconstruct_image(Uc, Sc, Vc)
+write_image(recon, "host_{0}_{1:04}.jpg".format(output, compression))
+   
+# reconstruct a compressed image (offloaded)
+Uc = np.matrix(U[:, :compression])
+Sc = np.diag(S[:compression])
+Vc = np.matrix(V[:compression, :])
+recon = reconstruct_image_dgemm(Uc, Sc, Vc)
+write_image(recon, "dgemm_{0}_{1:04}.jpg".format(output, compression))
+    

@@ -75,7 +75,8 @@ offload_array.c: ../include/pymic_kernel.h
 	chmod a+rX ../pymic/liboffload_array.so
 	
 clean:
-	rm -f *.o
+	rm -f $(PYMIC_OBJECTS)
+	rm -f $(XSTREAM_OBJECTS)
 
 realclean: clean
 	rm -f *.bak *~
