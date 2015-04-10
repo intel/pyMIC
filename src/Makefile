@@ -35,7 +35,7 @@ else
 # DEBUG=-DDEBUG
 endif
 
-PYMIC_OBJECTS=pymicimpl_interface.o pymicimpl_buffers.o pymicimpl_misc.o
+PYMIC_OBJECTS=pymicimpl_interface.o pymicimpl_misc.o
 XSTREAM_OBJECTS=libxstream/src/libxstream.o libxstream/src/libxstream_capture.o \
                 libxstream/src/libxstream_event.o libxstream/src/libxstream_stream.o \
 				libxstream/src/libxstream_alloc.o libxstream/src/libxstream_argument.o \
@@ -59,8 +59,7 @@ _pymicimpl.so: $(PYMIC_OBJECTS) $(XSTREAM_OBJECTS)
 	cp _pymicimpl.so ../pymic/_pymicimpl.so
 	chmod a+rX ../pymic/_pymicimpl.so
 
-pymicimpl_interface.cc: debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_buffers.h pymicimpl_misc.h
-pymicimpl_buffers.cc:   debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_buffers.h 
+pymicimpl_interface.cc: debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_misc.h
 pymicimpl_misc.cc:      debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h 
 
 

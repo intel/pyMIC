@@ -1,6 +1,7 @@
 # Next Version
 * Now using Markdown for README and CHANGELOG.
 * Bugfix: example SVD now respects order of the passed matrices when applying the `dgemm` routine.
+* Refactoring: simplified bridge between pyMIC and LIBXSTREAM.
 
 
 # Version 0.5

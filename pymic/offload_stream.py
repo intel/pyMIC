@@ -41,7 +41,6 @@ from _pymicimpl import _pymic_impl_stream_deallocate
 from _pymicimpl import _pymic_impl_stream_memcpy_h2d
 from _pymicimpl import _pymic_impl_stream_memcpy_d2h
 from _pymicimpl import _pymic_impl_stream_memcpy_d2d
-from _pymicimpl import _pymic_impl_stream_ptr_translate
 from _pymicimpl import _pymic_impl_invoke_kernel
 
 from _misc import _debug as debug
@@ -471,42 +470,9 @@ class OffloadStream:
         return None
             
     def translate_device_pointer(self, device_ptr):
-        """Translate a fake pointer to a real raw pointer on the target device.
-           Though it is part of the stream interface, the operation is 
-           synchronous.
-           
-           Caution: this is a low-level function, do not use it unless you
-                    have a very specific reason to do so.  Better use the 
-                    high-level interfaces of OffloadArray instead.
-           
-           Parameters
-           ----------
-           device_ptr : int
-              Fake pointer to the memory location
-           
-           See Also
-           --------
-           allocate_device_memory, deallocate_device_memory
-
-           Returns
-           -------
-           out : int
-              Translated pointer 
-
-           Examples
-           --------
-           >>> device_ptr = stream.allocate_device_memory(nbytes)
-           >>> print device_ptr
-           139782444843008    # random data      
-           >>> translated = stream.translate_device_pointer(device_ptr)
-           >>> print translated
-           140498172420096    # random data
+        """This function does not exist anymore.
         """
-        if not isinstance(device_ptr, SmartPtr):
-            raise ValueError('Wrong argument, no device pointer given')
-        # TODO: add more safety checks here (e.g., pointer from right device 
-        #       and stream)
-        return _pymic_impl_stream_ptr_translate(device_ptr._device_ptr)
+        raise NotImplementedError("This function does not exist anymore")
         
     @trace
     def invoke(self, kernel, *args):

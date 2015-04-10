@@ -40,33 +40,22 @@
 
 #include "pymicimpl_common.h"
 #include "pymicimpl_misc.h"
-#include "pymicimpl_buffers.h"
 
-#if PYMIC_USE_XSTREAM
 #include <libxstream.h>
-#endif
-
-#if PYMIC_USE_XSTREAM
-#include "libxstream.h"
-#endif
-
-#if PYMIC_USE_XSTREAM
-#include "libxstream.h"
-#endif
 
 #include "debug.h"
 
 using namespace pymic;
 
-PyObject* throw_exception(const char* format, ...) {
+PyObject *throw_exception(const char *format, ...) {
     va_list vargs;
 
     const size_t bufsz = 256;
     char buffer[bufsz];
 
-    PyObject* pymic = NULL;
-    PyObject* modules_dict = NULL;
-    PyObject* exception_type = NULL;
+    PyObject *pymic = NULL;
+    PyObject *modules_dict = NULL;
+    PyObject *exception_type = NULL;
     
     // get the modules dictionary
     modules_dict = PySys_GetObject("modules");
@@ -91,25 +80,21 @@ PyObject* throw_exception(const char* format, ...) {
     vsnprintf(buffer, bufsz, format, vargs);
     
     // create (throw/register) the exception 
-    PyObject* exception = PyErr_Format(exception_type, buffer);
+    PyObject *exception = PyErr_Format(exception_type, buffer);
     return exception;
 }
 
 
 PYMIC_INTERFACE 
-PyObject* pymic_impl_offload_number_of_devices(PyObject* self, PyObject* args) {
+PyObject *pymic_impl_offload_number_of_devices(PyObject *self, PyObject *args) {
 	debug_enter();
 	if (!PyArg_ParseTuple(args, ""))
 		return NULL;
     size_t no_of_devs = 0;
-#if PYMIC_USE_XSTREAM
     if (libxstream_get_ndevices(&no_of_devs)) {
         // TODO: error handling
         printf("WOOOPS: error case at %s:%d\n", __FILE__, __LINE__);
     }
-#else
-	no_of_devs = get_number_of_devices();
-#endif
 	debug(10, "detected %d devices", no_of_devs);
 	debug_leave();
 	return Py_BuildValue("I", static_cast<int>(no_of_devs));
@@ -117,7 +102,7 @@ PyObject* pymic_impl_offload_number_of_devices(PyObject* self, PyObject* args) {
 
 
 PYMIC_INTERFACE
-PyObject* pymic_impl_load_library(PyObject* self, PyObject* args) {
+PyObject *pymic_impl_load_library(PyObject *self, PyObject *args) {
 	int device;
     const char * filename_cstr = NULL;
     std::string filename;
@@ -148,7 +133,7 @@ PyObject* pymic_impl_load_library(PyObject* self, PyObject* args) {
 }
 
 PYMIC_INTERFACE
-PyObject* pymic_impl_unload_library(PyObject* self, PyObject* args) {
+PyObject *pymic_impl_unload_library(PyObject *self, PyObject *args) {
 	int device;
     uintptr_t handle = 0;
     char * tempname_cstr;
@@ -179,40 +164,31 @@ PyObject* pymic_impl_unload_library(PyObject* self, PyObject* args) {
 
 
 PYMIC_INTERFACE
-PyObject * pymic_impl_stream_create(PyObject * self, PyObject * args) {
+PyObject *pymic_impl_stream_create(PyObject *self, PyObject *args) {
     debug_enter();
     int lowest, greatest;
     int device;
     char * name;
+    libxstream_stream * stream = NULL;
+    uintptr_t stream_id = 0;
     
 	if (! PyArg_ParseTuple(args, "is", &device, &name))
 		return NULL;
 
-#if PYMIC_USE_XSTREAM
-    libxstream_stream * stream = NULL;
-    uintptr_t stream_id = 0;
     if (libxstream_stream_create(&stream, device, 0, 0, name) != LIBXSTREAM_ERROR_NONE) {
         printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
         throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
     }
     stream_id = reinterpret_cast<uintptr_t>(stream);
-#endif
 
-    // in the native implementation, we make everything synchronous and
-    // we use the same stream (= device id)
     debug(10, "using default stream for device %d", device);
-        
     debug_leave();
-#if PYMIC_USE_XSTREAM
     return Py_BuildValue("k", static_cast<uintptr_t>(stream_id));
-#else    
-    return Py_BuildValue("k", static_cast<uintptr_t>(device));
-#endif
 }
 
 
 PYMIC_INTERFACE
-PyObject * pymic_impl_stream_destroy(PyObject * self, PyObject * args) {
+PyObject *pymic_impl_stream_destroy(PyObject *self, PyObject *args) {
     debug_enter();
     int device;
     uintptr_t stream_id;
@@ -220,13 +196,12 @@ PyObject * pymic_impl_stream_destroy(PyObject * self, PyObject * args) {
 
 	if (! PyArg_ParseTuple(args, "ik", &device, &stream_id))
 		return NULL;
-#if PYMIC_USE_XSTREAM
+
     stream = reinterpret_cast<libxstream_stream *>(stream_id);
     if (libxstream_stream_destroy(stream) != LIBXSTREAM_ERROR_NONE) {
         printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
         throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
     }
-#endif    
     
     debug_leave();
     Py_RETURN_NONE;
@@ -234,7 +209,7 @@ PyObject * pymic_impl_stream_destroy(PyObject * self, PyObject * args) {
 
 
 PYMIC_INTERFACE
-PyObject * pymic_impl_stream_sync(PyObject * self, PyObject * args) {
+PyObject *pymic_impl_stream_sync(PyObject *self, PyObject *args) {
     debug_enter();
     int device;
     uintptr_t stream_id;
@@ -242,13 +217,12 @@ PyObject * pymic_impl_stream_sync(PyObject * self, PyObject * args) {
 
 	if (! PyArg_ParseTuple(args, "ik", &device, &stream_id))
 		return NULL;
-#if PYMIC_USE_XSTREAM
+
     stream = reinterpret_cast<libxstream_stream *>(stream_id);
     if (libxstream_stream_sync(stream) != LIBXSTREAM_ERROR_NONE) {
         printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
         throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
     }
-#endif    
     
     debug_leave();
     Py_RETURN_NONE;
@@ -256,22 +230,21 @@ PyObject * pymic_impl_stream_sync(PyObject * self, PyObject * args) {
 
 
 PYMIC_INTERFACE
-PyObject * pymic_impl_stream_allocate(PyObject * self, PyObject * args) {
+PyObject *pymic_impl_stream_allocate(PyObject *self, PyObject *args) {
     debug_enter();
     int device;
     uintptr_t stream_id;
-    void * stream = NULL;
     size_t size;
     int alignment;
-    unsigned char * device_ptr;
+    void *device_ptr = NULL;
 
  	if (! PyArg_ParseTuple(args, "ikki", &device, &stream_id, &size, &alignment))
 		return NULL;
-#if PYMIC_USE_XSTREAM
-    stream = reinterpret_cast<void *>(stream_id);
-#endif
-    
-    device_ptr = buffer_allocate(device, stream, size, alignment);
+
+    if (libxstream_mem_allocate(device, &device_ptr, size, alignment) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
     
     debug(10, "allocated %ld bytes on device %d with pointer %p",
           size, device, device_ptr);
@@ -281,20 +254,20 @@ PyObject * pymic_impl_stream_allocate(PyObject * self, PyObject * args) {
 
 
 PYMIC_INTERFACE
-PyObject * pymic_impl_stream_deallocate(PyObject * self, PyObject * args) {
+PyObject *pymic_impl_stream_deallocate(PyObject *self, PyObject *args) {
     debug_enter();
     int device;
     uintptr_t stream_id;
-    void * stream = NULL;
     unsigned char * device_ptr;
 
  	if (! PyArg_ParseTuple(args, "ikk", &device, &stream_id, &device_ptr))
 		return NULL;
-#if PYMIC_USE_XSTREAM
-    stream = reinterpret_cast<void *>(stream_id);
-#endif
-    buffer_release(device, stream, device_ptr);
 
+    if (libxstream_mem_deallocate(device, device_ptr) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+    
     debug(10, "deallocated pointer %p on device %d",
           device_ptr, device);
     debug_leave();
@@ -303,7 +276,7 @@ PyObject * pymic_impl_stream_deallocate(PyObject * self, PyObject * args) {
 
 
 PYMIC_INTERFACE
-PyObject * pymic_impl_stream_memcpy_h2d(PyObject * self, PyObject * args) {
+PyObject *pymic_impl_stream_memcpy_h2d(PyObject *self, PyObject *args) {
     debug_enter();
     uintptr_t host_ptr;
     uintptr_t device_ptr;
@@ -312,28 +285,33 @@ PyObject * pymic_impl_stream_memcpy_h2d(PyObject * self, PyObject * args) {
     size_t offset_device;
     int device;
     uintptr_t stream_id;
-    void * stream = NULL;
-    unsigned char * host_mem;
-    unsigned char * dev_mem;
+    libxstream_stream *stream = NULL;
+    unsigned char *host_mem;
+    unsigned char *dev_mem;
     
  	if (! PyArg_ParseTuple(args, "ikkkkkk", &device, &stream_id, &host_ptr, &device_ptr, 
                            &size, &offset_host, &offset_device))
 		return NULL;
     host_mem = reinterpret_cast<unsigned char *>(host_ptr);
     dev_mem = reinterpret_cast<unsigned char *>(device_ptr);
-#if PYMIC_USE_XSTREAM
-    stream = reinterpret_cast<void *>(stream_id);
-#endif
-    buffer_copy_to_target(device, stream, host_mem, dev_mem, 
-                          size, offset_host, offset_device);
+    stream = reinterpret_cast<libxstream_stream *>(stream_id);
 
+    unsigned char * src_offs = host_mem + offset_host;
+    unsigned char * dst_offs = dev_mem + offset_device;
+    debug(100, "%s: transferring %ld bytes from host pointer 0x%lp into device pointer 0x%lx",
+          __FUNCTION__, size, hptr, dptr);
+    if (libxstream_memcpy_h2d(src_offs, dst_offs, size, stream) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+                          
     debug_leave();
     Py_RETURN_NONE;
 }
 
 
 PYMIC_INTERFACE
-PyObject * pymic_impl_stream_memcpy_d2h(PyObject * self, PyObject * args) {
+PyObject *pymic_impl_stream_memcpy_d2h(PyObject *self, PyObject *args) {
     debug_enter();
     uintptr_t host_ptr;
     uintptr_t device_ptr;
@@ -342,21 +320,25 @@ PyObject * pymic_impl_stream_memcpy_d2h(PyObject * self, PyObject * args) {
     size_t offset_device;
     int device;
     uintptr_t stream_id;
-    void * stream = NULL;
-    unsigned char * host_mem;
-    unsigned char * dev_mem;
+    libxstream_stream *stream = NULL;
+    unsigned char *host_mem;
+    unsigned char *dev_mem;
     
  	if (! PyArg_ParseTuple(args, "ikkkkkk", &device, &stream_id, &device_ptr, &host_ptr,  
                            &size, &offset_device, &offset_host))
 		return NULL;
     dev_mem = reinterpret_cast<unsigned char *>(device_ptr);
     host_mem = reinterpret_cast<unsigned char *>(host_ptr);
-#if PYMIC_USE_XSTREAM
-    stream = reinterpret_cast<void *>(stream_id);
-#endif    
+    stream = reinterpret_cast<libxstream_stream *>(stream_id);
     
-    buffer_copy_to_host(device, stream, dev_mem, host_mem, 
-                        size, offset_device, offset_host);
+    unsigned char * src_offs = dev_mem + offset_device;
+    unsigned char * dst_offs = host_mem + offset_host;
+    debug(100, "%s: transferring %ld bytes from device pointer 0x%lp into host pointer 0x%lx",
+          __FUNCTION__, size, dptr, hptr);
+    if (libxstream_memcpy_d2h(src_offs, dst_offs, size, stream) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
 
     debug_leave();
     Py_RETURN_NONE;
@@ -364,7 +346,7 @@ PyObject * pymic_impl_stream_memcpy_d2h(PyObject * self, PyObject * args) {
 
 
 PYMIC_INTERFACE
-PyObject * pymic_impl_stream_memcpy_d2d(PyObject * self, PyObject * args) {
+PyObject *pymic_impl_stream_memcpy_d2d(PyObject *self, PyObject *args) {
     debug_enter();
     uintptr_t src;
     uintptr_t dst;
@@ -373,45 +355,33 @@ PyObject * pymic_impl_stream_memcpy_d2d(PyObject * self, PyObject * args) {
     size_t offset_device_dst;
     int device;
     uintptr_t stream_id;
-    void * stream = NULL;
-    unsigned char * src_mem;
-    unsigned char * dst_mem;
+    libxstream_stream *stream = NULL;
+    unsigned char *src_mem;
+    unsigned char *dst_mem;
     
  	if (! PyArg_ParseTuple(args, "ikkkkkk", &device, &stream_id, &src, &dst,  
                            &size, &offset_device_src, &offset_device_dst))
 		return NULL;
     src_mem = reinterpret_cast<unsigned char *>(src);
     dst_mem = reinterpret_cast<unsigned char *>(dst);
-#if PYMIC_USE_XSTREAM
-    stream = reinterpret_cast<void *>(stream_id);
-#endif    
+    stream = reinterpret_cast<libxstream_stream *>(stream_id);
     
-    buffer_copy_on_device(device, stream, src_mem, dst_mem, 
-                          size, offset_device_src, offset_device_dst);
-
+    // buffer_copy_on_device(device, stream, src_mem, dst_mem, 
+                          // size, offset_device_src, offset_device_dst);
+    unsigned char * src_ptr = src_mem + offset_device_src;
+    unsigned char * dst_ptr = dst_mem + offset_device_dst;
+    if (libxstream_memcpy_d2d(src_ptr, dst_ptr, size, stream) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        throw internal_exception("XSTREAM FAILED", __FILE__, __LINE__);
+    }
+                          
     debug_leave();
     Py_RETURN_NONE;
 }
 
 
 PYMIC_INTERFACE
-PyObject * pymic_impl_stream_ptr_translate(PyObject * self, PyObject * args) {
-    debug_enter();
-    uintptr_t device_ptr;
-    uintptr_t translated;
-    
- 	if (! PyArg_ParseTuple(args, "k", &device_ptr))
-		return NULL;
-
-    translated = buffer_translate_pointer(reinterpret_cast<unsigned char *>(device_ptr));
-
-    debug_leave();
-    return Py_BuildValue("k", translated);
-}
-
-
-PYMIC_INTERFACE
-PyObject * pymic_impl_find_kernel(PyObject* self, PyObject* args) {
+PyObject *pymic_impl_find_kernel(PyObject *self, PyObject *args) {
     int device;
     uintptr_t funcptr = 0;
     uintptr_t handle = 0;
@@ -434,15 +404,15 @@ PyObject * pymic_impl_find_kernel(PyObject* self, PyObject* args) {
 }
 
 
-PyObject * pymic_impl_invoke_kernel(PyObject * self, PyObject * args) {
+PyObject *pymic_impl_invoke_kernel(PyObject *self, PyObject *args) {
     int device;
     uintptr_t stream_id;
     libxstream_stream * stream;
     uintptr_t funcptr = 0;
-    PyObject * argd = NULL;    // dimensionality of the arguments
-    PyObject * argt = NULL;    // types of the arguments (int, double, complex)
-    PyObject * argv = NULL;    // values of the arguments (host/device pointers)
-    PyObject * argsz = NULL;   // number of bytes for the argument
+    PyObject *argd = NULL;    // dimensionality of the arguments
+    PyObject *argt = NULL;    // types of the arguments (int, double, complex)
+    PyObject *argv = NULL;    // values of the arguments (host/device pointers)
+    PyObject *argsz = NULL;   // number of bytes for the argument
     int argc = 0;
     debug_enter();
 
@@ -568,7 +538,6 @@ static PyMethodDef methods[] = {
     PYMIC_ENTRYPOINT(pymic_impl_stream_memcpy_h2d, "Copy from device to host"),
     PYMIC_ENTRYPOINT(pymic_impl_stream_memcpy_d2h, "Copy from device to host"),
     PYMIC_ENTRYPOINT(pymic_impl_stream_memcpy_d2d, "Copy from device to device"),
-    PYMIC_ENTRYPOINT(pymic_impl_stream_ptr_translate, "Pointer translation"),
 
     // kernel invocation
     PYMIC_ENTRYPOINT(pymic_impl_find_kernel, "Find a kernel by its name in a loaded library."),
