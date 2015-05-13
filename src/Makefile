@@ -35,25 +35,27 @@ else
 # DEBUG=-DDEBUG
 endif
 
-PYMIC_OBJECTS=pymicimpl_interface.o pymicimpl_misc.o
-XSTREAM_OBJECTS=libxstream/src/libxstream.o libxstream/src/libxstream_capture.o \
-                libxstream/src/libxstream_event.o libxstream/src/libxstream_stream.o \
-				libxstream/src/libxstream_alloc.o libxstream/src/libxstream_argument.o \
-				libxstream/src/libxstream_context.o libxstream/src/libxstream_offload.o
+LIBXSTREAM=./libxstream
+
+PYMIC_SOURCE=pymicimpl_interface.cc pymicimpl_misc.cc
+LIBXSTREAM_SOURCE=$(shell ls $(LIBXSTREAM)/src/*.cpp)
+
+PYMIC_OBJECTS=$(PYMIC_SOURCE:.cc=.o)
+LIBXSTREAM_OBJECTS=$(LIBXSTREAM_SOURCE:.cpp=.o)
 
 PYTHON_INCLUDES+=-I/usr/include/python2.7 -I/usr/lib64/python2.7/site-packages/numpy/core/include
 
 CC_MIC=icc
 CFLAGS_MIC=-DPYMIC_USE_XSTREAM=1 -I../include -fPIC -shared -mmic -g -O2 -o
 CXX=icpc
-CXXFLAGS=$(DEBUG) -DNDEBUG -DPYMIC_USE_XSTREAM=1 -DLIBXSTREAM_EXPORTED -offload=mandatory -Wall -pthread -g -O2 -ansi-alias -fPIC -I. -I../include -I./libxstream/include $(PYTHON_INCLUDES)
+CXXFLAGS=$(DEBUG) -DNDEBUG -DPYMIC_USE_XSTREAM=1 -DLIBXSTREAM_EXPORTED -offload=mandatory -Wall -pthread -g -O2 -ansi-alias -fPIC -I. -I../include -I$(LIBXSTREAM)/include $(PYTHON_INCLUDES)
 LD=icpc
 LDFLAGS=-shared -pthread -offload-option,mic,link,"--no-undefined"
 
 all: ../pymic/_pymicimpl.so _pymicimpl.so ../pymic/liboffload_array.so liboffload_array.so
 
-_pymicimpl.so: $(PYMIC_OBJECTS) $(XSTREAM_OBJECTS)
-	$(LD) $(LDFLAGS) -o $@ $(PYMIC_OBJECTS) $(XSTREAM_OBJECTS)
+_pymicimpl.so: $(PYMIC_OBJECTS) $(LIBXSTREAM_OBJECTS)
+	$(LD) $(LDFLAGS) -o $@ $(PYMIC_OBJECTS) $(LIBXSTREAM_OBJECTS)
 	
 ../pymic/_pymicimpl.so: _pymicimpl.so
 	cp _pymicimpl.so ../pymic/_pymicimpl.so
@@ -61,7 +63,6 @@ _pymicimpl.so: $(PYMIC_OBJECTS) $(XSTREAM_OBJECTS)
 
 pymicimpl_interface.cc: debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_misc.h
 pymicimpl_misc.cc:      debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h 
-
 
 liboffload_array.so: offload_array.c
 	$(CC_MIC) $(CFLAGS_MIC) $@ $< -lm
@@ -75,7 +76,7 @@ offload_array.c: ../include/pymic_kernel.h
 	
 clean:
 	rm -f $(PYMIC_OBJECTS)
-	rm -f $(XSTREAM_OBJECTS)
+	rm -f $(LIBXSTREAM_OBJECTS)
 
 realclean: clean
 	rm -f *.bak *~
