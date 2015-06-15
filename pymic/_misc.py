@@ -118,11 +118,14 @@ def _map_data_types(dtype):
     return _data_type_map[dtype]
 
 
+# TODO: refactoring: rename this class to "FakePointer"
 class _DeviceSmartPtr:
     """Smart pointer to store the fake pointer and perform pointer
        translation and offset computation."""
 
+       
     _stream = None
+    # TODO: refactoring: rename _device to _device_id       
     _device = None
     _device_ptr = None
     _sticky = False

@@ -470,9 +470,55 @@ class OffloadStream:
         return None
             
     def translate_device_pointer(self, device_ptr):
-        """This function does not exist anymore.
+        """Translate a fake pointer to a real raw pointer on the target device.
+           Though it is part of the stream interface, the operation is
+           synchronous and automatically invokes OffloadStream.sync().
+
+           Caution: this is a low-level function, do not use it unless you
+                    have a very specific reason to do so.  Better use the
+                    high-level interfaces of OffloadArray instead.
+
+           Parameters
+           ----------
+           device_ptr : fake pointer
+              Fake pointer to the memory location
+
+           See Also
+           --------
+           allocate_device_memory, deallocate_device_memory
+
+           Returns
+           -------
+           out : int
+              Translated pointer
+
+           Examples
+           --------
+           >>> device_ptr = stream.allocate_device_memory(nbytes)
+           >>> print device_ptr
+           0x7ff74c04d000+0    # random data
+           >>> translated = stream.translate_device_pointer(device_ptr)
+           >>> print translated
+           140702047573768     # random data
         """
-        raise NotImplementedError("This function does not exist anymore")
+        
+        if device_ptr is None:
+            return 0
+        
+        if device_ptr._device != self._device_id:
+            raise OffloadError('Device pointer for device {0} does not belong '
+                               'to device {1}.'.format(device_ptr._device,
+                                                       self._device_id))
+              
+        ptr = device_ptr._device_ptr
+        translated = numpy.zeros((1,), dtype=int)
+        offl_translated = self.bind(translated, update_device=False)
+        self.invoke(offl_translated._library.pymic_translate_pointer, 
+                    ptr, offl_translated)
+        offl_translated.update_host()
+        self.sync()
+                
+        return translated[0]
         
     @trace
     def invoke(self, kernel, *args):
