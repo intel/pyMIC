@@ -45,7 +45,7 @@ from _pymicimpl import _pymic_impl_invoke_kernel
 
 from _misc import _debug as debug
 from _misc import _get_order as get_order
-from _misc import _DeviceSmartPtr as SmartPtr
+from _misc import _FakePointer as FakePointer
 from _misc import _map_data_types as map_data_types
 from _tracing import _trace as trace
 
@@ -156,7 +156,7 @@ class OffloadStream:
                  ', alignment {3}', 
                  nbytes, device, device_ptr, alignment)
                
-        return SmartPtr(self, device, device_ptr, sticky)
+        return FakePointer(self, device, device_ptr, sticky)
         
     def deallocate_device_memory(self, device_ptr):
         """Deallocate device memory previously allocated through
@@ -191,7 +191,7 @@ class OffloadStream:
     
         if device_ptr is None:
             raise ValueError('Cannot deallocate None pointer')
-        if not isinstance(device_ptr, SmartPtr):
+        if not isinstance(device_ptr, FakePointer):
             raise ValueError('Wrong argument, no device pointer given')
         # TODO: add more safety checks here (e.g., pointer from right device 
         #       and stream)
@@ -261,7 +261,7 @@ class OffloadStream:
              12.  13.  14.  15.]
         """
 
-        if not isinstance(device_ptr, SmartPtr):
+        if not isinstance(device_ptr, FakePointer):
             raise ValueError('Wrong argument, no device pointer given')
         # TODO: add more safety checks here (e.g., pointer from right device 
         #       and stream)
@@ -348,7 +348,7 @@ class OffloadStream:
              12.  13.  14.  15.]
         """
 
-        if not isinstance(device_ptr, SmartPtr):
+        if not isinstance(device_ptr, FakePointer):
             raise ValueError('Wrong argument, no device pointer given')
         # TODO: add more safety checks here (e.g., pointer from right device 
         #       and stream)
@@ -439,11 +439,11 @@ class OffloadStream:
              12.  13.  14.  15.]
         """
 
-        if not isinstance(device_ptr_src, SmartPtr):
+        if not isinstance(device_ptr_src, FakePointer):
             raise ValueError('Wrong argument, no device pointer given')
         # TODO: add more safety checks here (e.g., pointer from right device 
         #       and stream)
-        if not isinstance(device_ptr_dst, SmartPtr):
+        if not isinstance(device_ptr_dst, FakePointer):
             raise ValueError('Wrong argument, no device pointer given')
         # TODO: add more safety checks here (e.g., pointer from right device 
         #       and stream)
@@ -505,7 +505,7 @@ class OffloadStream:
         if device_ptr is None:
             return 0
         
-        if device_ptr._device != self._device_id:
+        if device_ptr._device_id != self._device_id:
             raise OffloadError('Device pointer for device {0} does not belong '
                                'to device {1}.'.format(device_ptr._device,
                                                        self._device_id))
