@@ -152,8 +152,8 @@ class _FakePointer:
         """Add an offset to the fake pointer."""
         if not isinstance(offset, int):
             raise ValueError('Only int offsets allowed for fake pointers.')
-        new = _DeviceSmartPtr(self._stream, self._device, self._device_ptr, 
-                       self._sticky)
+        new = _FakePointer(self._stream, self._device, self._device_ptr, 
+                           self._sticky)
         new._offset = self._offset + offset
         return new
 
@@ -168,8 +168,8 @@ class _FakePointer:
         """Substract an offset to the fake pointer."""
         if not isinstance(offset, int):
             raise ValueError('Only int offsets allowed for fake pointers.')
-        new = _DeviceSmartPtr(self._stream, self._device, self._device_ptr, 
-                       self._sticky)
+        new = _FakePointer(self._stream, self._device, self._device_ptr, 
+                           self._sticky)
         new._offset = self._offset - offset
         return new
 
