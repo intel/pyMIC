@@ -40,20 +40,28 @@
 typedef uintptr_t libxstream_signal;
 
 typedef void libxstream_lock;
-libxstream_lock* libxstream_lock_create();
-void libxstream_lock_destroy(libxstream_lock* lock);
-void libxstream_lock_acquire(libxstream_lock* lock);
-void libxstream_lock_release(libxstream_lock* lock);
-bool libxstream_lock_try(libxstream_lock* lock);
+LIBXSTREAM_TARGET(mic) libxstream_lock* libxstream_lock_create();
+LIBXSTREAM_TARGET(mic) libxstream_lock* libxstream_lock_get(const volatile void* address);
+LIBXSTREAM_TARGET(mic) void libxstream_lock_destroy(libxstream_lock* lock);
+LIBXSTREAM_TARGET(mic) void libxstream_lock_acquire(libxstream_lock* lock);
+LIBXSTREAM_TARGET(mic) void libxstream_lock_release(libxstream_lock* lock);
+LIBXSTREAM_TARGET(mic) bool libxstream_lock_try(libxstream_lock* lock);
 
-size_t nthreads_active();
-int this_thread_id();
-void this_thread_yield();
-void this_thread_sleep(size_t ms = 1);
+LIBXSTREAM_TARGET(mic) size_t nthreads_active();
+LIBXSTREAM_TARGET(mic) int this_thread_id();
+LIBXSTREAM_TARGET(mic) void this_thread_yield();
+LIBXSTREAM_TARGET(mic) void this_thread_sleep(size_t ms = LIBXSTREAM_SLEEP_MS);
+LIBXSTREAM_TARGET(mic) void this_thread_wait(size_t& cycle);
 
+/**
+ * The following flags are complimentary to libxstream_call_flags,
+ * but considered internal and not to be exposed in the public API.
+ */
 enum {
-  LIBXSTREAM_CALL_UNLOCK    = (2 * (LIBXSTREAM_CALL_INVALID - 1)),
-  LIBXSTREAM_CALL_EXTERNAL  = (4 * (LIBXSTREAM_CALL_INVALID - 1))
+  LIBXSTREAM_CALL_DEVICE    = ( 2 * (LIBXSTREAM_CALL_INVALID - 1)),
+  LIBXSTREAM_CALL_LOOP      = ( 4 * (LIBXSTREAM_CALL_INVALID - 1)),
+  LIBXSTREAM_CALL_EVENT     = ( 8 * (LIBXSTREAM_CALL_INVALID - 1)),
+  LIBXSTREAM_CALL_EXTERNAL  = (16 * (LIBXSTREAM_CALL_INVALID - 1))
 };
 
 #endif // defined(LIBXSTREAM_EXPORTED) || defined(__LIBXSTREAM)

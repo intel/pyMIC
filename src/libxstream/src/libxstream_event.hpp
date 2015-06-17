@@ -31,44 +31,43 @@
 #ifndef LIBXSTREAM_EVENT_HPP
 #define LIBXSTREAM_EVENT_HPP
 
-#include "libxstream.hpp"
+#include "libxstream_workqueue.hpp"
 
 #if defined(LIBXSTREAM_EXPORTED) || defined(__LIBXSTREAM)
 
 
-struct libxstream_event {
+struct/*!class*/ libxstream_event {
 public:
   libxstream_event();
+  libxstream_event(const libxstream_event& other);
+
+  ~libxstream_event();
 
 public:
-  // Number of streams the event was recorded for.
-  size_t expected() const;
+  libxstream_event& operator=(const libxstream_event& rhs) {
+    libxstream_event tmp(rhs);
+    swap(tmp);
+    return *this;
+  }
 
-  // Reset the event.
-  int reset();
+  void swap(libxstream_event& other);
 
   // Enqueue this event into the given stream; reset to start over.
-  int enqueue(libxstream_stream& stream, bool reset);
+  int record(libxstream_stream& stream, bool reset);
 
   // Query whether the event already happened or not.
   int query(bool& occurred, const libxstream_stream* exclude = 0) const;
 
-  // Wait for the event to happen.
-  int wait(const libxstream_stream* exclude = 0);
+  // Wait for the event to happen; optionally exclude events related to a given stream.
+  int wait(const libxstream_stream* exclude, bool any);
+
+  // Wait for the event to happen using a barrier i.e., waiting within the given stream.
+  int wait_stream(libxstream_stream* stream);
 
 private:
-  class slot_type {
-    libxstream_stream* m_stream;
-    mutable libxstream_signal m_pending;
-  public:
-    slot_type(): m_stream(0), m_pending(0) {}
-    slot_type(int thread, libxstream_stream& stream);
-    const libxstream_stream* stream() const { return m_stream; }
-    libxstream_stream* stream() { return m_stream; }
-    libxstream_signal pending() const { return m_pending; }
-    void pending(libxstream_signal signal) { m_pending = signal; }
-  } m_slots[LIBXSTREAM_MAX_NDEVICES*LIBXSTREAM_MAX_NSTREAMS];
-  size_t m_expected;
+  typedef libxstream_workqueue::entry_type* slot_type;
+  slot_type* m_slots;
+  void* m_expected;
 };
 
 #endif // defined(LIBXSTREAM_EXPORTED) || defined(__LIBXSTREAM)

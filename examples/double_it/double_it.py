@@ -38,13 +38,13 @@ library = device.load_library(("libdouble_it.so",))
 stream = device.get_default_stream()
 
 na = np.arange(1, 33)
+print 'na @ address 0x{0:x}'.format(na.ctypes.data)
 
 a = stream.bind(na)
 
 print "input:"
 print "--------------------------------------"
 print na
-print a.update_host()
 print
 
 stream.invoke(library.doubleit_kernel, a, a.size)

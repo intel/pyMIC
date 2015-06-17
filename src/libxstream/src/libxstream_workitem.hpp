@@ -28,11 +28,12 @@
 ******************************************************************************/
 /* Hans Pabst (Intel Corp.)
 ******************************************************************************/
-#ifndef LIBXSTREAM_CAPTURE_HPP
-#define LIBXSTREAM_CAPTURE_HPP
+#ifndef LIBXSTREAM_WORKITEM_HPP
+#define LIBXSTREAM_WORKITEM_HPP
 
 #include "libxstream_argument.hpp"
 #include "libxstream_stream.hpp"
+#include "libxstream_workqueue.hpp"
 
 #if defined(LIBXSTREAM_EXPORTED) || defined(__LIBXSTREAM)
 
@@ -42,75 +43,83 @@
 #define LIBXSTREAM_OFFLOAD_REFRESH length(0) LIBXSTREAM_OFFLOAD_REUSE
 #define LIBXSTREAM_OFFLOAD_DATA(ARG, IS_SCALAR) inout(ARG: length(((IS_SCALAR)*sizeof(libxstream_argument::data_union))) alloc_if(IS_SCALAR) free_if(IS_SCALAR))
 
-#define LIBXSTREAM_ASYNC_PENDING (capture_region_pending)
+#define LIBXSTREAM_ASYNC_PENDING workitem_pending
 #define LIBXSTREAM_ASYNC_READY (0 == (LIBXSTREAM_ASYNC_PENDING))
-#define LIBXSTREAM_ASYNC_STREAM (m_stream)
-#define LIBXSTREAM_ASYNC_DEVICE (capture_region_device)
+#define LIBXSTREAM_ASYNC_STREAM m_stream
+#define LIBXSTREAM_ASYNC_DEVICE workitem_device
 #define LIBXSTREAM_ASYNC_DEVICE_UPDATE(DEVICE) LIBXSTREAM_ASYNC_DEVICE = (DEVICE)
+#define LIBXSTREAM_ASYNC_QENTRY workitem_qentry
+#define LIBXSTREAM_ASYNC_INTERNAL(NAME) LIBXSTREAM_CONCATENATE(NAME,_internal)
 
-#if defined(LIBXSTREAM_OFFLOAD) && (0 != LIBXSTREAM_OFFLOAD) && defined(LIBXSTREAM_ASYNC) && (0 != (2*LIBXSTREAM_ASYNC+1)/2)
-# if (1 == (2*LIBXSTREAM_ASYNC+1)/2) // asynchronous offload
+#if defined(LIBXSTREAM_OFFLOAD) && (0 != LIBXSTREAM_OFFLOAD) && defined(LIBXSTREAM_ASYNC) && (1 < (2*LIBXSTREAM_ASYNC+1)/2) // asynchronous offload
+# if (2 == (2*LIBXSTREAM_ASYNC+1)/2) // asynchronous offload
 #   define LIBXSTREAM_ASYNC_DECL \
-      libxstream_signal capture_region_signal_consumed = capture_region_signal
+      libxstream_signal workitem_signal_consumed = workitem_signal
 #   define LIBXSTREAM_ASYNC_TARGET target(mic:LIBXSTREAM_ASYNC_DEVICE)
-#   define LIBXSTREAM_ASYNC_TARGET_SIGNAL LIBXSTREAM_ASYNC_TARGET signal(capture_region_signal_consumed++)
-#   define LIBXSTREAM_ASYNC_TARGET_WAIT LIBXSTREAM_ASYNC_TARGET_SIGNAL wait(LIBXSTREAM_ASYNC_PENDING)
-# elif (2 == (2*LIBXSTREAM_ASYNC+1)/2) // compiler streams
+#   define LIBXSTREAM_ASYNC_TARGET_SIGNAL LIBXSTREAM_ASYNC_TARGET signal(workitem_signal_consumed++)
+#   define LIBXSTREAM_ASYNC_TARGET_WAIT LIBXSTREAM_ASYNC_TARGET wait(LIBXSTREAM_ASYNC_PENDING)
+#   define LIBXSTREAM_ASYNC_TARGET_SIGNAL_WAIT LIBXSTREAM_ASYNC_TARGET_SIGNAL wait(LIBXSTREAM_ASYNC_PENDING)
+# elif (3 == (2*LIBXSTREAM_ASYNC+1)/2) // compiler streams
 #   define LIBXSTREAM_ASYNC_DECL \
       const _Offload_stream handle_ = LIBXSTREAM_ASYNC_STREAM ? LIBXSTREAM_ASYNC_STREAM->handle() : 0; \
-      libxstream_signal capture_region_signal_consumed = capture_region_signal
+      libxstream_signal workitem_signal_consumed = workitem_signal
 #   define LIBXSTREAM_ASYNC_TARGET target(mic) stream(handle_)
-#   define LIBXSTREAM_ASYNC_TARGET_SIGNAL LIBXSTREAM_ASYNC_TARGET signal(capture_region_signal_consumed++)
-#   define LIBXSTREAM_ASYNC_TARGET_WAIT LIBXSTREAM_ASYNC_TARGET_SIGNAL
+#   define LIBXSTREAM_ASYNC_TARGET_SIGNAL LIBXSTREAM_ASYNC_TARGET signal(workitem_signal_consumed++)
+#   define LIBXSTREAM_ASYNC_TARGET_WAIT LIBXSTREAM_ASYNC_TARGET wait(LIBXSTREAM_ASYNC_PENDING)
+#   define LIBXSTREAM_ASYNC_TARGET_SIGNAL_WAIT LIBXSTREAM_ASYNC_TARGET_SIGNAL
 # endif
-#elif defined(LIBXSTREAM_OFFLOAD) && (0 != LIBXSTREAM_OFFLOAD) // synchronous offload
+#elif defined(LIBXSTREAM_OFFLOAD) && (0 != LIBXSTREAM_OFFLOAD) && defined(LIBXSTREAM_ASYNC) && (0 < (2*LIBXSTREAM_ASYNC+1)/2) // synchronous offload
 # if defined(LIBXSTREAM_DEBUG)
-#   define LIBXSTREAM_ASYNC_DECL const libxstream_signal capture_region_signal_consumed = capture_region_signal + 1
+#   define LIBXSTREAM_ASYNC_DECL const libxstream_signal workitem_signal_consumed = workitem_signal + 1
 # else
-#   define LIBXSTREAM_ASYNC_DECL const libxstream_signal capture_region_signal_consumed = capture_region_signal;
+#   define LIBXSTREAM_ASYNC_DECL const libxstream_signal workitem_signal_consumed = workitem_signal;
 # endif
 # define LIBXSTREAM_ASYNC_TARGET target(mic:LIBXSTREAM_ASYNC_DEVICE)
 # define LIBXSTREAM_ASYNC_TARGET_SIGNAL LIBXSTREAM_ASYNC_TARGET
-# define LIBXSTREAM_ASYNC_TARGET_WAIT LIBXSTREAM_ASYNC_TARGET_SIGNAL
-#else
+# define LIBXSTREAM_ASYNC_TARGET_WAIT LIBXSTREAM_ASYNC_TARGET
+# define LIBXSTREAM_ASYNC_TARGET_SIGNAL_WAIT LIBXSTREAM_ASYNC_TARGET_SIGNAL
+#else // no offload
 # if defined(LIBXSTREAM_DEBUG)
-#   define LIBXSTREAM_ASYNC_DECL libxstream_signal capture_region_signal_consumed = capture_region_signal + 1
+#   define LIBXSTREAM_ASYNC_DECL libxstream_signal workitem_signal_consumed = workitem_signal + 1
 # else
-#   define LIBXSTREAM_ASYNC_DECL libxstream_signal capture_region_signal_consumed = capture_region_signal;
+#   define LIBXSTREAM_ASYNC_DECL libxstream_signal workitem_signal_consumed = workitem_signal;
 # endif
 # define LIBXSTREAM_ASYNC_TARGET
 # define LIBXSTREAM_ASYNC_TARGET_SIGNAL
 # define LIBXSTREAM_ASYNC_TARGET_WAIT
+# define LIBXSTREAM_ASYNC_TARGET_SIGNAL_WAIT
 #endif
 
-#define LIBXSTREAM_ASYNC_BEGIN(STREAM, ...) do { \
-  libxstream_stream *const libxstream_capture_stream = cast_to_stream(STREAM); \
-  const libxstream_capture_base::arg_type libxstream_capture_argv[] = { __VA_ARGS__ }; \
-  struct libxstream_capture: public libxstream_capture_base { \
-    libxstream_capture(size_t argc, const arg_type argv[], libxstream_stream* stream, int flags, int& result) \
-      : libxstream_capture_base(argc, argv, stream, flags) \
-    { \
-      result = libxstream_enqueue(*this, 0 != (flags & LIBXSTREAM_CALL_WAIT)); \
+#define LIBXSTREAM_ASYNC_BEGIN \
+  typedef struct LIBXSTREAM_UNIQUE(workitem_type): public libxstream_workitem { \
+    LIBXSTREAM_UNIQUE(workitem_type)(libxstream_stream* stream, int flags, size_t argc, const arg_type argv[], const char* name) \
+      : libxstream_workitem(stream, flags, argc, argv, name) \
+    {} \
+    LIBXSTREAM_UNIQUE(workitem_type)* virtual_clone() const { \
+      return new LIBXSTREAM_UNIQUE(workitem_type)(*this); \
     } \
-    libxstream_capture* virtual_clone() const { \
-      return new libxstream_capture(*this); \
+    void virtual_run(libxstream_workqueue::entry_type& LIBXSTREAM_ASYNC_QENTRY) { \
+      const libxstream_signal LIBXSTREAM_ASYNC_PENDING = LIBXSTREAM_ASYNC_STREAM ? LIBXSTREAM_ASYNC_STREAM->pending() : 0; \
+      const libxstream_signal workitem_signal = LIBXSTREAM_ASYNC_STREAM ? LIBXSTREAM_ASYNC_STREAM->signal() : 0; \
+      int LIBXSTREAM_ASYNC_DEVICE = LIBXSTREAM_ASYNC_STREAM ? LIBXSTREAM_ASYNC_STREAM->device() : (0 != (LIBXSTREAM_CALL_DEVICE & flags()) ? val<int,0>() : -2); \
+      if (-1 > (LIBXSTREAM_ASYNC_DEVICE)) LIBXSTREAM_ASYNC_QENTRY.status() = libxstream_get_active_device(&LIBXSTREAM_ASYNC_DEVICE); \
+      LIBXSTREAM_ASYNC_DECL; libxstream_use_sink(&LIBXSTREAM_ASYNC_QENTRY); libxstream_use_sink(&LIBXSTREAM_ASYNC_DEVICE); libxstream_use_sink(&LIBXSTREAM_ASYNC_PENDING); do
+#define LIBXSTREAM_ASYNC_END(STREAM, FLAGS, NAME, ...) while(libxstream_not_constant(LIBXSTREAM_FALSE)); \
+      if (workitem_signal != workitem_signal_consumed) pending(workitem_signal); \
     } \
-    void virtual_run() { \
-      const libxstream_signal LIBXSTREAM_ASYNC_PENDING = LIBXSTREAM_ASYNC_STREAM ? LIBXSTREAM_ASYNC_STREAM->pending(thread()) : 0; \
-      int LIBXSTREAM_ASYNC_DEVICE = LIBXSTREAM_ASYNC_STREAM ? LIBXSTREAM_ASYNC_STREAM->device() : val<int,0>(); \
-      const libxstream_signal capture_region_signal = LIBXSTREAM_ASYNC_STREAM ? LIBXSTREAM_ASYNC_STREAM->signal() : 0; \
-      LIBXSTREAM_ASYNC_DECL; libxstream_use_sink(&LIBXSTREAM_ASYNC_DEVICE); libxstream_use_sink(&LIBXSTREAM_ASYNC_PENDING); do
-#define LIBXSTREAM_ASYNC_END(FLAGS, RESULT) while(libxstream_not_constant(LIBXSTREAM_FALSE)); \
-      if (LIBXSTREAM_ASYNC_STREAM && capture_region_signal != capture_region_signal_consumed) { \
-        LIBXSTREAM_ASYNC_STREAM->pending(thread(), capture_region_signal); \
-      } \
-    } \
-  } capture_region(sizeof(libxstream_capture_argv) / sizeof(*libxstream_capture_argv), \
-    libxstream_capture_argv, libxstream_capture_stream, FLAGS, RESULT); \
-  } while(libxstream_not_constant(LIBXSTREAM_FALSE))
+  } LIBXSTREAM_UNIQUE(workitem_type); \
+  const libxstream_workitem::arg_type LIBXSTREAM_UNIQUE(LIBXSTREAM_CONCATENATE(NAME,argv))[] = { libxstream_workitem::arg_type(), __VA_ARGS__ }; \
+  LIBXSTREAM_UNIQUE(workitem_type) LIBXSTREAM_UNIQUE(LIBXSTREAM_CONCATENATE(NAME,item))(cast_to_stream(STREAM), FLAGS, \
+    sizeof(LIBXSTREAM_UNIQUE(LIBXSTREAM_CONCATENATE(NAME,argv))) / sizeof(*LIBXSTREAM_UNIQUE(LIBXSTREAM_CONCATENATE(NAME,argv))) - 1, \
+    LIBXSTREAM_UNIQUE(LIBXSTREAM_CONCATENATE(NAME,argv)) + 1, __FUNCTION__); \
+  libxstream_workqueue::entry_type& LIBXSTREAM_ASYNC_INTERNAL(NAME) = LIBXSTREAM_UNIQUE(LIBXSTREAM_CONCATENATE(NAME,item)).stream() \
+    ? LIBXSTREAM_UNIQUE(LIBXSTREAM_CONCATENATE(NAME,item)).stream()->enqueue(LIBXSTREAM_UNIQUE(LIBXSTREAM_CONCATENATE(NAME,item))) \
+    : libxstream_enqueue(&LIBXSTREAM_UNIQUE(LIBXSTREAM_CONCATENATE(NAME,item))); \
+  const libxstream_workqueue::entry_type& NAME = LIBXSTREAM_ASYNC_INTERNAL(NAME); \
+  libxstream_use_sink(&NAME)
 
 
-struct libxstream_capture_base {
+class libxstream_workitem {
 public:
   class arg_type: public libxstream_argument {
   public:
@@ -143,8 +152,8 @@ public:
   };
 
 public:
-  libxstream_capture_base(size_t argc, const arg_type argv[], libxstream_stream* stream, int flags);
-  virtual ~libxstream_capture_base();
+  libxstream_workitem(libxstream_stream* stream, int flags, size_t argc, const arg_type argv[], const char* name);
+  virtual ~libxstream_workitem();
 
 public:
   template<typename T,size_t i> T& val() {
@@ -171,31 +180,43 @@ public:
     return *reinterpret_cast<T**>(&m_signature[i]);
   }
 
-  int status(int code);
-  int thread() const;
+  const libxstream_stream* stream() const { return m_stream; }
+  libxstream_stream* stream() { return m_stream; }
 
-  libxstream_capture_base* clone() const;
-  void operator()();
+  const libxstream_event* event() const { return m_event; }
+  void event(const libxstream_event* value) { m_event = value; }
+
+  void pending(libxstream_signal signal) { m_pending = signal; }
+  libxstream_signal pending() const { return m_pending; }
+
+  void flags(int value) { m_flags = value; }
+  int flags() const { return m_flags; }
+
+  int thread() const { return m_thread; }
+
+  libxstream_workitem* clone() const;
+  void operator()(libxstream_workqueue::entry_type& entry);
 
 private:
-  virtual libxstream_capture_base* virtual_clone() const = 0;
-  virtual void virtual_run() = 0;
+  virtual libxstream_workitem* virtual_clone() const = 0;
+  virtual void virtual_run(libxstream_workqueue::entry_type& entry) = 0;
 
 protected:
   libxstream_argument m_signature[(LIBXSTREAM_MAX_NARGS)+1];
   libxstream_function m_function;
   libxstream_stream* m_stream;
-  int m_flags;
 
 private:
-#if defined(LIBXSTREAM_THREADLOCAL_SIGNALS) && defined(LIBXSTREAM_ASYNC) && (0 != (2*LIBXSTREAM_ASYNC+1)/2)
-  int m_thread;
+  const libxstream_event* m_event;
+  libxstream_signal m_pending;
+  int m_flags, m_thread;
+#if defined(LIBXSTREAM_DEBUG)
+  const char* m_name;
 #endif
-  bool m_unlock;
 };
 
 
-int libxstream_enqueue(const libxstream_capture_base& capture_region, bool wait);
+libxstream_workqueue::entry_type& libxstream_enqueue(libxstream_workitem* workitem);
 
 #endif // defined(LIBXSTREAM_EXPORTED) || defined(__LIBXSTREAM)
-#endif // LIBXSTREAM_CAPTURE_HPP
+#endif // LIBXSTREAM_WORKITEM_HPP

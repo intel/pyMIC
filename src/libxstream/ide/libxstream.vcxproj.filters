@@ -27,9 +27,6 @@
     <ClInclude Include="..\src\libxstream.hpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\libxstream_capture.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\libxstream_event.hpp">
       <Filter>src</Filter>
     </ClInclude>
@@ -48,12 +45,15 @@
     <ClInclude Include="..\src\libxstream_context.hpp">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\libxstream_workitem.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\libxstream_workqueue.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\libxstream.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\libxstream_capture.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\src\libxstream_event.cpp">
@@ -72,6 +72,12 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\src\libxstream_context.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\libxstream_workitem.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\libxstream_workqueue.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

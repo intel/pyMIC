@@ -3,11 +3,11 @@
 LIBXSTREAM_ROOT="../.."
 NAME=$(basename ${PWD})
 
-ICCOPT="-O2 -xHost -ansi-alias -offload-option,mic,compiler,\"-L${MKLROOT}/lib/mic\""
-ICCLNK="-mkl"
+ICCOPT="-O2 -xHost -ansi-alias -openmp -offload-option,mic,compiler,\"-L${MKLROOT}/lib/mic\""
+ICCLNK="-mkl -openmp"
 
-GCCOPT="-O2 -march=native"
-GCCLNK="-llapack -lblas"
+GCCOPT="-O2 -march=native -fopenmp"
+GCCLNK="-llapack -lblas -fopenmp"
 
 OPT="-Wall -std=c++0x"
 
@@ -37,10 +37,10 @@ if [[ "Windows_NT" = "${OS}" ]] ; then
   OPT+=" -D_REENTRANT"
   LNK+=" -lpthread"
 else
-  OPT+=" -pthread"
+  OPT+=" -fPIC -pthread"
 fi
 
 ${CXX} ${OPT} $* \
   -I${LIBXSTREAM_ROOT}/include -I${LIBXSTREAM_ROOT}/src -DLIBXSTREAM_EXPORTED \
-  ${LIBXSTREAM_ROOT}/src/*.cpp *.cpp \
+  ${LIBXSTREAM_ROOT}/src/*.cpp *.c* \
   ${LNK} -o ${NAME}

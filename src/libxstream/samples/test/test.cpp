@@ -107,30 +107,18 @@ const libxstream_function complex_cpp = reinterpret_cast<libxstream_function>(te
 
 
 test_type::test_type(int device)
-  : m_signature(0), m_stream(0), m_event(0)
-  , m_host_mem(0), m_dev_mem1(0), m_dev_mem2(0)
+  : m_stream(0), m_event(0), m_host_mem(0), m_dev_mem1(0), m_dev_mem2(0)
 {
   size_t mem_free = 0, mem_avail = 0;
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_mem_info(device, &mem_free, &mem_avail));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_stream_create(&m_stream, device, 0, 0, 0));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_stream_create(&m_stream, device, 0, 0));
 
   const size_t size = 4711u * 1024u;
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_mem_allocate(-1, &m_host_mem, size, 0));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_mem_allocate(device, &m_dev_mem1, size, 0));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_mem_allocate(device, &m_dev_mem2, size, 0));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_mem_info(device, &mem_free, &mem_avail));
-
-  const void* real = 0;
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_mem_pointer(-1, m_host_mem, &real));
-  LIBXSTREAM_CHECK_CONDITION_THROW(m_host_mem == real);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_mem_pointer(device, m_dev_mem1, &real));
-#if defined(LIBXSTREAM_OFFLOAD) && (0 != LIBXSTREAM_OFFLOAD)
-  LIBXSTREAM_CHECK_CONDITION_THROW(m_dev_mem1 != real);
-#endif
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_mem_pointer(device, m_dev_mem2, &real));
-#if defined(LIBXSTREAM_OFFLOAD) && (0 != LIBXSTREAM_OFFLOAD)
-  LIBXSTREAM_CHECK_CONDITION_THROW(m_dev_mem2 != real);
-#endif
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_stream_wait(0)); // not necessary; test
 
   const char pattern_a = 'a', pattern_b = 'b';
   LIBXSTREAM_ASSERT(pattern_a != pattern_b);
@@ -147,59 +135,67 @@ test_type::test_type(int device)
 
   size_t nargs = 0, arity = 0;
   libxstream_bool ok = LIBXSTREAM_FALSE;
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_create_signature(&m_signature, 4));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(m_signature, &nargs));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(m_signature, &arity));
-  LIBXSTREAM_CHECK_CONDITION_THROW(4 == nargs && 0 == arity);
+  libxstream_argument* signature = 0;
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_signature(&signature));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(signature, &nargs));
+  LIBXSTREAM_CHECK_CONDITION_THROW(LIBXSTREAM_MAX_NARGS == nargs);
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(signature, &arity));
+  LIBXSTREAM_CHECK_CONDITION_THROW(0 == arity);
 
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_output(m_signature, 0, &ok, libxstream_map_to<libxstream_bool>::type(), 0, 0));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(m_signature, &nargs));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(m_signature, &arity));
-  LIBXSTREAM_CHECK_CONDITION_THROW(4 == nargs && 1 == arity);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_elemsize(m_signature, 0, &typesize));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_output(signature, 0, &ok, libxstream_map_to<libxstream_bool>::type(), 0, 0));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(signature, &nargs));
+  LIBXSTREAM_CHECK_CONDITION_THROW(LIBXSTREAM_MAX_NARGS == nargs);
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(signature, &arity));
+  LIBXSTREAM_CHECK_CONDITION_THROW(1 == arity);
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_elemsize(signature, 0, &typesize));
   LIBXSTREAM_CHECK_CONDITION_THROW(sizeof(libxstream_bool) == typesize);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_datasize(m_signature, 0, &typesize));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_datasize(signature, 0, &typesize));
   LIBXSTREAM_CHECK_CONDITION_THROW(sizeof(libxstream_bool) == typesize);
 
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input (m_signature, 1, &pattern_a, libxstream_map_to<char>::type(), 0, 0));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(m_signature, &nargs));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(m_signature, &arity));
-  LIBXSTREAM_CHECK_CONDITION_THROW(4 == nargs && 2 == arity);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_elemsize(m_signature, 1, &typesize));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input(signature, 1, &pattern_a, libxstream_map_to<char>::type(), 0, 0));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(signature, &nargs));
+  LIBXSTREAM_CHECK_CONDITION_THROW(LIBXSTREAM_MAX_NARGS == nargs);
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(signature, &arity));
+  LIBXSTREAM_CHECK_CONDITION_THROW(2 == arity);
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_elemsize(signature, 1, &typesize));
   LIBXSTREAM_CHECK_CONDITION_THROW(1 == typesize);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_datasize(m_signature, 1, &typesize));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_datasize(signature, 1, &typesize));
   LIBXSTREAM_CHECK_CONDITION_THROW(1 == typesize);
 
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input (m_signature, 2, m_dev_mem1, LIBXSTREAM_TYPE_VOID, 1, &size));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(m_signature, &nargs));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(m_signature, &arity));
-  LIBXSTREAM_CHECK_CONDITION_THROW(4 == nargs && 3 == arity);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_elemsize(m_signature, 2, &typesize));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input(signature, 2, m_dev_mem1, LIBXSTREAM_TYPE_VOID, 1, &size));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(signature, &nargs));
+  LIBXSTREAM_CHECK_CONDITION_THROW(LIBXSTREAM_MAX_NARGS == nargs);
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(signature, &arity));
+  LIBXSTREAM_CHECK_CONDITION_THROW(3 == arity);
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_elemsize(signature, 2, &typesize));
   LIBXSTREAM_CHECK_CONDITION_THROW(1 == typesize);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_datasize(m_signature, 2, &typesize));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_datasize(signature, 2, &typesize));
   LIBXSTREAM_CHECK_CONDITION_THROW(size == typesize);
+
   // for testing purpose the following argument is weak-typed instead of (..., libxstream_map_to<size_t>::type(), 0, 0)
   typesize = sizeof(size_t);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input (m_signature, 3, &size, LIBXSTREAM_TYPE_VOID, 0, &typesize));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(m_signature, &nargs));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(m_signature, &arity));
-  LIBXSTREAM_CHECK_CONDITION_THROW(4 == nargs && 4 == arity);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_elemsize(m_signature, 3, &typesize));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input(signature, 3, &size, LIBXSTREAM_TYPE_VOID, 0, &typesize));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_nargs(signature, &nargs));
+  LIBXSTREAM_CHECK_CONDITION_THROW(LIBXSTREAM_MAX_NARGS == nargs);
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(signature, &arity));
+  LIBXSTREAM_CHECK_CONDITION_THROW(4 == arity);
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_elemsize(signature, 3, &typesize));
   LIBXSTREAM_CHECK_CONDITION_THROW(sizeof(size_t) == typesize);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_datasize(m_signature, 3, &typesize));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_datasize(signature, 3, &typesize));
   LIBXSTREAM_CHECK_CONDITION_THROW(sizeof(size_t) == typesize);
 
   //const libxstream_function check = reinterpret_cast<libxstream_function>(test_internal::check);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_call(check, m_signature, m_stream, LIBXSTREAM_CALL_DEFAULT));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_call(check, signature, m_stream, LIBXSTREAM_CALL_DEFAULT));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_event_create(&m_event));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_event_record(m_event, m_stream));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_event_synchronize(m_event));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_event_wait(m_event));
   LIBXSTREAM_CHECK_CONDITION_THROW(LIBXSTREAM_FALSE != ok);
 
-  libxstream_argument* signature = 0;
   const std::complex<float>  c32( 1.05f, 19.81f);
   const std::complex<double> c64(25.07 , 19.75 );
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_signature(&signature));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_clear_signature(signature));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(signature, &arity));
+  LIBXSTREAM_CHECK_CONDITION_THROW(0 == arity);
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_output(signature, 0,  &ok, libxstream_map_to_type(ok ), 0, 0));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input (signature, 1, &c32, libxstream_map_to_type(c32), 0, 0));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input (signature, 2,  reinterpret_cast<const float*>(&c32) + 0, libxstream_map_to_type(c32.real()), 0, 0));
@@ -207,15 +203,16 @@ test_type::test_type(int device)
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input (signature, 4, &c64, libxstream_map_to_type(c64), 0, 0));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input (signature, 5, reinterpret_cast<const double*>(&c64) + 0, libxstream_map_to_type(c64.real()), 0, 0));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_input (signature, 6, reinterpret_cast<const double*>(&c64) + 1, libxstream_map_to_type(c64.imag()), 0, 0));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_get_arity(signature, &arity));
+  LIBXSTREAM_CHECK_CONDITION_THROW(7 == arity);
 
   //const libxstream_function complex_c = reinterpret_cast<libxstream_function>(test_internal::complex_c);
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_call(complex_c, signature, m_stream, LIBXSTREAM_CALL_DEFAULT));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_stream_sync(m_stream));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_stream_wait(m_stream));
   LIBXSTREAM_CHECK_CONDITION_THROW(LIBXSTREAM_FALSE != ok);
 
   //const libxstream_function complex_cpp = reinterpret_cast<libxstream_function>(test_internal::complex_cpp);
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_call(complex_cpp, signature, m_stream, LIBXSTREAM_CALL_DEFAULT));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_stream_sync(m_stream));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_fn_call(complex_cpp, signature, m_stream, LIBXSTREAM_CALL_WAIT));
   LIBXSTREAM_CHECK_CONDITION_THROW(LIBXSTREAM_FALSE != ok);
 
   std::fill_n(reinterpret_cast<char*>(m_host_mem), size, pattern_b);
@@ -229,7 +226,7 @@ test_type::test_type(int device)
   int has_occured = 0;
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_event_query(m_event, &has_occured));
   if (0 == has_occured) {
-    LIBXSTREAM_CHECK_CALL_THROW(libxstream_event_synchronize(m_event));
+    LIBXSTREAM_CHECK_CALL_THROW(libxstream_event_wait(m_event));
   }
 
   test_internal::check(ok, LIBXSTREAM_SETVAL(pattern_a), m_host_mem, LIBXSTREAM_SETVAL(size));
@@ -238,10 +235,10 @@ test_type::test_type(int device)
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_memcpy_d2h(m_dev_mem1, m_host_mem, size2, m_stream));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_memcpy_d2h(reinterpret_cast<const char*>(m_dev_mem1) + size2, reinterpret_cast<char*>(m_host_mem) + size2, size - size2, m_stream));
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_event_record(m_event, m_stream));
-  LIBXSTREAM_CHECK_CALL_THROW(libxstream_stream_sync(m_stream));
+  LIBXSTREAM_CHECK_CALL_THROW(libxstream_stream_wait(m_stream));
 
   LIBXSTREAM_CHECK_CALL_THROW(libxstream_event_query(m_event, &has_occured));
-  LIBXSTREAM_CHECK_CONDITION_THROW(0 != has_occured);
+  LIBXSTREAM_CHECK_CONDITION_THROW(LIBXSTREAM_FALSE != has_occured);
 
   const char zero = 0;
   test_internal::check(ok, LIBXSTREAM_SETVAL(zero), m_host_mem, LIBXSTREAM_SETVAL(size));
@@ -256,7 +253,6 @@ test_type::~test_type()
   LIBXSTREAM_CHECK_CALL_RETURN(libxstream_mem_deallocate(-1, m_host_mem));
   LIBXSTREAM_CHECK_CALL_RETURN(libxstream_mem_deallocate(device, m_dev_mem1));
   LIBXSTREAM_CHECK_CALL_RETURN(libxstream_mem_deallocate(device, m_dev_mem2));
-  LIBXSTREAM_CHECK_CALL_RETURN(libxstream_fn_destroy_signature(m_signature));
   LIBXSTREAM_CHECK_CALL_RETURN(libxstream_stream_destroy(m_stream));
   LIBXSTREAM_CHECK_CALL_RETURN(libxstream_event_destroy(m_event));
   fprintf(stdout, "TST successfully completed.\n");
@@ -274,7 +270,7 @@ int main(int argc, char* argv[])
 
     size_t ndevices = 0;
     if (LIBXSTREAM_ERROR_NONE != libxstream_get_ndevices(&ndevices) || 0 == ndevices) {
-      throw std::runtime_error("no device found!");
+      LIBXSTREAM_PRINT0(2, "No device found or device not ready!");
     }
 
 #if defined(_OPENMP)
@@ -283,7 +279,7 @@ int main(int argc, char* argv[])
 #   pragma omp parallel for schedule(dynamic,chunksize)
 #endif
     for (int i = 0; i < ntasks; ++i) {
-      const test_type test(i % ndevices);
+      const test_type test(i % std::max<size_t>(ndevices, 1));
     }
   }
   catch(const std::exception& e) {

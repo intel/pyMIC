@@ -31,12 +31,12 @@
 #ifndef LIBXSTREAM_OFFLOAD_HPP
 #define LIBXSTREAM_OFFLOAD_HPP
 
-#include <libxstream.h>
+#include "libxstream_workqueue.hpp"
 
 #if defined(LIBXSTREAM_EXPORTED) || defined(__LIBXSTREAM)
 
 
-int libxstream_offload(libxstream_function function, const libxstream_argument signature[], libxstream_stream* stream, int flags);
+libxstream_workqueue::entry_type& libxstream_offload(libxstream_function function, const libxstream_argument signature[], libxstream_stream* stream, int flags);
 
 #endif // defined(LIBXSTREAM_EXPORTED) || defined(__LIBXSTREAM)
 #endif // LIBXSTREAM_OFFLOAD_HPP

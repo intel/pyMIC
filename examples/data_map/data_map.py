@@ -37,7 +37,4 @@ stream = device.get_default_stream()
 
 a = stream.zeros((8, 8), dtype=float)
 stream.sync()
-#stream.transfer_device2host(a._device_ptr, a.array.ctypes.data, 512)
-#stream.sync()
 print(a)
-

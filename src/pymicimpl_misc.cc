@@ -43,7 +43,6 @@
 #include <unistd.h>
 #include <fcntl.h>
  
-#include "pymicimpl_common.h"
 #include "pymicimpl_misc.h"
 
 #include <pymic_kernel.h>
@@ -62,7 +61,7 @@ void target_load_library(int device, const std::string &filename,
                              std::string &tempname, uintptr_t &handle) {
     debug_enter();
     
-    int target = PYMIC_MAP_ANY_DEVICE(device);
+    int target = device;
 	uintptr_t handle_device_ptr = 0;
     ssize_t ret;
     int fd;
@@ -175,7 +174,7 @@ error_label_target_load_library:
 void target_unload_library(int device, const std::string &tempname, uintptr_t handle) {
     debug_enter();
 
-    int target = PYMIC_MAP_ANY_DEVICE(device);
+    int target = device;
     const char * tempname_cstr;
     const size_t bufsz = 256;
     char buffer[bufsz];
@@ -216,7 +215,7 @@ error_label_target_unload_library:
 
 
 uintptr_t find_kernel(int device, uintptr_t handle, const std::string &kernel_name) {
-	int target = PYMIC_MAP_ANY_DEVICE(device);
+	int target = device;
 	const size_t bufsz = 256;
 	char buffer[bufsz];
 	const char *kernel_cstr = kernel_name.c_str();

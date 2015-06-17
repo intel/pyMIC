@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.40121.0
+VisualStudioVersion = 12.0.40418.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libxstream", "libxstream.vcxproj", "{3A6B8214-52C3-4600-9C82-5FBA21660100}"
 EndProject
@@ -11,6 +11,18 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "multi-dgemm", "..\samples\m
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test", "..\samples\test\test.vcxproj", "{04B39B86-56B5-45D0-B54D-0A3B3C1FCAFB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3A6B8214-52C3-4600-9C82-5FBA21660100} = {3A6B8214-52C3-4600-9C82-5FBA21660100}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{A6F22FC8-CB62-4876-90A4-77E5EB9A7BFA}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "copy", "..\samples\copy\copy.vcxproj", "{0E8A18D9-E853-46DD-AB34-554C360D2FD2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3A6B8214-52C3-4600-9C82-5FBA21660100} = {3A6B8214-52C3-4600-9C82-5FBA21660100}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "entropy", "..\samples\entropy\entropy.vcxproj", "{40028F92-5AE1-40EF-AE8D-59531568E42A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3A6B8214-52C3-4600-9C82-5FBA21660100} = {3A6B8214-52C3-4600-9C82-5FBA21660100}
 	EndProjectSection
@@ -61,8 +73,38 @@ Global
 		{04B39B86-56B5-45D0-B54D-0A3B3C1FCAFB}.symbols|Win32.Build.0 = symbols|Win32
 		{04B39B86-56B5-45D0-B54D-0A3B3C1FCAFB}.symbols|x64.ActiveCfg = symbols|x64
 		{04B39B86-56B5-45D0-B54D-0A3B3C1FCAFB}.symbols|x64.Build.0 = symbols|x64
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.debug|Win32.ActiveCfg = debug|Win32
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.debug|Win32.Build.0 = debug|Win32
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.debug|x64.ActiveCfg = debug|x64
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.debug|x64.Build.0 = debug|x64
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.release|Win32.ActiveCfg = release|Win32
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.release|Win32.Build.0 = release|Win32
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.release|x64.ActiveCfg = release|x64
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.release|x64.Build.0 = release|x64
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.symbols|Win32.ActiveCfg = symbols|Win32
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.symbols|Win32.Build.0 = symbols|Win32
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.symbols|x64.ActiveCfg = symbols|x64
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2}.symbols|x64.Build.0 = symbols|x64
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.debug|Win32.ActiveCfg = debug|Win32
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.debug|Win32.Build.0 = debug|Win32
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.debug|x64.ActiveCfg = debug|x64
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.debug|x64.Build.0 = debug|x64
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.release|Win32.ActiveCfg = release|Win32
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.release|Win32.Build.0 = release|Win32
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.release|x64.ActiveCfg = release|x64
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.release|x64.Build.0 = release|x64
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.symbols|Win32.ActiveCfg = symbols|Win32
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.symbols|Win32.Build.0 = symbols|Win32
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.symbols|x64.ActiveCfg = symbols|x64
+		{40028F92-5AE1-40EF-AE8D-59531568E42A}.symbols|x64.Build.0 = symbols|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C9CE8936-0601-4200-895B-9DD3B3296DE1} = {A6F22FC8-CB62-4876-90A4-77E5EB9A7BFA}
+		{04B39B86-56B5-45D0-B54D-0A3B3C1FCAFB} = {A6F22FC8-CB62-4876-90A4-77E5EB9A7BFA}
+		{0E8A18D9-E853-46DD-AB34-554C360D2FD2} = {A6F22FC8-CB62-4876-90A4-77E5EB9A7BFA}
+		{40028F92-5AE1-40EF-AE8D-59531568E42A} = {A6F22FC8-CB62-4876-90A4-77E5EB9A7BFA}
 	EndGlobalSection
 EndGlobal

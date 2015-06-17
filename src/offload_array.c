@@ -181,19 +181,16 @@ void pymic_offload_array_mul(const int64_t *dtype, const int64_t *n,
 
 PYMIC_KERNEL
 void pymic_offload_array_fill(const int64_t *dtype, const int64_t *n,
-                              void *ptr, ...) {
+                              void *ptr, const void *value) {
     /* pymic_offload_array_fill(int dtype, int n,
                                 type  *x, type value) */
     size_t i;
-
-    const void *data = 0;
-    libxstream_get_data(0, 3/*va_arg*/, &data);
 
     switch(*dtype) {
     case DTYPE_INT:
         {
             int64_t  *x  = (int64_t *)ptr;
-            int64_t   v  = *(const int64_t *)data;
+            int64_t   v  = *(const int64_t *)value;
             for (i = 0; i < *n; i++) {
                 x[i] = v;
             }
@@ -202,7 +199,7 @@ void pymic_offload_array_fill(const int64_t *dtype, const int64_t *n,
     case DTYPE_FLOAT:
         {
             double  *x  = (double *)ptr;
-            double   v  = *(const double *)data;
+            double   v  = *(const double *)value;
             for (i = 0; i < *n; i++) {
                 x[i] = v;
             }
@@ -211,7 +208,7 @@ void pymic_offload_array_fill(const int64_t *dtype, const int64_t *n,
     case DTYPE_COMPLEX:
         {
             double complex  *x  = (double complex *)ptr;
-            double complex   v  = *(const double complex *)data;
+            double complex   v  = *(const double complex *)value;
             for (i = 0; i < *n; i++) {
                 x[i] = v;
             }

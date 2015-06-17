@@ -1,12 +1,16 @@
 My Amplifier*
 My Inspector*
 bin
+lib
 build
 tmp
-README.tex
+samples/*/*.dat
+samples/*/*.pdf
+samples/*/*.png
 *.stackdump
 *.opensdf
 *.user
+*.docx
 *.log
 *.exe
 *.dll

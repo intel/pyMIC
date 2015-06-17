@@ -37,9 +37,12 @@ from offload_error import OffloadError
 from _misc import _debug as debug
 from _misc import _config as config
 
-from _pymicimpl import _pymic_impl_load_library
-from _pymicimpl import _pymic_impl_unload_library
-from _pymicimpl import _pymic_impl_find_kernel
+# from _pymicimpl import _pymic_impl_load_library
+# from _pymicimpl import _pymic_impl_unload_library
+# from _pymicimpl import _pymic_impl_find_kernel
+from pymic_libxstream import pymic_library_load
+from pymic_libxstream import pymic_library_unload
+from pymic_libxstream import pymic_library_find_kernel
 
 
 class OffloadLibrary:
@@ -90,7 +93,7 @@ class OffloadLibrary:
         self._library = library
         self._device = device
         self._device_id = device._map_dev_id()
-        self.unloader = _pymic_impl_unload_library
+        self.unloader = pymic_library_unload
         self._cache = {}
 
         # locate the library on the host file system
@@ -103,15 +106,15 @@ class OffloadLibrary:
 
         # load the library and memorize handle
         debug(5, "loading '{0}' on device {1}", filename, self._device_id)
-        self._tempfile, self._handle = (
-            _pymic_impl_load_library(self._device_id, filename))
+        self._handle, self._tempfile = pymic_library_load(self._device_id, 
+                                                          filename)
         debug(5, "successfully loaded '{0}' on device {1} with handle 0x{2:x}",
               filename, self._device_id, self._handle)
 
     def __del__(self):
         # unload the library on the target device
         if self._handle is not None:
-            self.unloader(self._device_id, self._tempfile, self._handle)
+            self.unloader(self._device_id, self._handle, self._tempfile)
 
     def __repr__(self):
         return "OffloadLibrary('{0}'@0x{1:x}@mic:{2})".format(self._library,
@@ -126,8 +129,8 @@ class OffloadLibrary:
     def __getattr__(self, attr):
         funcptr = self._cache.get(attr, None)
         if funcptr is None:
-            funcptr = _pymic_impl_find_kernel(self._device_id,
-                                              self._handle, attr)
+            funcptr = pymic_library_find_kernel(self._device_id,
+                                                self._handle, attr)
             self._cache[attr] = funcptr
 
         return attr, funcptr, self._device, self

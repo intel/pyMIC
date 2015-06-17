@@ -82,12 +82,7 @@ extern "C" struct LIBXSTREAM_TARGET(mic) libxstream_argument {
 int libxstream_construct(libxstream_argument arguments[], size_t arg, libxstream_argument::kind_type kind, const void* value, libxstream_type type, size_t dims, const size_t shape[]);
 int libxstream_construct(libxstream_argument* signature, size_t nargs);
 
-LIBXSTREAM_TARGET(mic) libxstream_argument::value_union libxstream_get_value(const libxstream_argument& arg,
-#if defined(LIBXSTREAM_CALL_BYVALUE)
-  bool byvalue = true);
-#else
-  bool byvalue = false);
-#endif
+LIBXSTREAM_TARGET(mic) libxstream_argument::value_union libxstream_get_value(const libxstream_argument& arg);
 LIBXSTREAM_TARGET(mic) int libxstream_set_value(libxstream_argument& arg, const void* data);
 
 #endif // defined(LIBXSTREAM_EXPORTED) || defined(__LIBXSTREAM)

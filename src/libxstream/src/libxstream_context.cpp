@@ -62,7 +62,7 @@ LIBXSTREAM_TARGET(mic) const libxstream_argument* libxstream_find(const libxstre
   if (context.signature) {
     for (const libxstream_argument* argi = context.signature; LIBXSTREAM_TYPE_INVALID != argi->type; ++argi) {
       LIBXSTREAM_ASSERT(libxstream_argument::kind_invalid != argi->kind);
-      if (variable == libxstream_get_value(*argi, false).const_pointer) {
+      if (variable == libxstream_get_value(*argi).const_pointer) {
         argument = argi;
         break;
       }

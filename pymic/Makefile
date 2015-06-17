@@ -38,7 +38,7 @@ clean:
 	rm -f *.pyc
 	
 realclean: clean
-	rm -f *~
-	rm -f _pymicimpl.so
+	rm -f *~ *.bak
+	rm -f pymic_libxstream.so
 	rm -f liboffload_array.so
  

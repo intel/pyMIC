@@ -144,6 +144,7 @@ You can set the `PYMIC_DEBUG` environment variable to enable the debugging outpu
 |0      | disable debugging output                               |
 |1      | show data transfers and kernel invocation              |
 |2      | show allocation/deallocation of buffers                |
+|3      | show argument conversions                              |
 |5      | show additional operations performed                   | 
 |10     | extension module: data transfers                       |
 |100    | extension module: buffer management, kernel invocation |

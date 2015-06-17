@@ -40,7 +40,6 @@ public:
   ~test_type();
 
 private:
-  libxstream_argument* m_signature;
   libxstream_stream* m_stream;
   libxstream_event* m_event;
   void* m_host_mem;

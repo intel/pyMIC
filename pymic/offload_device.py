@@ -31,7 +31,7 @@ from __future__ import print_function
 
 import numpy
 
-from _pymicimpl import _pymic_impl_offload_number_of_devices
+from pymic_libxstream import pymic_get_ndevices
 
 from _misc import _debug as debug
 from _misc import _get_order as get_order
@@ -60,7 +60,7 @@ def number_of_devices():
        >>> pymic.number_of_devices()
        2
     """
-    return _pymic_impl_offload_number_of_devices()
+    return pymic_get_ndevices()
 
 
 class OffloadDevice:

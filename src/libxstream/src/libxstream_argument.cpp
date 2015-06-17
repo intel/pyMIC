@@ -52,7 +52,7 @@ int libxstream_construct(libxstream_argument arguments[], size_t arg, libxstream
 #if defined(LIBXSTREAM_DEBUG)
   memset(argument.data.self, 0, sizeof(libxstream_argument)); // avoid false pos. with mem. analysis
 #endif
-#if defined(LIBXSTREAM_PRINT)
+#if defined(LIBXSTREAM_TRACE) && ((1 < ((2*LIBXSTREAM_TRACE+1)/2) && defined(LIBXSTREAM_DEBUG)) || 1 == ((2*LIBXSTREAM_TRACE+1)/2))
   static const char *const context[] = { "", "input", "output", "inout" };
 #endif
   argument.kind = kind;
@@ -60,12 +60,8 @@ int libxstream_construct(libxstream_argument arguments[], size_t arg, libxstream
 
   if (shape) {
     if (0 < dims || !weak_candidate) {
-#if defined(LIBXSTREAM_PRINT)
-      if (0 == dims && !weak_candidate) {
-        LIBXSTREAM_PRINT_WARN("libxstream_fn_%s: signature=0x%llx arg=%lu is strong-typed (ignored shape)!",
-          context[kind], reinterpret_cast<unsigned long long>(arguments), static_cast<unsigned long>(arg));
-      }
-#endif
+      LIBXSTREAM_PRINT((0 == dims && !weak_candidate) ? 3 : 0, "fn_%s: signature=0x%llx arg=%lu is strong-typed; ignored shape",
+        context[kind], reinterpret_cast<unsigned long long>(arguments), static_cast<unsigned long>(arg));
       argument.type = type;
     }
     else { // 0 == dims && weak_candidate
@@ -78,12 +74,8 @@ int libxstream_construct(libxstream_argument arguments[], size_t arg, libxstream
     for (size_t i = 0; i < dims; ++i) argument.shape[i] = shape[i];
   }
   else {
-#if defined(LIBXSTREAM_PRINT)
-    if (0 < dims && 0 == shape) {
-      LIBXSTREAM_PRINT_WARN("libxstream_fn_%s: signature=0x%llx arg=%lu is weak-typed (no shape information)!",
-        context[kind], reinterpret_cast<unsigned long long>(arguments), static_cast<unsigned long>(arg));
-    }
-#endif
+    LIBXSTREAM_PRINT((0 < dims && 0 == shape) ? 3 : 0, "fn_%s: signature=0x%llx arg=%lu is weak-typed; no shape",
+      context[kind], reinterpret_cast<unsigned long long>(arguments), static_cast<unsigned long>(arg));
     std::fill_n(argument.shape, dims, 0);
     argument.type = type;
   }
@@ -108,13 +100,11 @@ int libxstream_construct(libxstream_argument* signature, size_t nargs)
 }
 
 
-LIBXSTREAM_TARGET(mic) libxstream_argument::value_union libxstream_get_value(const libxstream_argument& arg, bool byvalue)
+LIBXSTREAM_TARGET(mic) libxstream_argument::value_union libxstream_get_value(const libxstream_argument& arg)
 {
   const void* data = 0;
 
-  if (0 != arg.dims || 0 != (libxstream_argument::kind_output & arg.kind) || (byvalue &&
-    (LIBXSTREAM_TYPE_C32 > arg.type || (LIBXSTREAM_TYPE_VOID == arg.type && sizeof(void*) >= *arg.shape))))
-  {
+  if (0 != arg.dims || 0 != (libxstream_argument::kind_output & arg.kind)) {
     char *const dst = reinterpret_cast<char*>(&data);
     for (size_t i = 0; i < sizeof(void*); ++i) dst[i] = arg.data.self[i];
   }

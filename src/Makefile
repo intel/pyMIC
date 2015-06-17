@@ -37,7 +37,7 @@ endif
 
 LIBXSTREAM=./libxstream
 
-PYMIC_SOURCE=pymicimpl_interface.cc pymicimpl_misc.cc
+PYMIC_SOURCE=pymic_internal.cc pymicimpl_misc.cc
 LIBXSTREAM_SOURCE=$(shell ls $(LIBXSTREAM)/src/*.cpp)
 
 PYMIC_OBJECTS=$(PYMIC_SOURCE:.cc=.o)
@@ -45,25 +45,35 @@ LIBXSTREAM_OBJECTS=$(LIBXSTREAM_SOURCE:.cpp=.o)
 
 PYTHON_INCLUDES+=-I/usr/include/python2.7 -I/usr/lib64/python2.7/site-packages/numpy/core/include
 
+CYTHON=cython
+CYTHONFLAGS=-2
+
+CC=icc
+CFLAGS=$(DEBUG) -DPYMIC_USE_XSTREAM=1 -DLIBXSTREAM_EXPORTED -offload=mandatory -Wall -pthread -g -O2 -ansi-alias -fPIC -I. -I../include -I$(LIBXSTREAM)/include $(PYTHON_INCLUDES)
+
 CC_MIC=icc
 CFLAGS_MIC=-DPYMIC_USE_XSTREAM=1 -I../include -fPIC -shared -mmic -g -O2 -o
+
 CXX=icpc
-CXXFLAGS=$(DEBUG) -DNDEBUG -DPYMIC_USE_XSTREAM=1 -DLIBXSTREAM_EXPORTED -offload=mandatory -Wall -pthread -g -O2 -ansi-alias -fPIC -I. -I../include -I$(LIBXSTREAM)/include $(PYTHON_INCLUDES)
+CXXFLAGS=$(DEBUG) -DPYMIC_USE_XSTREAM=1 -DLIBXSTREAM_EXPORTED -offload=mandatory -std=c++0x -Wall -pthread -g -O2 -ansi-alias -fPIC -I. -I../include -I$(LIBXSTREAM)/include $(PYTHON_INCLUDES)
+
 LD=icpc
 LDFLAGS=-shared -pthread -offload-option,mic,link,"--no-undefined"
 
-all: ../pymic/_pymicimpl.so _pymicimpl.so ../pymic/liboffload_array.so liboffload_array.so
+all: new_module
 
-_pymicimpl.so: $(PYMIC_OBJECTS) $(LIBXSTREAM_OBJECTS)
-	$(LD) $(LDFLAGS) -o $@ $(PYMIC_OBJECTS) $(LIBXSTREAM_OBJECTS)
+# old_module: ../pymic/_pymicimpl.so _pymicimpl.so ../pymic/liboffload_array.so liboffload_array.so
+new_module: ../pymic/pymic_libxstream.so pymic_libxstream.so ../pymic/liboffload_array.so liboffload_array.so
+
+pymic_libxstream.so: pymic_libxstream.o pymic_internal.o pymicimpl_misc.o $(LIBXSTREAM_OBJECTS)
+	$(LD) $(LDFLAGS) -o $@ pymic_libxstream.o pymic_internal.o pymicimpl_misc.o $(LIBXSTREAM_OBJECTS)
 	
-../pymic/_pymicimpl.so: _pymicimpl.so
-	cp _pymicimpl.so ../pymic/_pymicimpl.so
-	chmod a+rX ../pymic/_pymicimpl.so
+../pymic/pymic_libxstream.so: pymic_libxstream.so
+	cp pymic_libxstream.so ../pymic/pymic_libxstream.so
 
-pymicimpl_interface.cc: debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h pymicimpl_misc.h
-pymicimpl_misc.cc:      debug.h pymicimpl_config.h pymicimpl_common.h pymicimpl_misc.h 
-
+pymic_libxstream.c: pymic_libxstream.pyx
+	$(CYTHON) $(CYTHONFLAGS) $<
+	
 liboffload_array.so: offload_array.c
 	$(CC_MIC) $(CFLAGS_MIC) $@ $< -lm
 	chmod a+rX liboffload_array.so
@@ -72,12 +82,12 @@ offload_array.c: ../include/pymic_kernel.h
 	
 ../pymic/liboffload_array.so: liboffload_array.so
 	cp liboffload_array.so ../pymic/liboffload_array.so
-	chmod a+rX ../pymic/liboffload_array.so
 	
 clean:
 	rm -f $(PYMIC_OBJECTS)
 	rm -f $(LIBXSTREAM_OBJECTS)
+	rm -f pymic_libxstream.c pymic_libxstream.o
 
 realclean: clean
-	rm -f *.bak *~
+	rm -f *~ *.bak
 	rm -f *.so

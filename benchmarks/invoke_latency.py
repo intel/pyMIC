@@ -36,7 +36,7 @@ import pymic
 
 benchmark = sys.argv[0][2:][:-3]
 
-nrepeat = 1000000
+nrepeat = 10000
 if len(sys.argv) > 1:
     nrepeat = int(sys.argv[1])
 

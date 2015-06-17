@@ -1,5 +1,7 @@
 # Next Version
+* Switched to Cython to generate the glue code for pyMIC.
 * Now using Markdown for README and CHANGELOG.
+* Introduced PYMIC_DEBUG=3 to trace argument passing for kernels.
 * Bugfix: added back the translate_device_pointer() function.
 * Bugfix: example SVD now respects order of the passed matrices when applying the `dgemm` routine.
 * Refactoring: simplified bridge between pyMIC and LIBXSTREAM.

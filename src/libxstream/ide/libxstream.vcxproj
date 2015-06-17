@@ -35,21 +35,23 @@
     <ClInclude Include="..\src\libxstream.hpp" />
     <ClInclude Include="..\src\libxstream_alloc.hpp" />
     <ClInclude Include="..\src\libxstream_argument.hpp" />
-    <ClInclude Include="..\src\libxstream_capture.hpp" />
     <ClInclude Include="..\src\libxstream_context.hpp" />
     <ClInclude Include="..\src\libxstream_event.hpp" />
     <ClInclude Include="..\src\libxstream_offload.hpp" />
     <ClInclude Include="..\src\libxstream_stream.hpp" />
+    <ClInclude Include="..\src\libxstream_workitem.hpp" />
+    <ClInclude Include="..\src\libxstream_workqueue.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\libxstream.cpp" />
     <ClCompile Include="..\src\libxstream_alloc.cpp" />
     <ClCompile Include="..\src\libxstream_argument.cpp" />
-    <ClCompile Include="..\src\libxstream_capture.cpp" />
     <ClCompile Include="..\src\libxstream_context.cpp" />
     <ClCompile Include="..\src\libxstream_event.cpp" />
     <ClCompile Include="..\src\libxstream_offload.cpp" />
     <ClCompile Include="..\src\libxstream_stream.cpp" />
+    <ClCompile Include="..\src\libxstream_workitem.cpp" />
+    <ClCompile Include="..\src\libxstream_workqueue.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectName>libxstream</ProjectName>
@@ -175,6 +177,10 @@
       </DisableSpecificWarnings>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0407</Culture>
@@ -213,9 +219,11 @@
       <Cpp0xSupport>true</Cpp0xSupport>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
-      <OffloadConstructs>None</OffloadConstructs>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0407</Culture>
@@ -259,6 +267,10 @@
       </DisableSpecificWarnings>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
+      <OmitFramePointers>true</OmitFramePointers>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0407</Culture>
@@ -298,9 +310,12 @@
       <Cpp0xSupport>true</Cpp0xSupport>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
-      <OffloadConstructs>None</OffloadConstructs>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0407</Culture>
@@ -333,7 +348,6 @@
       <Cpp0xSupport>true</Cpp0xSupport>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
-      <OffloadConstructs>None</OffloadConstructs>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
     </ClCompile>
     <ResourceCompile>
@@ -371,7 +385,6 @@
       <Cpp0xSupport>true</Cpp0xSupport>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
-      <OffloadConstructs>None</OffloadConstructs>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
     </ClCompile>
     <ResourceCompile>

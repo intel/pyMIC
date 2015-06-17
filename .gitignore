@@ -57,6 +57,9 @@ target/
 *.bak
 *~
 
+# Cython stuff
+src/pymic_libxstream.c
+
 # compiled code
 *.o
 *.a

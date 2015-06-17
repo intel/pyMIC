@@ -65,18 +65,16 @@ private:
   int deinit();
 
 public:
-  int init(const char* name, host_data_type& host_data, int device, int demux, size_t max_batch);
+  int init(const char* name, host_data_type& host_data, int device, size_t max_batch);
   int operator()(size_t index, size_t size);
 
   libxstream_stream* stream() { return m_stream; }
   libxstream_event* event();
   size_t bytes() const;
   bool ready() const;
-  int demux() const;
 
 private:
   host_data_type* m_host_data;
-  libxstream_argument* m_signature;
   libxstream_stream* m_stream;
   libxstream_event* m_event;
 

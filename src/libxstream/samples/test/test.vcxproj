@@ -42,7 +42,6 @@
     <ConfigurationType>Application</ConfigurationType>
     <ProfileGuidedOptimization>Disabled</ProfileGuidedOptimization>
     <CodeCoverageOperations>Disabled</CodeCoverageOperations>
-    <UseIntelMKL>Parallel</UseIntelMKL>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|Win32'" Label="Configuration">
@@ -51,7 +50,6 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <ProfileGuidedOptimization>Disabled</ProfileGuidedOptimization>
     <CodeCoverageOperations>Disabled</CodeCoverageOperations>
-    <UseIntelMKL>Parallel</UseIntelMKL>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='symbols|Win32'" Label="Configuration">
@@ -60,14 +58,12 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <ProfileGuidedOptimization>Disabled</ProfileGuidedOptimization>
     <CodeCoverageOperations>Disabled</CodeCoverageOperations>
-    <UseIntelMKL>Parallel</UseIntelMKL>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <ProfileGuidedOptimization>Disabled</ProfileGuidedOptimization>
     <CodeCoverageOperations>Disabled</CodeCoverageOperations>
-    <UseIntelMKL>Parallel</UseIntelMKL>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'" Label="Configuration">
@@ -76,7 +72,6 @@
     <InterproceduralOptimization>true</InterproceduralOptimization>
     <ProfileGuidedOptimization>Disabled</ProfileGuidedOptimization>
     <CodeCoverageOperations>Disabled</CodeCoverageOperations>
-    <UseIntelMKL>Parallel</UseIntelMKL>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='symbols|x64'" Label="Configuration">
@@ -86,7 +81,6 @@
     <ProfileGuidedOptimization>Disabled</ProfileGuidedOptimization>
     <CodeCoverageOperations>Disabled</CodeCoverageOperations>
     <InstrumentIntelTBB>true</InstrumentIntelTBB>
-    <UseIntelMKL>Parallel</UseIntelMKL>
     <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -160,12 +154,15 @@
       <FlushDenormalResultsToZero>true</FlushDenormalResultsToZero>
       <EnableAnsiAliasing>true</EnableAnsiAliasing>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <OffloadConstructs>None</OffloadConstructs>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <OpenMPSupport>true</OpenMPSupport>
       <Cpp0xSupport>true</Cpp0xSupport>
       <OpenMP>GenerateParallelCode</OpenMP>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0407</Culture>
@@ -200,13 +197,15 @@
       <FlushDenormalResultsToZero>true</FlushDenormalResultsToZero>
       <EnableAnsiAliasing>true</EnableAnsiAliasing>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <OffloadConstructs>None</OffloadConstructs>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <OpenMPSupport>true</OpenMPSupport>
       <Cpp0xSupport>true</Cpp0xSupport>
       <OpenMP>GenerateParallelCode</OpenMP>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0407</Culture>
@@ -244,12 +243,15 @@
       <UnmaskFloatingPointExceptions>NoTraps</UnmaskFloatingPointExceptions>
       <FlushDenormalResultsToZero>true</FlushDenormalResultsToZero>
       <EnableAnsiAliasing>true</EnableAnsiAliasing>
-      <OffloadConstructs>None</OffloadConstructs>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <OpenMPSupport>true</OpenMPSupport>
       <Cpp0xSupport>true</Cpp0xSupport>
       <OpenMP>GenerateParallelCode</OpenMP>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0407</Culture>
@@ -285,13 +287,16 @@
       <UnmaskFloatingPointExceptions>NoTraps</UnmaskFloatingPointExceptions>
       <FlushDenormalResultsToZero>true</FlushDenormalResultsToZero>
       <EnableAnsiAliasing>true</EnableAnsiAliasing>
-      <OffloadConstructs>None</OffloadConstructs>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <OpenMPSupport>true</OpenMPSupport>
       <Cpp0xSupport>true</Cpp0xSupport>
       <OpenMP>GenerateParallelCode</OpenMP>
       <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
       <DisableSpecificDiagnostics>10373</DisableSpecificDiagnostics>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0407</Culture>
@@ -320,7 +325,6 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <OffloadConstructs>None</OffloadConstructs>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <OpenMPSupport>true</OpenMPSupport>
       <Cpp0xSupport>true</Cpp0xSupport>
@@ -358,7 +362,6 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <OffloadConstructs>None</OffloadConstructs>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <OpenMPSupport>true</OpenMPSupport>
       <Cpp0xSupport>true</Cpp0xSupport>

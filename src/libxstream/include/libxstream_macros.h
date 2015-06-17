@@ -35,8 +35,10 @@
 
 #define LIBXSTREAM_STRINGIFY(SYMBOL) #SYMBOL
 #define LIBXSTREAM_TOSTRING(SYMBOL) LIBXSTREAM_STRINGIFY(SYMBOL)
-#define LIBXSTREAM_CONCATENATE(A, B) A##B
-#define LIBXSTREAM_FSYMBOL(SYMBOL) LIBXSTREAM_CONCATENATE(SYMBOL, _)
+#define LIBXSTREAM_CONCATENATE2(A, B) A##B
+#define LIBXSTREAM_CONCATENATE(A, B) LIBXSTREAM_CONCATENATE2(A, B)
+#define LIBXSTREAM_FSYMBOL(SYMBOL) LIBXSTREAM_CONCATENATE2(SYMBOL, _)
+#define LIBXSTREAM_UNIQUE(NAME) LIBXSTREAM_CONCATENATE(NAME, __LINE__)
 
 #if defined(__cplusplus)
 # define LIBXSTREAM_EXTERN_C extern "C"
@@ -57,7 +59,7 @@
 #endif /*__cplusplus*/
 
 #if !defined(LIBXSTREAM_RESTRICT)
-# if ((defined(__GNUC__) && !defined(__CYGWIN32__)) || defined(__INTEL_COMPILER)) && !defined(_WIN32)
+# if ((defined(__GNUC__) && !defined(__CYGWIN__)) || defined(__INTEL_COMPILER)) && !defined(_WIN32)
 #   define LIBXSTREAM_RESTRICT __restrict__
 # elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #   define LIBXSTREAM_RESTRICT __restrict
@@ -75,21 +77,35 @@
 #endif /*LIBXSTREAM_PRAGMA*/
 
 #if defined(__INTEL_COMPILER)
-# define LIBXSTREAM_PRAGMA_LOOP_COUNT(MIN, MAX, AVG) LIBXSTREAM_PRAGMA(loop_count min(MIN) max(MAX) avg(AVG))
 # define LIBXSTREAM_PRAGMA_SIMD_REDUCTION(EXPRESSION) LIBXSTREAM_PRAGMA(simd reduction(EXPRESSION))
 # define LIBXSTREAM_PRAGMA_SIMD_COLLAPSE(N) LIBXSTREAM_PRAGMA(simd collapse(N))
-#elif (201307 <= _OPENMP) // V4.0
-# define LIBXSTREAM_PRAGMA_LOOP_COUNT(MIN, MAX, AVG)
+# define LIBXSTREAM_PRAGMA_SIMD_PRIVATE(...) LIBXSTREAM_PRAGMA(simd private(__VA_ARGS__))
+# define LIBXSTREAM_PRAGMA_SIMD LIBXSTREAM_PRAGMA(simd)
+#elif (201307 <= _OPENMP) /*OpenMP 4.0*/
 # define LIBXSTREAM_PRAGMA_SIMD_REDUCTION(EXPRESSION) LIBXSTREAM_PRAGMA(omp simd reduction(EXPRESSION))
 # define LIBXSTREAM_PRAGMA_SIMD_COLLAPSE(N) LIBXSTREAM_PRAGMA(omp simd collapse(N))
+# define LIBXSTREAM_PRAGMA_SIMD_PRIVATE(...) LIBXSTREAM_PRAGMA(omp simd private(__VA_ARGS__))
+# define LIBXSTREAM_PRAGMA_SIMD LIBXSTREAM_PRAGMA(omp simd)
 #else
-# define LIBXSTREAM_PRAGMA_LOOP_COUNT(MIN, MAX, AVG)
 # define LIBXSTREAM_PRAGMA_SIMD_REDUCTION(EXPRESSION)
 # define LIBXSTREAM_PRAGMA_SIMD_COLLAPSE(N)
+# define LIBXSTREAM_PRAGMA_SIMD_PRIVATE(...)
+# define LIBXSTREAM_PRAGMA_SIMD
+#endif
+
+#if defined(__INTEL_COMPILER)
+# define LIBXSTREAM_PRAGMA_LOOP_COUNT(MIN, MAX, AVG) LIBXSTREAM_PRAGMA(loop_count min(MIN) max(MAX) avg(AVG))
+# define LIBXSTREAM_PRAGMA_UNROLL_N(N) LIBXSTREAM_PRAGMA(unroll(N))
+# define LIBXSTREAM_PRAGMA_UNROLL LIBXSTREAM_PRAGMA(unroll)
+#else
+# define LIBXSTREAM_PRAGMA_LOOP_COUNT(MIN, MAX, AVG)
+# define LIBXSTREAM_PRAGMA_UNROLL_N(N)
+# define LIBXSTREAM_PRAGMA_UNROLL
 #endif
 
 #define LIBXSTREAM_MIN(A, B) ((A) < (B) ? (A) : (B))
 #define LIBXSTREAM_MAX(A, B) ((A) < (B) ? (B) : (A))
+#define LIBXSTREAM_MOD(A, B) ((A) & ((B) - 1)) /*B: pot!*/
 
 #if defined(_WIN32) && !defined(__GNUC__)
 # define LIBXSTREAM_ATTRIBUTE(A) __declspec(A)
@@ -114,6 +130,8 @@
 #   define LIBXSTREAM_ASSUME(EXPRESSION) __assume(EXPRESSION)
 # elif (40500 <= (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__))
 #   define LIBXSTREAM_ASSUME(EXPRESSION) do { if (!(EXPRESSION)) __builtin_unreachable(); } while(0)
+# else
+#   define LIBXSTREAM_ASSUME(EXPRESSION)
 # endif
 #endif
 #define LIBXSTREAM_ALIGN_VALUE(DST_TYPE, SRC_TYPE, VALUE, ALIGNMENT) ((DST_TYPE)((-( \
@@ -123,13 +141,10 @@
 
 #if defined(_WIN32) && !defined(__GNUC__)
 # define LIBXSTREAM_TLS LIBXSTREAM_ATTRIBUTE(thread)
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) || defined(__clang__)
 # define LIBXSTREAM_TLS __thread
-#elif defined(LIBXSTREAM_STDFEATURES)
+#elif defined(__cplusplus)
 # define LIBXSTREAM_TLS thread_local
-#endif
-#if !defined(LIBXSTREAM_TLS)
-# define LIBXSTREAM_TLS
 #endif
 
 #if defined(__INTEL_OFFLOAD) && (!defined(_WIN32) || (1400 <= __INTEL_COMPILER))
@@ -151,29 +166,58 @@
 # define LIBXSTREAM_EXPORT
 #endif
 
+/**
+ * Below group of preprocessor symbols are used to configure the DEBUG and TRACE properties.
+ */
 #if (defined(LIBXSTREAM_ERROR_DEBUG) || defined(_DEBUG)) && !defined(NDEBUG) && !defined(LIBXSTREAM_DEBUG)
 # define LIBXSTREAM_DEBUG
 #endif
-
 #if defined(LIBXSTREAM_ERROR_CHECK) && !defined(LIBXSTREAM_CHECK)
 # define LIBXSTREAM_CHECK
+#endif
+
+/**
+ * Application specific (re-)configuration depending on whether __LIBXSTREAM is defined or not.
+ */
+#if defined(__LIBXSTREAM)
+# if defined(LIBXSTREAM_ASYNC)
+#   undef  LIBXSTREAM_ASYNC
+#   define LIBXSTREAM_ASYNC
+# endif
+#endif
+
+/**
+ * Below group of preprocessor symbols are used to fixup some platform specifics.
+ */
+#if !defined(_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES)
+# define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
+#endif
+#if !defined(_CRT_SECURE_NO_DEPRECATE)
+# define _CRT_SECURE_NO_DEPRECATE 1
+#endif
+#if !defined(_USE_MATH_DEFINES)
+# define _USE_MATH_DEFINES 1
+#endif
+#if !defined(WIN32_LEAN_AND_MEAN)
+# define WIN32_LEAN_AND_MEAN 1
+#endif
+#if !defined(NOMINMAX)
+# define NOMINMAX 1
 #endif
 
 LIBXSTREAM_EXPORT_C LIBXSTREAM_TARGET(mic) void libxstream_use_sink(const void*);
 LIBXSTREAM_EXPORT_C LIBXSTREAM_TARGET(mic) int libxstream_not_constant(int value);
 
 #if defined(LIBXSTREAM_DEBUG)
-# define LIBXSTREAM_USE_SINK(VAR) libxstream_use_sink(VAR)
 # define LIBXSTREAM_ASSERT(A) assert(A)
 # include "libxstream_begin.h"
 # include <assert.h>
 # include "libxstream_end.h"
 #else
-# define LIBXSTREAM_USE_SINK(VAR)
 # define LIBXSTREAM_ASSERT(A)
 #endif
 
-#if !defined(LIBXSTREAM_PREFER_OPENMP) || !defined(_OPENMP)
+#if (!defined(LIBXSTREAM_PREFER_OPENMP) || !defined(_OPENMP))
 # if (201103L <= __cplusplus)
 #   if !defined(LIBXSTREAM_STDFEATURES)
 #     define LIBXSTREAM_STDFEATURES
@@ -195,38 +239,45 @@ LIBXSTREAM_EXPORT_C LIBXSTREAM_TARGET(mic) int libxstream_not_constant(int value
 # endif
 #endif
 
+#if defined(LIBXSTREAM_STDFEATURES) && defined(__CYGWIN__) && defined(__STRICT_ANSI__)
+# undef __STRICT_ANSI__
+#endif
+
 #define LIBXSTREAM_TRUE  1
 #define LIBXSTREAM_FALSE 0
 
-#define LIBXSTREAM_ERROR_NONE       0
-#define LIBXSTREAM_ERROR_RUNTIME   -1
-#define LIBXSTREAM_ERROR_CONDITION -2
+#define LIBXSTREAM_NOT_SUPPORTED     1
+#define LIBXSTREAM_ERROR_NONE        0
+#define LIBXSTREAM_ERROR_RUNTIME    -1
+#define LIBXSTREAM_ERROR_CONDITION  -2
 
-#if defined(LIBXSTREAM_TRACE) && ((1 == ((2*LIBXSTREAM_TRACE+1)/2) && defined(LIBXSTREAM_DEBUG)) || 1 < ((2*LIBXSTREAM_TRACE+1)/2))
-# define LIBXSTREAM_PRINT
-# define LIBXSTREAM_PRINT_INFO(MESSAGE, ...) fprintf(stderr, "DBG " MESSAGE "\n", __VA_ARGS__)
-# define LIBXSTREAM_PRINT_INFO0(MESSAGE) fprintf(stderr, "DBG " MESSAGE "\n")
-# define LIBXSTREAM_PRINT_INFOCTX(MESSAGE, ...) fprintf(stderr, "DBG %s: " MESSAGE "\n", __FUNCTION__, __VA_ARGS__)
-# define LIBXSTREAM_PRINT_INFOCTX0(MESSAGE) fprintf(stderr, "DBG %s: " MESSAGE "\n", __FUNCTION__)
-# define LIBXSTREAM_PRINT_WARN(MESSAGE, ...) fprintf(stderr, "WRN " MESSAGE "\n", __VA_ARGS__)
-# define LIBXSTREAM_PRINT_WARN0(MESSAGE) fprintf(stderr, "WRN " MESSAGE "\n")
-# define LIBXSTREAM_PRINT_WARNCTX(MESSAGE, ...) fprintf(stderr, "WRN %s: " MESSAGE "\n", __FUNCTION__, __VA_ARGS__)
-# define LIBXSTREAM_PRINT_WARNCTX0(MESSAGE) fprintf(stderr, "WRN %s: " MESSAGE "\n", __FUNCTION__)
+#if defined(LIBXSTREAM_TRACE) && ((1 < ((2*LIBXSTREAM_TRACE+1)/2) && defined(LIBXSTREAM_DEBUG)) || 1 == ((2*LIBXSTREAM_TRACE+1)/2))
+# define LIBXSTREAM_PRINT(VERBOSITY, MESSAGE, ...) libxstream_print(VERBOSITY, "LIBXSTREAM " MESSAGE "\n", __VA_ARGS__)
+# define LIBXSTREAM_PRINT0(VERBOSITY, MESSAGE) libxstream_print(VERBOSITY, "LIBXSTREAM " MESSAGE "\n")
 #else
-# define LIBXSTREAM_PRINT_INFO(MESSAGE, ...)
-# define LIBXSTREAM_PRINT_INFO0(MESSAGE)
-# define LIBXSTREAM_PRINT_INFOCTX(MESSAGE, ...)
-# define LIBXSTREAM_PRINT_INFOCTX0(MESSAGE)
-# define LIBXSTREAM_PRINT_WARN(MESSAGE, ...)
-# define LIBXSTREAM_PRINT_WARN0(MESSAGE)
-# define LIBXSTREAM_PRINT_WARNCTX(MESSAGE, ...)
-# define LIBXSTREAM_PRINT_WARNCTX0(MESSAGE)
+# define LIBXSTREAM_PRINT(VERBOSITY, MESSAGE, ...)
+# define LIBXSTREAM_PRINT0(VERBOSITY, MESSAGE)
 #endif
 
-#if defined(_MSC_VER)
+#if defined(__MIC__)
+# define LIBXSTREAM_DEVICE_NAME "mic"
+#else
+# define LIBXSTREAM_DEVICE_NAME "host"
+#endif
+
+#if defined(_WIN32)
 # define LIBXSTREAM_SNPRINTF(S, N, F, ...) _snprintf_s(S, N, _TRUNCATE, F, __VA_ARGS__)
+# define LIBXSTREAM_FLOCK(FILE) _lock_file(FILE)
+# define LIBXSTREAM_FUNLOCK(FILE) _unlock_file(FILE)
 #else
 # define LIBXSTREAM_SNPRINTF(S, N, F, ...) snprintf(S, N, F, __VA_ARGS__)
+# if !defined(__CYGWIN__) || defined(LIBXSTREAM_STDFEATURES)
+#   define LIBXSTREAM_FLOCK(FILE) flockfile(FILE)
+#   define LIBXSTREAM_FUNLOCK(FILE) funlockfile(FILE)
+# else
+#   define LIBXSTREAM_FLOCK(FILE)
+#   define LIBXSTREAM_FUNLOCK(FILE)
+# endif
 #endif
 
 #if defined(LIBXSTREAM_CHECK)
@@ -273,20 +324,14 @@ LIBXSTREAM_EXPORT_C LIBXSTREAM_TARGET(mic) int libxstream_not_constant(int value
 # define LIBXSTREAM_CHECK_CALL_ASSERT(EXPRESSION) EXPRESSION
 #endif
 
-#if defined(LIBXSTREAM_CALL_BYVALUE)
-# define LIBXSTREAM_INVAL(TYPE) TYPE
+#if defined(__cplusplus)
+# define LIBXSTREAM_INVAL(TYPE) const TYPE&
 # define LIBXSTREAM_GETVAL(VALUE) VALUE
 # define LIBXSTREAM_SETVAL(VALUE) VALUE
-#else /*by-pointer*/
-# if defined(__cplusplus)
-#   define LIBXSTREAM_INVAL(TYPE) const TYPE&
-#   define LIBXSTREAM_GETVAL(VALUE) VALUE
-#   define LIBXSTREAM_SETVAL(VALUE) VALUE
-# else
-#   define LIBXSTREAM_INVAL(TYPE) const TYPE*
-#   define LIBXSTREAM_GETVAL(VALUE) *VALUE
-#   define LIBXSTREAM_SETVAL(VALUE) &VALUE
-# endif
+#else
+# define LIBXSTREAM_INVAL(TYPE) const TYPE*
+# define LIBXSTREAM_GETVAL(VALUE) *VALUE
+# define LIBXSTREAM_SETVAL(VALUE) &VALUE
 #endif
 
 #endif /*LIBXSTREAM_MACROS_H*/
