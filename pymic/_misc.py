@@ -147,35 +147,3 @@ class _DeviceAllocation:
     def __del__(self):
         if self._allocated and not self._sticky:
             self._stream.deallocate_device_memory(self)
-
-    def __add__(self, offset):
-        """Add an offset to the fake pointer."""
-        if not isinstance(offset, int):
-            raise ValueError('Only int offsets allowed for fake pointers.')
-        new = _DeviceAllocation(self._stream, self._device, self._device_ptr,
-                           self._sticky)
-        new._offset = self._offset + offset
-        return new
-
-    def __iadd__(self, offset):
-        """And an offset to the fake pointer (in-place operation)."""
-        if not isinstance(offset, int):
-            raise ValueError('Only int offsets allowed for fake pointers.')
-        self._offset += offset
-        return self
-
-    def __sub__(self, offset):
-        """Substract an offset to the fake pointer."""
-        if not isinstance(offset, int):
-            raise ValueError('Only int offsets allowed for fake pointers.')
-        new = _DeviceAllocation(self._stream, self._device, self._device_ptr,
-                           self._sticky)
-        new._offset = self._offset - offset
-        return new
-
-    def __isub__(self):
-        """Substract an offset to the fake pointer (in-place operation)."""
-        if not isinstance(offset, int):
-            raise ValueError('Only int offsets allowed for fake pointers.')
-        self._offset -= offset
-        return self
