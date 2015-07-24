@@ -275,11 +275,6 @@ class OffloadStream:
             raise ValueError('Invalid None host pointer')
         if nbytes <= 0:
             raise ValueError('Invalid byte count: {0}'.format(nbytes))
-        if device_ptr._offset != 0:
-            if offset_device != 0:
-                raise ValueError('Offset cannot be non-zero if fake pointer'
-                                 'has an offset.')
-            offset_device = device_ptr._offset
 
         debug(1, '(host -> device {0}) transferring {1} bytes '
                  '(host ptr 0x{2:x}, device ptr {3}',
@@ -362,11 +357,6 @@ class OffloadStream:
             raise ValueError('Invalid None host pointer')
         if nbytes <= 0:
             raise ValueError('Invalid byte count: {0}'.format(nbytes))
-        if device_ptr._offset != 0:
-            if offset_device != 0:
-                raise ValueError('Offset cannot be non-zero if fake pointer'
-                                 'has an offset.')
-            offset_device = device_ptr._offset
 
         debug(1, '(device {0} -> host) transferring {1} bytes '
                  '(device ptr {2}, host ptr 0x{3:x})',
