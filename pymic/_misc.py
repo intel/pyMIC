@@ -121,18 +121,13 @@ def _map_data_types(dtype):
 class _DeviceAllocation:
     """Smart pointer to store the fake pointer and perform pointer
        translation and offset computation."""
-
-    _stream = None
-    _device_id = None
-    _device_ptr = None
-    _sticky = False
-
     def __init__(self, stream, device, device_ptr, sticky):
         """Initialize the fake pointer with the data coming from
            OffloadStream.allocate_device_memory."""
         assert stream != None
         assert device != None
         assert device_ptr != None
+
         self._stream = stream
         self._device = device
         self._device_ptr = device_ptr

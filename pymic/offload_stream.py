@@ -495,9 +495,10 @@ class OffloadStream:
         if device_ptr is None:
             return 0
 
-        if device_ptr._device_id != self._device_id:
+        device_id = device_ptr._stream._device_id
+        if device_id != self._device_id:
             raise OffloadError('Device pointer for device {0} does not belong '
-                               'to device {1}.'.format(device_ptr._device,
+                               'to device {1}.'.format(device_id,
                                                        self._device_id))
 
         ptr = device_ptr._device_ptr
@@ -508,7 +509,7 @@ class OffloadStream:
         offl_translated.update_host()
         self.sync()
 
-        return translated[0]
+        return int(translated[0])
 
     @trace
     def invoke(self, kernel, *args):
