@@ -1,35 +1,35 @@
-# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
-# 
-# Redistribution and use in source and binary forms, with or without 
-# modification, are permitted provided that the following conditions are 
-# met: 
-# 
-# 1. Redistributions of source code must retain the above copyright 
-# notice, this list of conditions and the following disclaimer. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved.
 #
-# 2. Redistributions in binary form must reproduce the above copyright 
-# notice, this list of conditions and the following disclaimer in the 
-# documentation and/or other materials provided with the distribution. 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
 #
-# 3. Neither the name of the copyright holder nor the names of its 
-# contributors may be used to endorse or promote products derived from 
-# this software without specific prior written permission. 
+# 1. Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS 
-# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED 
-# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A 
-# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
-# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
-# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
 
-import numpy 
+import numpy
 
 from _misc import _debug as debug
 from _misc import _deprecated as deprecated
@@ -49,35 +49,35 @@ for d in devices:
         dev = devices[d]
         _offload_libraries[d] = dev.load_library("liboffload_array.so")
 
-    
+
 class OffloadArray(object):
     """An offloadable array structure to perform array-based computation
        on an Intel(R) Xeon Phi(tm) Coprocessor
-       
+
        The interface is largely numpy-alike.  All operators execute their
        respective operation in an element-wise fashion on the target device.
-    """   
-    
+    """
+
     array = None
     device = None
     stream = None
     _library = None
     _device_ptr = None
     _nbytes = None
-    
-    def __init__(self, shape, dtype, order="C", 
+
+    def __init__(self, shape, dtype, order="C",
                  alloc_arr=True, base=None, device=None, stream=None):
         # allocate the array on the coprocessor
         self.order = order
         self.dtype = numpy.dtype(dtype)
         self.base = base
-    
+
         # save a reference to the device
         assert device is not None
         assert stream is not None
         self.device = device
         self.stream = stream
-    
+
         # determine size of the array from its shape
         try:
             size = 1
@@ -90,7 +90,7 @@ class OffloadArray(object):
         self.size = size
         self.shape = shape
         self._nbytes = self.dtype.itemsize * self.size
-        
+
         if base is not None:
             self.array = base.array.reshape(shape)
         else:
@@ -101,81 +101,76 @@ class OffloadArray(object):
                 self._device_ptr = stream.allocate_device_memory(self._nbytes)
 
         self._library = _offload_libraries[device.device_id]
-        
-    def __del__(self):
-        # deallocate storage on the target if this array goes away
-        if self.base is None:
-            self.stream.deallocate_device_memory(self._device_ptr)
-        
+
     def __str__(self):
         return str(self.array)
-    
+
     def __repr__(self):
         return repr(self.array)
-    
+
     def __hash__(self):
         raise TypeError("An OffloadArray is not hashable.")
-    
+
     @trace
     def update_device(self):
         """Update the OffloadArray's buffer space on the associated
-           device by copying the contents of the associated numpy.ndarray 
+           device by copying the contents of the associated numpy.ndarray
            to the device.
-        
+
            Parameters
            ----------
            n/a
-           
+
            Returns
            -------
            out : OffloadArray
                The object instance of this OffloadArray.
-           
+
            See Also
            --------
-           update_host     
+           update_host
         """
         host_ptr = self.array.ctypes.get_data()
-        self.stream.transfer_host2device(host_ptr, self._device_ptr, 
+        self.stream.transfer_host2device(host_ptr, self._device_ptr,
                                          self._nbytes)
         return None
-    
+
     @trace
     def update_host(self):
         """Update the associated numpy.ndarray on the host with the contents
            by copying the OffloadArray's buffer space from the device to the
            host.
 
-           The operation is enqueued into the array's default stream object 
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
 
            Parameters
            ----------
-           n/a 
-            
+           n/a
+
            Returns
            -------
            out : OffloadArray
                The object instance of this OffloadArray.
-           
+
            See Also
            --------
            update_device
         """
         host_ptr = self.array.ctypes.get_data()
-        self.stream.transfer_device2host(self._device_ptr, host_ptr, 
+        self.stream.transfer_device2host(self._device_ptr, host_ptr,
                                          self._nbytes)
         return self
-    
+
     def assign_stream(self, stream):
         """Assign a new stream for this OffloadArray's operations
            (update_device, update_host, __add__, etc.).
-        
+
            Parameters
            ----------
            stream : OffloadStream
                New default stream.
-            
+
            Returns
            -------
            n/a
@@ -183,17 +178,17 @@ class OffloadArray(object):
            See Also
            --------
            n/a
-        """    
+        """
         if stream.get_device() is not self.device:
             raise ValueError("Cannot assign a stream from different device "
-                             "({0} != {1})".format(self.device, 
+                             "({0} != {1})".format(self.device,
                                                    stream.get_device()))
         self.stream = stream
-    
+
     def __add__(self, other):
         """Add an array or scalar to an array.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
 
@@ -205,7 +200,7 @@ class OffloadArray(object):
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -215,7 +210,7 @@ class OffloadArray(object):
         elif isinstance(other, numpy.ndarray):
             if self.array.shape != other.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -229,7 +224,7 @@ class OffloadArray(object):
                                  "{0} != {1}".format(self.dtype, type(other)))
             incy = int(0)
             incr = int(1)
-        result = OffloadArray(self.shape, self.dtype, device=self.device, 
+        result = OffloadArray(self.shape, self.dtype, device=self.device,
                               stream=self.stream)
         self.stream.invoke(self._library.pymic_offload_array_add,
                            dt, n, x, incx, y, incy, result, incr)
@@ -246,7 +241,7 @@ class OffloadArray(object):
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -255,7 +250,7 @@ class OffloadArray(object):
         elif isinstance(other, numpy.ndarray):
             if self.array.shape != other.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -270,14 +265,14 @@ class OffloadArray(object):
         self.stream.invoke(self._library.pymic_offload_array_add,
                            dt, n, x, incx, y, incy, x, incx)
         return self
-    
+
     def __sub__(self, other):
         """Subtract an array or scalar from an array.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
-        
+
         dt = map_data_types(self.dtype)
         n = int(self.size)
         x = self
@@ -286,7 +281,7 @@ class OffloadArray(object):
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -296,7 +291,7 @@ class OffloadArray(object):
         elif isinstance(other, numpy.ndarray):
             if self.array.shape != other.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -310,7 +305,7 @@ class OffloadArray(object):
                                  "{0} != {1}".format(self.dtype, type(other)))
             incy = int(0)
             incr = int(1)
-        result = OffloadArray(self.shape, self.dtype, device=self.device, 
+        result = OffloadArray(self.shape, self.dtype, device=self.device,
                               stream=self.stream)
         self.stream.invoke(self._library.pymic_offload_array_sub,
                            dt, n, x, incx, y, incy, result, incr)
@@ -318,7 +313,7 @@ class OffloadArray(object):
 
     def __isub__(self, other):
         """Subtract an array or scalar from an array (in-place operation)."""
-        
+
         dt = map_data_types(self.dtype)
         n = int(self.size)
         x = self
@@ -327,7 +322,7 @@ class OffloadArray(object):
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -336,7 +331,7 @@ class OffloadArray(object):
         elif isinstance(other, numpy.ndarray):
             if self.array.shape != other.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -354,8 +349,8 @@ class OffloadArray(object):
 
     def __mul__(self, other):
         """Multiply an array or a scalar with an array.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
 
@@ -367,7 +362,7 @@ class OffloadArray(object):
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -377,7 +372,7 @@ class OffloadArray(object):
         elif isinstance(other, numpy.ndarray):
             if self.array.shape != other.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -391,7 +386,7 @@ class OffloadArray(object):
                                  "{0} != {1}".format(self.dtype, type(other)))
             incy = int(0)
             incr = int(1)
-        result = OffloadArray(self.shape, self.dtype, device=self.device, 
+        result = OffloadArray(self.shape, self.dtype, device=self.device,
                               stream=self.stream)
         self.stream.invoke(self._library.pymic_offload_array_mul,
                            dt, n, x, incx, y, incy, result, incr)
@@ -399,7 +394,7 @@ class OffloadArray(object):
 
     def __imul__(self, other):
         """Multiply an array or a scalar with an array (in-place operation)."""
-        
+
         dt = map_data_types(self.dtype)
         n = int(self.size)
         x = self
@@ -408,7 +403,7 @@ class OffloadArray(object):
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -417,7 +412,7 @@ class OffloadArray(object):
         elif isinstance(other, numpy.ndarray):
             if self.array.shape != other.shape:
                 raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape, 
+                                 "{0} != {1}".format(self.array.shape,
                                                      other.shape))
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -435,17 +430,17 @@ class OffloadArray(object):
 
     def fill(self, value):
         """Fill an array with the specified value.
-           
+
            Parameters
            ----------
            value : type
                Value to fill the array with.
-            
+
            Returns
            -------
            out : OffloadArray
                The object instance of this OffloadArray.
-           
+
            See Also
            --------
            zero
@@ -458,18 +453,18 @@ class OffloadArray(object):
         n = int(self.size)
         x = self
 
-        self.stream.invoke(self._library.pymic_offload_array_fill, 
+        self.stream.invoke(self._library.pymic_offload_array_fill,
                            dt, n, x, value)
-                           
-        return self    
-    
+
+        return self
+
     def fillfrom(self, array):
         """Fill an array from a numpy.ndarray.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
-        
+
         if not isinstance(array, numpy.ndarray):
             raise TypeError("only numpy.ndarray supported")
         if self.dtype is not array.dtype:
@@ -482,21 +477,21 @@ class OffloadArray(object):
         nbytes = self._nbytes
         cptr = array.ctypes.data
         self.stream.transfer_host2device(cptr, self._device_ptr, nbytes)
-        
+
         return self
-    
+
     def zero(self, zero_value=None):
         """Fill the array with zeros.
-           
+
            Parameters
            ----------
-           n/a 
-            
+           n/a
+
            Returns
            -------
            out : OffloadArray
                The object instance of this OffloadArray.
-           
+
            See Also
            --------
            fill
@@ -512,19 +507,19 @@ class OffloadArray(object):
                 raise ValueError("Do not know representation of zero "
                                  "for type {0}".format(self.dtype))
         return self.fill(zero_value)
-    
+
     def one(self, one_value=None):
         """Fill the array with ones.
-           
+
            Parameters
            ----------
-           n/a 
-            
+           n/a
+
            Returns
            -------
            out : OffloadArray
                The object instance of this OffloadArray.
-           
+
            See Also
            --------
            fill
@@ -540,41 +535,41 @@ class OffloadArray(object):
                 raise ValueError("Do not know representation of one "
                                  "for type {0}".format(dtype))
         return self.fill(one_value)
-    
+
     def __len__(self):
         """Return the of size of the leading dimension."""
         if len(self.shape):
             return self.shape[0]
         else:
             return 1
-        
+
     def __abs__(self):
-        """Return a new OffloadArray with the absolute values of the elements 
+        """Return a new OffloadArray with the absolute values of the elements
            of `self`.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
-        
+
         dt = map_data_types(self.dtype)
         n = int(self.array.size)
         x = self
         if dt == 2:  # complex data
-            result = self.stream.empty(self.shape, dtype=numpy.float, 
+            result = self.stream.empty(self.shape, dtype=numpy.float,
                                        order=self.order, update_host=False)
         else:
             result = self.stream.empty_like(self, update_host=False)
-        self.stream.invoke(self._library.pymic_offload_array_abs, 
+        self.stream.invoke(self._library.pymic_offload_array_abs,
                            dt, n, x, result)
         return result
-        
+
     def __pow__(self, other):
         """Element-wise pow() function.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
-        
+
         dt = map_data_types(self.dtype)
         n = int(self.size)
         x = self
@@ -582,7 +577,7 @@ class OffloadArray(object):
         if isinstance(other, OffloadArray):
             if self.array.shape != other.array.shape:
                 raise ValueError("shapes of the arrays need to match ("
-                                 + str(self.array.shape) + " != " 
+                                 + str(self.array.shape) + " != "
                                  + str(other.array.shape) + ")")
             if self.dtype != other.dtype:
                 raise ValueError("Data types do not match: "
@@ -609,22 +604,22 @@ class OffloadArray(object):
             y = other
             incy = int(0)
             incr = int(1)
-        result = OffloadArray(self.shape, self.dtype, device=self.device, 
+        result = OffloadArray(self.shape, self.dtype, device=self.device,
                               stream=self.stream)
         self.stream.invoke(self._library.pymic_offload_array_pow,
                            dt, n, x, incx, y, incy, result, incr)
         return result
-        
+
     def reverse(self):
         """Return a new OffloadArray with all elements in reverse order.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
-        
+
         if len(self.shape) > 1:
             raise ValueError("Multi-dimensional arrays cannot be revered.")
-        
+
         dt = map_data_types(self.dtype)
         n = int(self.array.size)
         result = self.stream.empty_like(self)
@@ -635,11 +630,11 @@ class OffloadArray(object):
     def reshape(self, *shape):
         """Assigns a new shape to an existing OffloadArray without changing
            the data of it.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
-        
+
         if isinstance(shape[0], tuple) or isinstance(shape[0], list):
             shape = tuple(shape[0])
         # determine size of the array from its shape
@@ -658,16 +653,16 @@ class OffloadArray(object):
 
     def ravel(self):
         """Return a flattened array.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
         return self.reshape(self.size)
 
     def __setslice__(self, i, j, sequence):
         """Overwrite this OffloadArray with slice coming from another array.
-        
-           The operation is enqueued into the array's default stream object 
+
+           The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
         # TODO: raise errors here: shape/size/data data type
@@ -677,11 +672,11 @@ class OffloadArray(object):
         dt = map_data_types(self.dtype)
 
         if isinstance(sequence, OffloadArray):
-            self.stream.invoke(self._library.pymic_offload_array_setslice, 
+            self.stream.invoke(self._library.pymic_offload_array_setslice,
                                dt, lb, ub, self, sequence)
         elif isinstance(sequence, numpy.ndarray):
             offl_sequence = self.stream.bind(sequence)
-            self.stream.invoke(self._library.pymic_offload_array_setslice, 
+            self.stream.invoke(self._library.pymic_offload_array_setslice,
                                dt, lb, ub, self, offl_sequence)
             self.stream.sync()
         else:

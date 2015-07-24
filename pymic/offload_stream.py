@@ -623,12 +623,9 @@ class OffloadStream:
         pymic_stream_invoke_kernel(self._device_id, self._stream_id, kernel[1],
                                    len(args), arg_dims, arg_type, arg_ptrs,
                                    arg_size)
-        # iterate over the copyout arguments, transfer them back,
-        # and release buffers
+        # iterate over the copyout arguments, transfer them back
         for c in copy_in_out:
             self.transfer_device2host(c[1], c[0], c[2])
-            self.deallocate_device_memory(c[1])
-        return None
 
     @trace
     def bind(self, array, update_device=True):

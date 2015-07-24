@@ -126,7 +126,6 @@ class _DeviceAllocation:
     _device_id = None
     _device_ptr = None
     _sticky = False
-    _allocated = False
 
     def __init__(self, stream, device, device_ptr, sticky):
         """Initialize the fake pointer with the data coming from
@@ -144,5 +143,5 @@ class _DeviceAllocation:
         return '0x{0:x}'.format(self._device_ptr)
 
     def __del__(self):
-        if self._allocated and not self._sticky:
+        if not self._sticky:
             self._stream.deallocate_device_memory(self)
