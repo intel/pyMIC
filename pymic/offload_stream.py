@@ -504,12 +504,6 @@ class OffloadStream:
                                                        self._device_id))
 
         ptr = device_ptr._device_ptr
-        # print('ptr', '0x{0:x}'.format(ptr))
-        # translated = numpy.zeros((1,), dtype=int)
-        # offl_translated = self.bind(translated, update_device=False)
-        # self.invoke(offl_translated._library.pymic_translate_pointer,
-                    # ptr, offl_translated)
-        # offl_translated.update_host()
         translated = pymic_stream_translate_device_pointer(self._device_id,
                                                            self._stream_id,
                                                            ptr)

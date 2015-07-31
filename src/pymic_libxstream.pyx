@@ -48,7 +48,7 @@ cdef extern from "pymic_internal.h":
     int pymic_internal_load_library(int device, const char *filename, int64_t *handle, char **tempfile)
     int pymic_internal_unload_library(int device, int64_t handle, const char *tempfile)
     int pymic_internal_find_kernel(int device, int64_t handle, const char *kernel_name, int64_t *kernel_ptr)
-    int64_t pymic_internal_translate_pointer(int device, libxstream_stream *stream, int64_t pointer, int64_t *translated)
+    int pymic_internal_translate_pointer(int device, libxstream_stream *stream, int64_t pointer, int64_t *translated)
 
 ################################################################################
 cdef _c_pymic_get_ndevices():
