@@ -78,6 +78,8 @@ liboffload_array.so: offload_array.c
 	$(CC_MIC) $(CFLAGS_MIC) $@ $< -lm
 	chmod a+rX liboffload_array.so
 
+pymic_internal.cc: pymic_internal.h pymicimpl_misc.h
+pymicimpl_misc.cc: pymicimpl_misc.h
 offload_array.c: ../include/pymic_kernel.h
 	
 ../pymic/liboffload_array.so: liboffload_array.so

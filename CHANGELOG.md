@@ -4,6 +4,8 @@
 * Introduced PYMIC_DEBUG=3 to trace argument passing for kernels.
 * Bugfix: added back the translate_device_pointer() function.
 * Bugfix: example SVD now respects order of the passed matrices when applying the `dgemm` routine.
+* Bugfix: fixed memory leak when invoking kernels.
+* Bugfix: fixed broken translation of fake pointers.
 * Refactoring: simplified bridge between pyMIC and LIBXSTREAM.
 
 
