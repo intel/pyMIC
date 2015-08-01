@@ -38,6 +38,7 @@ from pymic_libxstream import pymic_stream_destroy
 from pymic_libxstream import pymic_stream_sync
 from pymic_libxstream import pymic_stream_allocate
 from pymic_libxstream import pymic_stream_deallocate
+from pymic_libxstream import pymic_stream_translate_device_pointer
 from pymic_libxstream import pymic_stream_memcpy_h2d
 from pymic_libxstream import pymic_stream_memcpy_d2h
 from pymic_libxstream import pymic_stream_memcpy_d2d
@@ -459,6 +460,7 @@ class OffloadStream:
                                 offset_device_dst)
         return None
 
+    @trace
     def translate_device_pointer(self, device_ptr):
         """Translate a fake pointer to a real raw pointer on the target device.
            Though it is part of the stream interface, the operation is
@@ -502,14 +504,12 @@ class OffloadStream:
                                                        self._device_id))
 
         ptr = device_ptr._device_ptr
-        translated = numpy.zeros((1,), dtype=int)
-        offl_translated = self.bind(translated, update_device=False)
-        self.invoke(offl_translated._library.pymic_translate_pointer,
-                    ptr, offl_translated)
-        offl_translated.update_host()
+        translated = pymic_stream_translate_device_pointer(self._device_id,
+                                                           self._stream_id,
+                                                           ptr)
         self.sync()
 
-        return int(translated[0])
+        return translated
 
     @trace
     def invoke(self, kernel, *args):

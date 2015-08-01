@@ -243,4 +243,11 @@ uintptr_t find_kernel(int device, uintptr_t handle, const std::string &kernel_na
 	return fct_ptr;
 }
 
+
+LIBXSTREAM_TARGET(mic)
+void pymic_translate_pointer(const void *pointer, uintptr_t *translated) {
+    /* pymic_translate_pointers(type *pointer, int *translated) */
+    *translated = reinterpret_cast<uintptr_t>(pointer);
+}
+
 } // namespace pymic

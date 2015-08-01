@@ -48,6 +48,7 @@ cdef extern from "pymic_internal.h":
     int pymic_internal_load_library(int device, const char *filename, int64_t *handle, char **tempfile)
     int pymic_internal_unload_library(int device, int64_t handle, const char *tempfile)
     int pymic_internal_find_kernel(int device, int64_t handle, const char *kernel_name, int64_t *kernel_ptr)
+    int pymic_internal_translate_pointer(int device, libxstream_stream *stream, int64_t pointer, int64_t *translated)
 
 ################################################################################
 cdef _c_pymic_get_ndevices():
@@ -124,6 +125,20 @@ def pymic_stream_deallocate(device_id, stream_id, device_ptr):
     _c_pymic_stream_deallocate(device_id, device_ptr)
     return None
     
+################################################################################
+cdef _c_pymic_stream_translate_device_pointer(int device_id, long stream_id, long device_ptr):
+    cdef libxstream_stream *stream
+    cdef int64_t translated
+    cdef err
+    stream = <libxstream_stream *>stream_id
+    err = pymic_internal_translate_pointer(device_id, stream, device_ptr, &translated)
+    if err != 0:
+        raise OffloadError('Could not translate pointer for device {0}'.format(device_id))
+    return translated
+
+def pymic_stream_translate_device_pointer(device_id, stream_id, device_ptr):
+    return _c_pymic_stream_translate_device_pointer(device_id, stream_id, device_ptr)
+
 ################################################################################
 cdef _c_pymic_stream_memcpy_h2d(int device_id, long stream_id, long host_ptr, long device_ptr, size_t nbytes):
     cdef libxstream_stream *stream

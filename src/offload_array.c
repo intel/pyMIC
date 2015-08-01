@@ -373,10 +373,3 @@ void pymic_offload_array_reverse(const int64_t *dtype, const int64_t *n,
         break;
     }
 }
-
-PYMIC_KERNEL
-void pymic_translate_pointer(const void *pointer, int64_t *translated) {
-    /* pymic_translate_pointers(type *pointer, type *translated) */
-    translated[0] = (int64_t) pointer;
-}
-    

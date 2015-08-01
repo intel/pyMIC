@@ -17,6 +17,8 @@ int pymic_internal_load_library(int device, const char *filename,
                                 int64_t *handle, char **tempfile);
 int pymic_internal_unload_library(int device, int64_t handle, const char *tempfile);
 int pymic_internal_find_kernel(int device, int64_t handle, const char *kernel_name, int64_t *kernel_ptr);
+int pymic_internal_translate_pointer(int device, libxstream_stream *stream,
+                                     uintptr_t pointer, int64_t *translated);
     
 #if defined(__cplusplus)
 }

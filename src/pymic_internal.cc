@@ -105,6 +105,12 @@ int pymic_internal_invoke_kernel(int device, libxstream_stream *stream,
         debug_leave();
         return 1;
     }
+
+    if (libxstream_fn_clear_signature(signature) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        debug_leave();
+        return 1;
+    }
        
     debug_leave();
     return 0;
@@ -166,5 +172,46 @@ int pymic_internal_find_kernel(int device, int64_t handle, const char *kernel_na
         return 1;
     }
     memcpy(kernel_ptr, &funcptr, sizeof(*kernel_ptr));
+    return 0;
+}
+
+// this is a workaround for a problem with the Intel LEO compiler
+const libxstream_function translate_pointer_func_workaround = reinterpret_cast<libxstream_function>(pymic::pymic_translate_pointer);
+
+extern "C"
+int pymic_internal_translate_pointer(int device, libxstream_stream *stream,
+                                         uintptr_t pointer, int64_t *translated) {
+    debug_enter();
+    char *dev_ptr = reinterpret_cast<char*>(pointer);
+    int64_t ret = 0;
+    libxstream_argument *signature = NULL;
+    if (libxstream_fn_signature(&signature) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        debug_leave();
+        return 1;
+    }
+    if (libxstream_fn_input(signature, 0, dev_ptr, LIBXSTREAM_TYPE_VOID, 1, 0) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        debug_leave();
+        return 1;
+    }
+    if (libxstream_fn_output(signature, 1, &ret, libxstream_map_to<int64_t>::type(), 0, 0) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        debug_leave();
+        return 1;
+    }
+    if (libxstream_fn_call(translate_pointer_func_workaround, signature, stream, LIBXSTREAM_CALL_WAIT) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        debug_leave();
+        return 1;
+    }
+    if (libxstream_fn_clear_signature(signature) != LIBXSTREAM_ERROR_NONE) {
+        printf("WHOOOOP at %s:%d\n", __FUNCTION__, __LINE__);
+        debug_leave();
+        return 1;
+    }
+    // memcpy(translated, &ret, sizeof(int64_t));
+    *translated = ret;
+    debug_leave();
     return 0;
 }
