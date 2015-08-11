@@ -30,6 +30,7 @@
 
 #include <pymic_kernel.h>
 
+#include <stdint.h>
 #include <stdio.h>
 #include <math.h>
 #include <complex.h>
@@ -37,13 +38,13 @@
 #include <stdlib.h>
 
 /* Data types, needs to match _data_type_map in _misc.py */
-#define DTYPE_INT       0
-#define DTYPE_FLOAT     1
-#define DTYPE_COMPLEX   2
-#define DTYPE_UINT64    3
+#define DTYPE_INT64     0
+#define DTYPE_INT32     1
+#define DTYPE_FLOAT     2
+#define DTYPE_COMPLEX   3
+#define DTYPE_UINT64    4
 
 #define print printf
-
 
 PYMIC_KERNEL
 void pymic_offload_array_add(const int64_t *dtype, const int64_t *n,
@@ -56,11 +57,21 @@ void pymic_offload_array_add(const int64_t *dtype, const int64_t *n,
     size_t i, ix, iy, ir;
     i = ix = iy = ir = 0;
     switch(*dtype) {
-    case DTYPE_INT:
+    case DTYPE_INT64:
         {
             const int64_t *x = (const int64_t *)x_;
             const int64_t *y = (const int64_t *)y_;
             int64_t *r = (int64_t *)r_;
+            for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
+                r[ir] = x[ix] + y[iy];
+            }
+        }
+        break;
+    case DTYPE_INT32:
+        {
+            const int32_t *x = (const int32_t *)x_;
+            const int32_t *y = (const int32_t *)y_;
+            int32_t *r = (int32_t *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] + y[iy];
             }
@@ -101,11 +112,21 @@ void pymic_offload_array_sub(const int64_t *dtype, const int64_t *n,
     size_t i, ix, iy, ir;
     i = ix = iy = ir = 0;
     switch(*dtype) {
-    case DTYPE_INT:
+    case DTYPE_INT64:
         {
             const int64_t *x = (const int64_t *)x_;
             const int64_t *y = (const int64_t *)y_;
             int64_t *r = (int64_t *)r_;
+            for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
+                r[ir] = x[ix] - y[iy];
+            }
+        }
+        break;
+    case DTYPE_INT32:
+        {
+            const int32_t *x = (const int32_t *)x_;
+            const int32_t *y = (const int32_t *)y_;
+            int32_t *r = (int32_t *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] - y[iy];
             }
@@ -145,11 +166,21 @@ void pymic_offload_array_mul(const int64_t *dtype, const int64_t *n,
     size_t i, ix, iy, ir;
     i = ix = iy = ir = 0;
     switch(*dtype) {
-    case DTYPE_INT:
+    case DTYPE_INT64:
         {
             const int64_t *x = (const int64_t *)x_;
             const int64_t *y = (const int64_t *)y_;
             int64_t *r = (int64_t *)r_;
+            for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
+                r[ir] = x[ix] * y[iy];
+            }
+        }
+        break;
+    case DTYPE_INT32:
+        {
+            const int32_t *x = (const int32_t *)x_;
+            const int32_t *y = (const int32_t *)y_;
+            int32_t *r = (int32_t *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] * y[iy];
             }
@@ -187,10 +218,19 @@ void pymic_offload_array_fill(const int64_t *dtype, const int64_t *n,
     size_t i;
 
     switch(*dtype) {
-    case DTYPE_INT:
+    case DTYPE_INT64:
         {
             int64_t  *x  = (int64_t *)ptr;
             int64_t   v  = *(const int64_t *)value;
+            for (i = 0; i < *n; i++) {
+                x[i] = v;
+            }
+        }
+        break;
+    case DTYPE_INT32:
+        {
+            int32_t  *x  = (int32_t *)ptr;
+            int32_t   v  = *(const int32_t *)value;
             for (i = 0; i < *n; i++) {
                 x[i] = v;
             }
@@ -234,8 +274,11 @@ void pymic_offload_array_setslice(const int64_t *dtype,
     int scale = 0;
     int nbytes;
     switch(*dtype) {
-    case DTYPE_INT:
+    case DTYPE_INT64:
         scale = 8; /* bytes */
+        break;
+    case DTYPE_INT32:
+        scale = 4; /* bytes */
         break;
     case DTYPE_FLOAT:
         scale = 8; /* bytes */
@@ -256,10 +299,19 @@ void pymic_offload_array_abs(const int64_t *dtype, const int64_t *n,
                                type  *x, type  *result) */
     size_t i;
     switch(*dtype) {
-    case DTYPE_INT:
+    case DTYPE_INT64:
         {
             const int64_t *x = (const int64_t *)x_;
             int64_t *r = (int64_t *)r_;
+            for (i = 0; i < *n; i++) {
+                r[i] = labs(x[i]);
+            }
+        }
+        break;
+    case DTYPE_INT32:
+        {
+            const int32_t *x = (const int32_t *)x_;
+            int32_t *r = (int32_t *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = labs(x[i]);
             }
@@ -296,11 +348,26 @@ void pymic_offload_array_pow(const int64_t *dtype, const int64_t *n,
                                int incy, type  *result, int incr) */
     size_t i, ix, iy, ir;
     switch(*dtype) {
-    case DTYPE_INT:
+    case DTYPE_INT64:
         {
             const int64_t *x = (const int64_t *)x_;
             const int64_t *y = (const int64_t *)y_;
             int64_t *r = (int64_t *)r_;
+            i = ix = iy = ir = 0;
+            for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
+                size_t j;
+                r[ir] = 1;
+                for (j = 0; j < y[iy]; j++) {
+                    r[ir] *= x[ix];
+                }
+            }
+        }
+        break;
+    case DTYPE_INT32:
+        {
+            const int32_t *x = (const int32_t *)x_;
+            const int32_t *y = (const int32_t *)y_;
+            int32_t *r = (int32_t *)r_;
             i = ix = iy = ir = 0;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 size_t j;
@@ -344,10 +411,19 @@ void pymic_offload_array_reverse(const int64_t *dtype, const int64_t *n,
                                     type  *x, type  *result) */
     size_t i;
     switch(*dtype) {
-    case DTYPE_INT:
+    case DTYPE_INT64:
         {
             const int64_t *x = (const int64_t *)x_;
             int64_t *r = (int64_t *)r_;
+            for (i = 0; i < *n; i++) {
+                r[i] = x[*n - i - 1];
+            }
+        }
+        break;
+    case DTYPE_INT32:
+        {
+            const int32_t *x = (const int32_t *)x_;
+            int32_t *r = (int32_t *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = x[*n - i - 1];
             }

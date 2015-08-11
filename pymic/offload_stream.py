@@ -29,20 +29,18 @@
 
 from __future__ import print_function
 
-import numpy
-
 from offload_error import OffloadError
 
-from pymic_libxstream import pymic_stream_create
-from pymic_libxstream import pymic_stream_destroy
-from pymic_libxstream import pymic_stream_sync
-from pymic_libxstream import pymic_stream_allocate
-from pymic_libxstream import pymic_stream_deallocate
-from pymic_libxstream import pymic_stream_translate_device_pointer
-from pymic_libxstream import pymic_stream_memcpy_h2d
-from pymic_libxstream import pymic_stream_memcpy_d2h
-from pymic_libxstream import pymic_stream_memcpy_d2d
-from pymic_libxstream import pymic_stream_invoke_kernel
+from _engine import pymic_stream_create
+from _engine import pymic_stream_destroy
+from _engine import pymic_stream_sync
+from _engine import pymic_stream_allocate
+from _engine import pymic_stream_deallocate
+from _engine import pymic_stream_translate_device_pointer
+from _engine import pymic_stream_memcpy_h2d
+from _engine import pymic_stream_memcpy_d2h
+from _engine import pymic_stream_memcpy_d2d
+from _engine import pymic_stream_invoke_kernel
 
 from _misc import _debug as debug
 from _misc import _get_order as get_order
@@ -51,6 +49,7 @@ from _misc import _map_data_types as map_data_types
 from _tracing import _trace as trace
 
 import pymic
+import numpy
 
 
 class OffloadStream:

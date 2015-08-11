@@ -106,10 +106,19 @@ _data_type_map = {
 
     # Numpy dtypes
     numpy.dtype(numpy.int64): 0,
-    numpy.dtype(numpy.float64): 1,
-    numpy.dtype(numpy.complex128): 2,
-    numpy.dtype(numpy.uint64) : 3
+    numpy.dtype(numpy.int32): 1,
+    numpy.dtype(numpy.float64): 2,
+    numpy.dtype(numpy.complex128): 3,
+    numpy.dtype(numpy.uint64) : 4
 }
+
+
+def _is_complex_type(dtype):
+    if dtype is complex:
+        return True
+    if dtype is numpy.dtype(numpy.complex128):
+        return True
+    return False
 
 
 def _map_data_types(dtype):

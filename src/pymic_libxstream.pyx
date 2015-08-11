@@ -27,7 +27,9 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from pymic import OffloadError
+from offload_error import OffloadError
+
+from libc.stdint cimport int64_t
 
 cdef extern from "libxstream/include/libxstream.h":
     ctypedef void libxstream_stream 
@@ -43,7 +45,6 @@ cdef extern from "libxstream/include/libxstream.h":
 
 cdef extern from "pymic_internal.h":
     ctypedef void libxstream_stream
-    ctypedef long int64_t
     int pymic_internal_invoke_kernel(int device, libxstream_stream *stream, void *funcptr, size_t argc, const int64_t *dims, const int64_t *types, void **ptrs, const size_t *sizes)
     int pymic_internal_load_library(int device, const char *filename, int64_t *handle, char **tempfile)
     int pymic_internal_unload_library(int device, int64_t handle, const char *tempfile)
@@ -67,13 +68,13 @@ cdef _c_pymic_stream_create(int device_id, const char *stream_name):
     err = libxstream_stream_create(&stream, device_id, 0, stream_name)
     if err != 0:
         raise OffloadError('Could not create stream for device {0}'.format(device_id))
-    return <long>stream
+    return <int64_t>stream
     
 def pymic_stream_create(device_id, stream_name = 'stream'):
     return _c_pymic_stream_create(device_id, stream_name)
 
 ################################################################################
-cdef _c_pymic_stream_destroy(int device_id, long stream_id):
+cdef _c_pymic_stream_destroy(int device_id, int64_t stream_id):
     cdef const libxstream_stream *stream
     cdef int err
     stream = <const libxstream_stream *>stream_id
@@ -87,7 +88,7 @@ def pymic_stream_destroy(device_id, stream_id):
     return None
     
 ################################################################################
-cdef _c_pymic_stream_sync(int device_id, long stream_id):
+cdef _c_pymic_stream_sync(int device_id, int64_t stream_id):
     cdef libxstream_stream *stream
     stream = <libxstream_stream *>stream_id
     err = libxstream_stream_wait(stream)
@@ -106,13 +107,13 @@ cdef _c_pymic_stream_allocate(int device_id, size_t nbytes, size_t alignment):
     err = libxstream_mem_allocate(device_id, &device_ptr, nbytes, alignment)
     if err != 0:
         raise OffloadError('Could not allocate memory on device {0}'.format(device_id))
-    return <long>device_ptr
+    return <int64_t>device_ptr
 
 def pymic_stream_allocate(device_id, stream_id, nbytes, alignment):
     return _c_pymic_stream_allocate(device_id, nbytes, alignment)
 
 ################################################################################
-cdef _c_pymic_stream_deallocate(int device_id, long device_ptr):
+cdef _c_pymic_stream_deallocate(int device_id, int64_t device_ptr):
     cdef void *ptr
     cdef err
     ptr = <void *>device_ptr
@@ -126,7 +127,7 @@ def pymic_stream_deallocate(device_id, stream_id, device_ptr):
     return None
     
 ################################################################################
-cdef _c_pymic_stream_translate_device_pointer(int device_id, long stream_id, long device_ptr):
+cdef _c_pymic_stream_translate_device_pointer(int device_id, int64_t stream_id, int64_t device_ptr):
     cdef libxstream_stream *stream
     cdef int64_t translated
     cdef err
@@ -140,7 +141,7 @@ def pymic_stream_translate_device_pointer(device_id, stream_id, device_ptr):
     return _c_pymic_stream_translate_device_pointer(device_id, stream_id, device_ptr)
 
 ################################################################################
-cdef _c_pymic_stream_memcpy_h2d(int device_id, long stream_id, long host_ptr, long device_ptr, size_t nbytes):
+cdef _c_pymic_stream_memcpy_h2d(int device_id, int64_t stream_id, int64_t host_ptr, int64_t device_ptr, size_t nbytes):
     cdef libxstream_stream *stream
     cdef int err
     stream = <libxstream_stream *>stream_id
@@ -156,7 +157,7 @@ def pymic_stream_memcpy_h2d(device_id, stream_id, host_ptr, device_ptr,
 
     
 ################################################################################
-cdef _c_pymic_stream_memcpy_d2h(int device_id, long stream_id, long device_ptr, long host_ptr, size_t nbytes):
+cdef _c_pymic_stream_memcpy_d2h(int device_id, int64_t stream_id, int64_t device_ptr, int64_t host_ptr, size_t nbytes):
     cdef libxstream_stream *stream
     cdef int err
     stream = <libxstream_stream *>stream_id
@@ -172,7 +173,7 @@ def pymic_stream_memcpy_d2h(device_id, stream_id, device_ptr, host_ptr,
                             
     
 ################################################################################
-cdef _c_pymic_stream_memcpy_d2d(int device_id, long stream_id, long device_ptr_src, long device_ptr_dst, size_t nbytes):
+cdef _c_pymic_stream_memcpy_d2d(int device_id, int64_t stream_id, int64_t device_ptr_src, int64_t device_ptr_dst, size_t nbytes):
     cdef libxstream_stream *stream
     cdef int err
     stream = <libxstream_stream *>stream_id
@@ -188,7 +189,7 @@ def pymic_stream_memcpy_d2d(device_id, stream_id, device_ptr_src,
     return None
     
 ################################################################################
-cdef _c_pymic_stream_invoke_kernel(int device_id, long stream_id, long kernel, 
+cdef _c_pymic_stream_invoke_kernel(int device_id, int64_t stream_id, int64_t kernel, 
                                    size_t argc, const int64_t *dims, const int64_t *types, void **ptrs, const size_t *sizes):
     cdef int err
     cdef libxstream_stream *stream
@@ -200,28 +201,28 @@ cdef _c_pymic_stream_invoke_kernel(int device_id, long stream_id, long kernel,
 
 def pymic_stream_invoke_kernel(device_id, stream_id, kernel, argc, 
                                arg_dims, arg_types, arg_ptrs, arg_sizes):
-    cdef long arg_dims_ptr 
-    cdef long arg_types_ptr
-    cdef long arg_ptrs_ptr
-    cdef long arg_sizes_ptr
+    cdef int64_t arg_dims_ptr 
+    cdef int64_t arg_types_ptr
+    cdef int64_t arg_ptrs_ptr
+    cdef int64_t arg_sizes_ptr
     
     arg_dims_ptr = arg_dims.ctypes.data
     arg_types_ptr = arg_types.ctypes.data
     arg_ptrs_ptr = arg_ptrs.ctypes.data
     arg_sizes_ptr = arg_sizes.ctypes.data
     
-    _c_pymic_stream_invoke_kernel(device_id, stream_id, kernel, argc, <long*>arg_dims_ptr, <long*>arg_types_ptr, <void**>arg_ptrs_ptr, <size_t*>arg_sizes_ptr)
+    _c_pymic_stream_invoke_kernel(device_id, stream_id, kernel, argc, <int64_t*>arg_dims_ptr, <int64_t*>arg_types_ptr, <void**>arg_ptrs_ptr, <size_t*>arg_sizes_ptr)
     return None
     
 ################################################################################
 cdef _c_pymic_library_load(int device, const char *filename):
     cdef int err
-    cdef long handle
+    cdef int64_t handle
     cdef char *tempfile
     handle = 0
     err = pymic_internal_load_library(device, filename, &handle, &tempfile)
     if err != 0:
-        raise OffloadError("Could not load library '{0}' on device {1}".format(<bytes>filename), device)
+        raise OffloadError("Could not load library '{0}' on device {1}".format(<bytes>filename, device))
     return (handle, <bytes> tempfile)
     
 def pymic_library_load(device_id, filename):
@@ -242,7 +243,7 @@ def pymic_library_unload(device_id, library_handle, tempfile):
 ################################################################################
 cdef _c_pymic_library_find_kernel(int device_id, int64_t library_handle, const char *kernel_name):
     cdef int err
-    cdef long kernel_ptr
+    cdef int64_t kernel_ptr
     kernel_ptr = 0
     err = pymic_internal_find_kernel(device_id, library_handle, kernel_name, &kernel_ptr)
     if err != 0:

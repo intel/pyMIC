@@ -1,4 +1,5 @@
-# Next Version
+# Version 0.6
+* Experimental support for the Windows operating system.
 * Switched to Cython to generate the glue code for pyMIC.
 * Now using Markdown for README and CHANGELOG.
 * Introduced PYMIC_DEBUG=3 to trace argument passing for kernels.

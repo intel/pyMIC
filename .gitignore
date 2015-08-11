@@ -64,6 +64,10 @@ src/pymic_libxstream.c
 *.o
 *.a
 *.so
+*.obj
+*.lib
+*.exp
+*.pyd
 
 # release files
 pyMIC-????-??-??.tbz2

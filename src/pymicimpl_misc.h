@@ -41,10 +41,11 @@
 namespace pymic {
 
 enum dtype {
-    dtype_int     = 0,
-    dtype_float   = 1,
-    dtype_complex = 2,
-    dtype_uint64  = 3,
+    dtype_int64   = 0,
+    dtype_int32   = 1,
+    dtype_float   = 2,
+    dtype_complex = 3,
+    dtype_uint64  = 4,
 };
 
 #if ! PYMIC_USE_XSTREAM

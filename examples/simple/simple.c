@@ -29,10 +29,12 @@
  */
 
 #include <pymic_kernel.h>
+#include <stdio.h>
 #include <unistd.h>
 
 PYMIC_KERNEL
 void sleepy(void) {
     /* sleep 5 seconds */
+    fprintf(stderr, "MIC: sleeping for 5 seconds...\n");
     sleep(5);
 }

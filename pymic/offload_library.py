@@ -37,12 +37,9 @@ from offload_error import OffloadError
 from _misc import _debug as debug
 from _misc import _config as config
 
-# from _pymicimpl import _pymic_impl_load_library
-# from _pymicimpl import _pymic_impl_unload_library
-# from _pymicimpl import _pymic_impl_find_kernel
-from pymic_libxstream import pymic_library_load
-from pymic_libxstream import pymic_library_unload
-from pymic_libxstream import pymic_library_find_kernel
+from _engine import pymic_library_load
+from _engine import pymic_library_unload
+from _engine import pymic_library_find_kernel
 
 
 class OffloadLibrary:
@@ -59,6 +56,7 @@ class OffloadLibrary:
 
     @staticmethod
     def _check_k1om(library):
+        return True
         p = subprocess.Popen(["readelf", '-h', library],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
@@ -70,7 +68,8 @@ class OffloadLibrary:
         if os.path.isabs(library) and OffloadLibrary._check_k1om(library):
             abspath = library
         else:
-            for path in config._search_path.split(':'):
+            for path in config._search_path.split(os.pathsep):
+                debug(5, "    looking for {0} in {1}", library, path)
                 abspath = os.path.join(path, library)
 
                 if (os.path.isfile(abspath) and

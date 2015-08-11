@@ -31,23 +31,35 @@
 #pragma offload_attribute(push, target(mic))
 #include <string>
 #pragma offload_attribute(pop)
+#include <algorithm>
 
+#include <stdint.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <dlfcn.h>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
+#if defined(_WIN32)
+#else
+#include <dlfcn.h>
+#endif
  
 #include "pymicimpl_misc.h"
 
 #include <pymic_kernel.h>
 
 #include "debug.h"
+
+#if defined(_WIN32)
+// define ssize_t on Windows
+typedef int ssize_t;
+#endif
+
+// VS 2013 does not know snprintf yet
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#define snprintf _snprintf
+#endif
 
 namespace pymic {
 
@@ -57,6 +69,60 @@ int get_number_of_devices() {
 }
 #endif
 
+#if defined(_WIN32)
+__declspec(target(mic))
+#else
+__attribute__((target(mic)))
+#endif
+uintptr_t target_load_library_device(char *buffer, size_t bufsz, char *data, 
+                                     ssize_t size, char *tempname_cstr, 
+                                     size_t tempname_cstr_sz) {
+#if defined(__MIC__)
+    uintptr_t handle_device_ptr = 0;
+    int fd;
+    int ret;
+    const char *tmplt = "/tmp/pymic-lib-XXXXXX";
+    void *handle = NULL;
+
+    // write the library's binary image to a temporary file
+    memset(tempname_cstr, 0, tempname_cstr_sz);
+    strncpy(tempname_cstr, tmplt, tempname_cstr_sz);
+    fd = mkstemp(tempname_cstr);
+    if (fd == -1) {
+        snprintf(buffer, bufsz, "mkstemp failed ('%s')", dlerror());
+        goto error_label_target_load_library;
+    }
+    ret = write(fd, data, size);
+    if (ret != size) {
+        snprintf(buffer, bufsz, "write failed ('%s')", dlerror());
+        close(fd);
+        goto error_label_target_load_library;
+    }
+    ret = close(fd);
+    if (ret) {
+        snprintf(buffer, bufsz, "close failed ('%s')", dlerror());
+        goto error_label_target_load_library;
+    }
+
+    // now load the library
+    dlerror();
+    handle = dlopen(tempname_cstr, RTLD_NOW | RTLD_GLOBAL);
+    if (!handle) {
+        // prepare the error message for an exception to be thrown on host
+        snprintf(buffer, bufsz, "dlopen failed ('%s')", dlerror());
+    }
+    handle_device_ptr = reinterpret_cast<uintptr_t>(handle);
+error_label_target_load_library:
+    ;
+    return handle_device_ptr;
+#else
+    // this function does not make sense on the host
+    fprintf(stderr, "THIS SHOULD NOT HAPPEN!\n");
+    exit(1);
+    return NULL;
+#endif
+}
+
 void target_load_library(int device, const std::string &filename, 
                              std::string &tempname, uintptr_t &handle) {
     debug_enter();
@@ -64,10 +130,10 @@ void target_load_library(int device, const std::string &filename,
     int target = device;
 	uintptr_t handle_device_ptr = 0;
     ssize_t ret;
-    int fd;
+    FILE *file = NULL;
     struct stat st;
     ssize_t size;
-    char * data;
+    char *data;
 	const size_t bufsz = 256;
 	char buffer[bufsz];
     char tempname_cstr[64];
@@ -85,75 +151,43 @@ void target_load_library(int device, const std::string &filename,
     // (should be enough for now)
     size = st.st_size;
     if (size >= 1*1024*2014*1024) {
-        snprintf(buffer, bufsz, "Cannot load %s: %s", 
-                 filename.c_str(), strerror(errno));
+        snprintf(buffer, bufsz, "Cannot load %s: library is larger than 1GB",
+                 filename.c_str());
         throw new internal_exception(buffer, __FILE__, __LINE__);
     }
     data = new char[size];
     
     // the file into the buffer
-    fd = open(filename.c_str(), 0);
-    if (fd < 0) {
+    file = fopen(filename.c_str(), "rb");
+    if (!file) {
         delete[] data;
-        snprintf(buffer, bufsz, "Cannot load %s: %s", 
+        snprintf(buffer, bufsz, "Cannot load %s: %s",
                  filename.c_str(), strerror(errno));
         throw new internal_exception(buffer, __FILE__, __LINE__);
     }
-    ret = read(fd, data, size);
-    if (ret != size) {
+    if (fread(data, 1, size, file) != size) {
         delete[] data;
-        snprintf(buffer, bufsz, "Cannot load %s: %s", 
+        snprintf(buffer, bufsz, "Cannot load %s: %s",
+                 filename.c_str(), strerror(errno));
+        fclose(file);
+        throw new internal_exception(buffer, __FILE__, __LINE__);
+    }
+    if (fclose(file) != 0) {
+        delete[] data;
+        snprintf(buffer, bufsz, "Cannot load %s: %s",
                  filename.c_str(), strerror(errno));
         throw new internal_exception(buffer, __FILE__, __LINE__);
     }
-    ret = close(fd);
-    if (ret) {
-        delete[] data;
-        snprintf(buffer, bufsz, "Cannot load %s: %s", 
-                 filename.c_str(), strerror(errno));
-        throw new internal_exception(buffer, __FILE__, __LINE__);
-    }
-    
-    debug(10, "transferring %ld bytes to device %d", static_cast<long int>(size), target);
-#pragma offload target(mic:target) in(size) in(data:length(size)) out(handle_device_ptr) in(bufsz) out(buffer) out(tempname_cstr)
-    {
-        int fd;
-        int ret;
-        const char * tmplt = "/tmp/pymic-lib-XXXXXX";
-		void *handle = NULL;
 
-        handle_device_ptr = 0;
-        
-        // write the library's binary image to a temporary file
-        memset(tempname_cstr, 0, sizeof(tempname_cstr));
-        strncpy(tempname_cstr, tmplt, sizeof(tempname_cstr));
-        fd = mkstemp(tempname_cstr);
-        if (fd == -1) {
-			snprintf(buffer, bufsz, "dlopen failed ('%s')", dlerror());
-            goto error_label_target_load_library;
-        }
-        ret = write(fd, data, size);
-        if (ret != size) {
-			snprintf(buffer, bufsz, "dlopen failed ('%s')", dlerror());
-            close(fd);
-            goto error_label_target_load_library;
-        }
-        ret = close(fd);
-        if (ret) {
-			snprintf(buffer, bufsz, "dlopen failed ('%s')", dlerror());
-            goto error_label_target_load_library;
-        }
-        
-        // now load the library
-        dlerror();
-		handle = dlopen(tempname_cstr, RTLD_NOW | RTLD_GLOBAL);
-		if (!handle) {
-            // prepare the error message for an exception to be thrown on host
-			snprintf(buffer, bufsz, "dlopen failed ('%s')", dlerror());
-		}
-		handle_device_ptr = reinterpret_cast<uintptr_t>(handle);
-error_label_target_load_library:  
-        ;
+    debug(10, "transferring %ld bytes to device %d", static_cast<long int>(size), target);
+    size_t tempname_cstr_sz = sizeof(tempname_cstr);
+    int64_t size_in = size;  // make this 64 bits for the transfer
+#pragma offload target(mic:target) in(size_in) in(data:length(size_in)) in(bufsz) out(buffer) out(tempname_cstr) out(handle_device_ptr)
+    {
+        handle_device_ptr = target_load_library_device(buffer, bufsz,
+                                                       data, size_in,
+                                                       tempname_cstr,
+                                                       tempname_cstr_sz);
     }
 
     tempname = tempname_cstr;
@@ -165,11 +199,48 @@ error_label_target_load_library:
               filename.c_str(), buffer);
         throw new internal_exception(buffer, __FILE__, __LINE__);
 	}
-    debug(10, "library load for '%s' succeeded on target, handle %p", 
+    debug(10, "library load for '%s' succeeded on target, handle %p",
           filename.c_str(), handle_device_ptr);
     handle = handle_device_ptr;
     debug_leave();
 }
+
+#if defined(_WIN32)
+__declspec(target(mic))
+#else
+__attribute__((target(mic)))
+#endif
+int target_unload_library_device(char *buffer, size_t bufsz, uintptr_t handle,
+                                 const char *tempname_cstr) {
+#if defined(__MIC__)
+    // unload the library
+    int errorcode = 0;
+    void *library = reinterpret_cast<void *>(handle);
+    dlerror();
+    errorcode = dlclose(library);
+    if (errorcode) {
+        snprintf(buffer, bufsz, "dlclose failed ('%s')", dlerror());
+        goto error_label_target_unload_library;
+    }
+
+    // delete temporary file
+    errno = 0;
+    errorcode = unlink(tempname_cstr);
+    if (errorcode) {
+        snprintf(buffer, bufsz, "dlclose failed ('%s')", dlerror());
+        goto error_label_target_unload_library;
+    }
+error_label_target_unload_library:
+    ;
+    return errorcode;
+#else
+    // this function does not make sense on the host
+    fprintf(stderr, "THIS SHOULD NOT HAPPEN!\n");
+    exit(1);
+    return 0;
+#endif
+}
+
 
 void target_unload_library(int device, const std::string &tempname, uintptr_t handle) {
     debug_enter();
@@ -185,24 +256,8 @@ void target_unload_library(int device, const std::string &tempname, uintptr_t ha
     tempname_cstr = tempname.c_str();
 #pragma offload target(mic:target) in(handle) in(bufsz) in(tempname_cstr:length(strlen(tempname_cstr)+1)) out(buffer) out(errorcode)
     {
-        // unload the library
-        void *library = reinterpret_cast<void *>(handle);
-        dlerror();
-        errorcode = dlclose(library);
-        if (errorcode) {
-            snprintf(buffer, bufsz, "dlclose failed ('%s')", dlerror());
-            goto error_label_target_unload_library;
-        }
-        
-        // delete temporary file
-        errno = 0;
-        errorcode = unlink(tempname_cstr);
-        if (errorcode) {
-            snprintf(buffer, bufsz, "dlclose failed ('%s')", dlerror());
-            goto error_label_target_unload_library;
-        }
-error_label_target_unload_library:
-        ;
+        errorcode = target_unload_library_device(buffer, bufsz, handle,
+                                                 tempname_cstr);
     }
 
     if (errorcode) {
@@ -211,6 +266,31 @@ error_label_target_unload_library:
     }
 
     debug_leave();
+}
+
+
+#if defined(_WIN32)
+__declspec(target(mic))
+#else
+__attribute__((target(mic)))
+#endif
+uintptr_t find_kernel_device(uintptr_t handle, const char *kernel_cstr) {
+#if __MIC__
+    uintptr_t fct_ptr = NULL;
+    void *handle_device_ptr = reinterpret_cast<void*>(handle);
+    void *ptr = NULL;
+    dlerror();
+    ptr = dlsym(handle_device_ptr, kernel_cstr);
+    dlerror();
+    fct_ptr = reinterpret_cast<uintptr_t>(ptr);
+    if (!ptr) {
+        dlerror();
+    }
+    return fct_ptr;
+#else
+    // this function does not make sense on the host
+    return 0;
+#endif
 }
 
 
@@ -227,19 +307,10 @@ uintptr_t find_kernel(int device, uintptr_t handle, const std::string &kernel_na
     debug(100, "looking for '%s' library with handle %p", kernel_cstr, handle);
 #pragma offload target(mic:target) in(kernel_cstr:length(kernel_sz)) in(handle) out(fct_ptr) 
     {
-        void *handle_device_ptr = reinterpret_cast<void*>(handle);
-        void *ptr = NULL;
-        dlerror();
-        ptr = dlsym(handle_device_ptr, kernel_cstr);
-        dlerror();
-        fct_ptr = reinterpret_cast<uintptr_t>(ptr);
-        if (!ptr) {
-            dlerror();
-        }
+        fct_ptr = find_kernel_device(handle, kernel_cstr);
     }
-
 	debug(100, "function pointer for '%s': %p", kernel_cstr, fct_ptr);
-	
+
 	return fct_ptr;
 }
 

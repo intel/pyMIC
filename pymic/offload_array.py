@@ -35,6 +35,7 @@ from _misc import _debug as debug
 from _misc import _deprecated as deprecated
 from _tracing import _trace as trace
 from _misc import _map_data_types as map_data_types
+from _misc import _is_complex_type as is_complex_type
 
 from offload_device import OffloadDevice
 from offload_device import devices
@@ -554,7 +555,7 @@ class OffloadArray(object):
         dt = map_data_types(self.dtype)
         n = int(self.array.size)
         x = self
-        if dt == 2:  # complex data
+        if is_complex_type(self.dtype):
             result = self.stream.empty(self.shape, dtype=numpy.float,
                                        order=self.order, update_host=False)
         else:

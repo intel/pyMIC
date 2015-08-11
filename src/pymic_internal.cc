@@ -46,6 +46,7 @@ int pymic_internal_invoke_kernel(int device, libxstream_stream *stream,
                                  const int64_t *dims, const int64_t *types, 
                                  void **ptrs, const size_t *sizes) {
     debug_enter();
+    
     // generate the proper function signature for this kernel
     libxstream_argument * signature = NULL;
     libxstream_fn_signature(&signature);
@@ -60,8 +61,11 @@ int pymic_internal_invoke_kernel(int device, libxstream_stream *stream,
         case 0: // argument is a scalar value
             // in case of a scalar value, the ptr is a host pointer
             switch(type) {
-            case pymic::dtype_int:
+            case pymic::dtype_int64:
                 scalar_type = LIBXSTREAM_TYPE_I64;
+                break;
+            case pymic::dtype_int32:
+                scalar_type = LIBXSTREAM_TYPE_I32;
                 break;
             case pymic::dtype_float:
                 scalar_type = LIBXSTREAM_TYPE_F64;
@@ -127,6 +131,7 @@ int pymic_internal_load_library(int device, const char *filename, int64_t *handl
         memcpy(handle, &library_handle, sizeof(*handle));
     }
     catch (pymic::internal_exception *exc) {
+        fprintf(stderr, "caught!\n");
         // catch and convert exception to return code
         debug(100, "internal exception raised at %s:%d, raising Python exception", 
                    exc->file(), exc->line());
@@ -174,6 +179,7 @@ int pymic_internal_find_kernel(int device, int64_t handle, const char *kernel_na
     memcpy(kernel_ptr, &funcptr, sizeof(*kernel_ptr));
     return 0;
 }
+
 
 // this is a workaround for a problem with the Intel LEO compiler
 const libxstream_function translate_pointer_func_workaround = reinterpret_cast<libxstream_function>(pymic::pymic_translate_pointer);
