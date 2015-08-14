@@ -1,3 +1,7 @@
+# Next Version
+* None arguments of kernels are converted to nullptr or NULL.
+
+
 # Version 0.6
 * Experimental support for the Windows operating system.
 * Switched to Cython to generate the glue code for pyMIC.

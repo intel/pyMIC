@@ -70,6 +70,94 @@ class OffloadStreamTests(unittest.TestCase):
         stream.sync()
 
     @skipNoDevice
+    def test_invoke_kernel_nullptr_1(self):
+        """Test if invoke kernel passes a None array as nullptr on
+           the kernel side."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        library = get_library(device, "libtests.so")
+
+        result = numpy.empty((1,), dtype=int)
+        result[0] = 1234567890
+        stream.invoke(library.test_offload_stream_nullptr_1, None, result)
+        stream.sync()
+
+        self.assertEqual(result[0], 0)
+
+    @skipNoDevice
+    def test_invoke_kernel_nullptr_2(self):
+        """Test if invoke kernel passes a None array as nullptr on
+           the kernel side."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        library = get_library(device, "libtests.so")
+
+        dummy1 = numpy.empty((1024,), dtype=float);
+        result = numpy.empty((1,), dtype=int)
+        result[0] = 1234567890
+        stream.invoke(library.test_offload_stream_nullptr_2, dummy1, None, result)
+        stream.sync()
+
+        self.assertEqual(result[0], 0)
+
+    @skipNoDevice
+    def test_invoke_kernel_nullptr_3(self):
+        """Test if invoke kernel passes a None array as nullptr on
+           the kernel side."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        library = get_library(device, "libtests.so")
+
+        dummy1 = numpy.empty((1024,), dtype=float);
+        dummy2 = numpy.empty((1024,), dtype=float);
+        result = numpy.empty((1,), dtype=int)
+        result[0] = 1234567890
+        stream.invoke(library.test_offload_stream_nullptr_3, dummy1, None, dummy2, result)
+        stream.sync()
+
+        self.assertEqual(result[0], 0)
+
+    @skipNoDevice
+    def test_invoke_kernel_nullptr_4(self):
+        """Test if invoke kernel passes a None array as nullptr on
+           the kernel side."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        library = get_library(device, "libtests.so")
+
+        dummy1 = numpy.empty((1024,), dtype=float);
+        dummy2 = numpy.empty((1024,), dtype=float);
+        result = numpy.empty((1,), dtype=int)
+        result[0] = 1234567890
+        stream.invoke(library.test_offload_stream_nullptr_4, dummy1, None, None, dummy2, result)
+        stream.sync()
+
+        self.assertEqual(result[0], 0)
+
+    @skipNoDevice
+    def test_invoke_kernel_nullptr_5(self):
+        """Test if invoke kernel passes a None array as nullptr on
+           the kernel side."""
+
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        library = get_library(device, "libtests.so")
+
+        dummy1 = numpy.empty((1024,), dtype=float);
+        dummy2 = numpy.empty((1024,), dtype=float);
+        dummy3 = numpy.empty((1024,), dtype=float);
+        result = numpy.empty((1,), dtype=int)
+        result[0] = 1234567890
+        stream.invoke(library.test_offload_stream_nullptr_5, dummy1, None, dummy2, None, dummy3, result)
+        stream.sync()
+
+        self.assertEqual(result[0], 0)
+
+    @skipNoDevice
     def test_invoke_kernel_scalar(self):
         """Test if a kernel is correctly invoked with copyin/copyout
            semantics for scalar arguments."""

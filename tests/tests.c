@@ -39,6 +39,37 @@ void test_offload_stream_empty(void) {
 }
 
 PYMIC_KERNEL
+void test_offload_stream_nullptr_1(const void *pointer, int64_t *result)  {
+    *result = (int64_t) pointer;
+}
+
+PYMIC_KERNEL
+void test_offload_stream_nullptr_2(const void *dummy1, const void *pointer,
+                                  int64_t *result)  {
+    *result = (int64_t) pointer;
+}
+
+PYMIC_KERNEL
+void test_offload_stream_nullptr_3(const void *dummy1, const void *pointer,
+                                   const void *dummy2, int64_t *result)  {
+    *result = (int64_t) pointer;
+}
+
+PYMIC_KERNEL
+void test_offload_stream_nullptr_4(const void *dummy1, const void *pointer1,
+                                   const void *pointer2, const void *dummy2,
+                                   int64_t *result)  {
+    *result = (int64_t) pointer1 + (int64_t) pointer2;
+}
+
+PYMIC_KERNEL
+void test_offload_stream_nullptr_5(const void *dummy1, const void *pointer1,
+                                   const void *dummy2, const void *pointer2,
+                                   const void *dummy3, int64_t *result)  {
+    *result = (int64_t) pointer1 + (int64_t) pointer2;
+}
+
+PYMIC_KERNEL
 void test_offload_stream_kernel_scalars(const long int *a, 
                                         const double *b, 
                                         const long int *c, 

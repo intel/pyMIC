@@ -53,7 +53,7 @@ LIBXSTREAM_TARGET(mic) void call(libxstream_function function, libxstream_argume
     size_t np = 0;
     LIBXSTREAM_PRAGMA_LOOP_COUNT(0, LIBXSTREAM_MAX_NARGS, LIBXSTREAM_MAX_NARGS/2)
     for (size_t i = 0; i < arity; ++i) {
-      if (0 != arguments[i].dims || 0 != (libxstream_argument::kind_output & arguments[i].kind)) {
+      if (0 != arguments[i].data.pointer && (0 != arguments[i].dims || 0 != (libxstream_argument::kind_output & arguments[i].kind))) {
 #if defined(__INTEL_COMPILER)
 #       pragma forceinline recursive
 #endif
@@ -89,7 +89,7 @@ LIBXSTREAM_TARGET(mic) void call(libxstream_function function, libxstream_argume
 
   // mark context as invalid
   context.flags = LIBXSTREAM_CALL_EXTERNAL;
-#if defined(LIBXSTREAM_DEBUG)
+#if defined(LIBXSTREAM_INTERNAL_DEBUG)
   context.signature = 0;
 #endif
 }
@@ -122,23 +122,25 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
       size_t np = 0;
       LIBXSTREAM_PRAGMA_LOOP_COUNT(0, LIBXSTREAM_MAX_NARGS, LIBXSTREAM_MAX_NARGS/2)
       for (size_t i = 0; i < arity; ++i) {
-        if (0 != m_signature[i].dims) {
-          p[np] = static_cast<char*>(libxstream_get_value(m_signature[i]).pointer);
-          ++np;
-        }
-        else if (0 != (libxstream_argument::kind_output & m_signature[i].kind)) {
-          p[np] = static_cast<char*>(libxstream_get_value(m_signature[i]).pointer);
-          s |= ((2 << np) >> 1);
-          ++np;
+        if (char *const pointer = reinterpret_cast<char*>(m_signature[i].data.pointer)) {
+          if (0 != m_signature[i].dims) {
+            p[np] = pointer;
+            ++np;
+          }
+          else if (0 != (libxstream_argument::kind_output & m_signature[i].kind)) {
+            p[np] = pointer;
+            s |= ((2 << np) >> 1);
+            ++np;
+          }
         }
       }
-# if defined(LIBXSTREAM_DEBUG)
+# if defined(LIBXSTREAM_INTERNAL_DEBUG)
       for (size_t i = np; i < (LIBXSTREAM_MAX_NARGS); ++i) p[i] = 0;
 # endif
 
       switch (np) {
         case 0: {
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1))
             libxstream_offload_internal::call(fhybrid ? fhybrid : reinterpret_cast<libxstream_function>(fnative), signature, 0, arity, cflags);
           }
@@ -149,7 +151,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 1: {
           char *a0 = p[0];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1)
             {
@@ -168,7 +170,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 2: {
           char *a0 = p[0], *a1 = p[1];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1) LIBXSTREAM_OFFLOAD_DATA(a1, s&2)
             {
@@ -187,7 +189,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 3: {
           char *a0 = p[0], *a1 = p[1], *a2 = p[2];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1) LIBXSTREAM_OFFLOAD_DATA(a1, s&2) LIBXSTREAM_OFFLOAD_DATA(a2, s&4)
             {
@@ -206,7 +208,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 4: {
           char *a0 = p[0], *a1 = p[1], *a2 = p[2], *a3 = p[3];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1) LIBXSTREAM_OFFLOAD_DATA(a1, s&2) LIBXSTREAM_OFFLOAD_DATA(a2, s&4) LIBXSTREAM_OFFLOAD_DATA(a3, s&8)
             {
@@ -225,7 +227,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 5: {
           char *a0 = p[0], *a1 = p[1], *a2 = p[2], *a3 = p[3], *a4 = p[4];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1) LIBXSTREAM_OFFLOAD_DATA(a1, s&2) LIBXSTREAM_OFFLOAD_DATA(a2, s&4) LIBXSTREAM_OFFLOAD_DATA(a3, s&8) \
               LIBXSTREAM_OFFLOAD_DATA(a4, s&16)
@@ -246,7 +248,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 6: {
           char *a0 = p[0], *a1 = p[1], *a2 = p[2], *a3 = p[3], *a4 = p[4], *a5 = p[5];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1)  LIBXSTREAM_OFFLOAD_DATA(a1, s&2) LIBXSTREAM_OFFLOAD_DATA(a2, s&4) LIBXSTREAM_OFFLOAD_DATA(a3, s&8) \
               LIBXSTREAM_OFFLOAD_DATA(a4, s&16) LIBXSTREAM_OFFLOAD_DATA(a5, s&32)
@@ -267,7 +269,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 7: {
           char *a0 = p[0], *a1 = p[1], *a2 = p[2], *a3 = p[3], *a4 = p[4], *a5 = p[5], *a6 = p[6];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1)  LIBXSTREAM_OFFLOAD_DATA(a1, s&2)  LIBXSTREAM_OFFLOAD_DATA(a2, s&4) LIBXSTREAM_OFFLOAD_DATA(a3, s&8) \
               LIBXSTREAM_OFFLOAD_DATA(a4, s&16) LIBXSTREAM_OFFLOAD_DATA(a5, s&32) LIBXSTREAM_OFFLOAD_DATA(a6, s&64)
@@ -288,7 +290,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 8: {
           char *a0 = p[0], *a1 = p[1], *a2 = p[2], *a3 = p[3], *a4 = p[4], *a5 = p[5], *a6 = p[6], *a7 = p[7];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1)  LIBXSTREAM_OFFLOAD_DATA(a1, s&2)  LIBXSTREAM_OFFLOAD_DATA(a2, s&4)  LIBXSTREAM_OFFLOAD_DATA(a3, s&8) \
               LIBXSTREAM_OFFLOAD_DATA(a4, s&16) LIBXSTREAM_OFFLOAD_DATA(a5, s&32) LIBXSTREAM_OFFLOAD_DATA(a6, s&64) LIBXSTREAM_OFFLOAD_DATA(a7, s&128)
@@ -309,7 +311,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 9: {
           char *a0 = p[0], *a1 = p[1], *a2 = p[2], *a3 = p[3], *a4 = p[4], *a5 = p[5], *a6 = p[6], *a7 = p[7], *a8 = p[8];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1)  LIBXSTREAM_OFFLOAD_DATA(a1, s&2)  LIBXSTREAM_OFFLOAD_DATA(a2, s&4)  LIBXSTREAM_OFFLOAD_DATA(a3, s&8)   \
               LIBXSTREAM_OFFLOAD_DATA(a4, s&16) LIBXSTREAM_OFFLOAD_DATA(a5, s&32) LIBXSTREAM_OFFLOAD_DATA(a6, s&64) LIBXSTREAM_OFFLOAD_DATA(a7, s&128) \
@@ -332,7 +334,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 10: {
           char *a0 = p[0], *a1 = p[1], *a2 = p[2], *a3 = p[3], *a4 = p[4], *a5 = p[5], *a6 = p[6], *a7 = p[7], *a8 = p[8], *a9 = p[9];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1)   LIBXSTREAM_OFFLOAD_DATA(a1, s&2)  LIBXSTREAM_OFFLOAD_DATA(a2, s&4)  LIBXSTREAM_OFFLOAD_DATA(a3, s&8)   \
               LIBXSTREAM_OFFLOAD_DATA(a4, s&16)  LIBXSTREAM_OFFLOAD_DATA(a5, s&32) LIBXSTREAM_OFFLOAD_DATA(a6, s&64) LIBXSTREAM_OFFLOAD_DATA(a7, s&128) \
@@ -355,7 +357,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         } break;
         case 11: {
           char *a0 = p[0], *a1 = p[1], *a2 = p[2], *a3 = p[3], *a4 = p[4], *a5 = p[5], *a6 = p[6], *a7 = p[7], *a8 = p[8], *a9 = p[9], *a10 = p[10];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1)   LIBXSTREAM_OFFLOAD_DATA(a1, s&2)   LIBXSTREAM_OFFLOAD_DATA( a2, s&4)  LIBXSTREAM_OFFLOAD_DATA(a3, s&8)   \
               LIBXSTREAM_OFFLOAD_DATA(a4, s&16)  LIBXSTREAM_OFFLOAD_DATA(a5, s&32)  LIBXSTREAM_OFFLOAD_DATA( a6, s&64) LIBXSTREAM_OFFLOAD_DATA(a7, s&128) \
@@ -379,7 +381,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         case 12: {
           char *a0 = p[0], *a1 = p[1],  *a2 = p[2],   *a3 = p[3], *a4 = p[4], *a5 = p[5], *a6 = p[6], *a7 = p[7];
           char *a8 = p[8], *a9 = p[9], *a10 = p[10], *a11 = p[11];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA(a0, s&1)   LIBXSTREAM_OFFLOAD_DATA(a1, s&2)   LIBXSTREAM_OFFLOAD_DATA( a2, s&4)    LIBXSTREAM_OFFLOAD_DATA( a3, s&8)   \
               LIBXSTREAM_OFFLOAD_DATA(a4, s&16)  LIBXSTREAM_OFFLOAD_DATA(a5, s&32)  LIBXSTREAM_OFFLOAD_DATA( a6, s&64)   LIBXSTREAM_OFFLOAD_DATA( a7, s&128) \
@@ -403,7 +405,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         case 13: {
           char *a0 = p[0], *a1 = p[1],  *a2 = p[2],   *a3 = p[3],   *a4 = p[4], *a5 = p[5], *a6 = p[6], *a7 = p[7];
           char *a8 = p[8], *a9 = p[9], *a10 = p[10], *a11 = p[11], *a12 = p[12];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA( a0, s&1)   LIBXSTREAM_OFFLOAD_DATA(a1, s&2)   LIBXSTREAM_OFFLOAD_DATA( a2, s&4)    LIBXSTREAM_OFFLOAD_DATA( a3, s&8)    \
               LIBXSTREAM_OFFLOAD_DATA( a4, s&16)  LIBXSTREAM_OFFLOAD_DATA(a5, s&32)  LIBXSTREAM_OFFLOAD_DATA( a6, s&64)   LIBXSTREAM_OFFLOAD_DATA( a7, s&128)  \
@@ -429,7 +431,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         case 14: {
           char *a0 = p[0], *a1 = p[1],  *a2 = p[2],   *a3 = p[3],   *a4 = p[4],   *a5 = p[5], *a6 = p[6], *a7 = p[7];
           char *a8 = p[8], *a9 = p[9], *a10 = p[10], *a11 = p[11], *a12 = p[12], *a13 = p[13];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA( a0, s&1)    LIBXSTREAM_OFFLOAD_DATA( a1, s&2)   LIBXSTREAM_OFFLOAD_DATA( a2, s&4)    LIBXSTREAM_OFFLOAD_DATA( a3, s&8)    \
               LIBXSTREAM_OFFLOAD_DATA( a4, s&16)   LIBXSTREAM_OFFLOAD_DATA( a5, s&32)  LIBXSTREAM_OFFLOAD_DATA( a6, s&64)   LIBXSTREAM_OFFLOAD_DATA( a7, s&128)  \
@@ -455,7 +457,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         case 15: {
           char *a0 = p[0], *a1 = p[1],  *a2 = p[2],   *a3 = p[3],   *a4 = p[4],   *a5 = p[5],   *a6 = p[6], *a7 = p[7];
           char *a8 = p[8], *a9 = p[9], *a10 = p[10], *a11 = p[11], *a12 = p[12], *a13 = p[13], *a14 = p[14];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA( a0, s&1)    LIBXSTREAM_OFFLOAD_DATA( a1, s&2)    LIBXSTREAM_OFFLOAD_DATA( a2, s&4)    LIBXSTREAM_OFFLOAD_DATA( a3, s&8)    \
               LIBXSTREAM_OFFLOAD_DATA( a4, s&16)   LIBXSTREAM_OFFLOAD_DATA( a5, s&32)   LIBXSTREAM_OFFLOAD_DATA( a6, s&64)   LIBXSTREAM_OFFLOAD_DATA( a7, s&128)  \
@@ -481,7 +483,7 @@ libxstream_workqueue::entry_type& libxstream_offload(libxstream_function functio
         case 16: {
           char *a0 = p[0], *a1 = p[1],  *a2 = p[2],   *a3 = p[3],   *a4 = p[4],   *a5 = p[5],   *a6 = p[6],   *a7 = p[7];
           char *a8 = p[8], *a9 = p[9], *a10 = p[10], *a11 = p[11], *a12 = p[12], *a13 = p[13], *a14 = p[14], *a15 = p[15];
-          if (LIBXSTREAM_ASYNC_READY) {
+          if (0 == (LIBXSTREAM_ASYNC_PENDING)) {
 #           pragma offload LIBXSTREAM_ASYNC_TARGET_SIGNAL in(fhybrid, fnative, arity, cflags) in(signature: length(arity + 1)) \
               LIBXSTREAM_OFFLOAD_DATA( a0, s&1)    LIBXSTREAM_OFFLOAD_DATA( a1, s&2)    LIBXSTREAM_OFFLOAD_DATA( a2, s&4)     LIBXSTREAM_OFFLOAD_DATA( a3, s&8)    \
               LIBXSTREAM_OFFLOAD_DATA( a4, s&16)   LIBXSTREAM_OFFLOAD_DATA( a5, s&32)   LIBXSTREAM_OFFLOAD_DATA( a6, s&64)    LIBXSTREAM_OFFLOAD_DATA( a7, s&128)  \

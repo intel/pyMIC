@@ -30,6 +30,8 @@
 
 #include <pymic_kernel.h>
  
+#include <stdio.h>
+
 PYMIC_KERNEL
 void empty_kernel(void) {
     /* this is an empty kernel */

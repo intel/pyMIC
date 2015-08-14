@@ -571,7 +571,17 @@ class OffloadStream:
         copy_in_out = []
         scalars = []
         for i, a in enumerate(args):
-            if isinstance(a, pymic.OffloadArray):
+            if a is None:
+                # this is a None object, so we pass a nullptr to kernel
+                arg_dims[i] = 1
+                arg_type[i] = -1    # magic number to mark nullptrs
+                arg_ptrs[i] = 0     # nullptr
+                arg_size[i] = 0
+                debug(3, "(device {0}, stream 0x{1:x}) kernel '{2}' "
+                         "arg {3} is None (device pointer 'nullptr')"
+                         "".format(self._device_id, self._stream_id,
+                         kernel[0], i))
+            elif isinstance(a, pymic.OffloadArray):
                 # get the device pointer of the OffloadArray and
                 # pass it to the kernel
                 arg_dims[i] = 1
