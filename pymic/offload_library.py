@@ -31,6 +31,7 @@ from __future__ import print_function
 
 import sys
 import os
+import platform
 import subprocess
 
 from offload_error import OffloadError
@@ -56,7 +57,12 @@ class OffloadLibrary:
 
     @staticmethod
     def _check_k1om(library):
-        return True
+        if platform.system() == 'Windows':
+            # If we're running on a Windows machine, the .so
+            # is expected to be a MIC native .so file.
+            return True
+        # Use readelf to detect the architecture flag of the .so
+        # file to make sure we are only finding MIC native ones.
         p = subprocess.Popen(["readelf", '-h', library],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
@@ -105,7 +111,7 @@ class OffloadLibrary:
 
         # load the library and memorize handle
         debug(5, "loading '{0}' on device {1}", filename, self._device_id)
-        self._handle, self._tempfile = pymic_library_load(self._device_id, 
+        self._handle, self._tempfile = pymic_library_load(self._device_id,
                                                           filename)
         debug(5, "successfully loaded '{0}' on device {1} with handle 0x{2:x}",
               filename, self._device_id, self._handle)
