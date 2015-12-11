@@ -43,10 +43,11 @@ LIBXSTREAM_SOURCE=$(shell ls $(LIBXSTREAM)/src/*.cpp)
 PYMIC_OBJECTS=$(PYMIC_SOURCE:.cc=.o)
 LIBXSTREAM_OBJECTS=$(LIBXSTREAM_SOURCE:.cpp=.o)
 
-PYTHON_INCLUDES+=-I/usr/include/python2.7 -I/usr/lib64/python2.7/site-packages/numpy/core/include
+PYTHON_CONFIG=python3.4-config
+PYTHON_INCLUDES+=$(shell $(PYTHON_CONFIG) --includes)
 
 CYTHON=cython
-CYTHONFLAGS=-2
+CYTHONFLAGS=-3
 
 CC=icc
 CFLAGS=$(DEBUG) -DPYMIC_USE_XSTREAM=1 -DLIBXSTREAM_EXPORTED -offload=mandatory -Wall -pthread -g -O2 -ansi-alias -fPIC -I. -I../include -I$(LIBXSTREAM)/include $(PYTHON_INCLUDES)

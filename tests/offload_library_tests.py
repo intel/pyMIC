@@ -73,6 +73,6 @@ class OffloadLibraryTests(unittest.TestCase):
         device2 = pymic.devices[1]
         stream = device2.get_default_stream()
         library = get_library(device1, "libkernelnames.so")
-        
+
         self.assertRaises(pymic.OffloadError, stream.invoke,
                           library.kernel_underscores)

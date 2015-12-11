@@ -29,24 +29,24 @@
 
 from __future__ import print_function
 
-from offload_error import OffloadError
+from pymic.offload_error import OffloadError
 
-from _engine import pymic_stream_create
-from _engine import pymic_stream_destroy
-from _engine import pymic_stream_sync
-from _engine import pymic_stream_allocate
-from _engine import pymic_stream_deallocate
-from _engine import pymic_stream_translate_device_pointer
-from _engine import pymic_stream_memcpy_h2d
-from _engine import pymic_stream_memcpy_d2h
-from _engine import pymic_stream_memcpy_d2d
-from _engine import pymic_stream_invoke_kernel
+from pymic._engine import pymic_stream_create
+from pymic._engine import pymic_stream_destroy
+from pymic._engine import pymic_stream_sync
+from pymic._engine import pymic_stream_allocate
+from pymic._engine import pymic_stream_deallocate
+from pymic._engine import pymic_stream_translate_device_pointer
+from pymic._engine import pymic_stream_memcpy_h2d
+from pymic._engine import pymic_stream_memcpy_d2h
+from pymic._engine import pymic_stream_memcpy_d2d
+from pymic._engine import pymic_stream_invoke_kernel
 
-from _misc import _debug as debug
-from _misc import _get_order as get_order
-from _misc import _DeviceAllocation as DeviceAllocation
-from _misc import _map_data_types as map_data_types
-from _tracing import _trace as trace
+from pymic._misc import _debug as debug
+from pymic._misc import _get_order as get_order
+from pymic._misc import _DeviceAllocation as DeviceAllocation
+from pymic._misc import _map_data_types as map_data_types
+from pymic._tracing import _trace as trace
 
 import pymic
 import numpy
@@ -55,10 +55,6 @@ import numpy
 class OffloadStream:
     """
     """
-
-    _device = None
-    _device_id = None
-    _stream_id = None
 
     def __init__(self, device=None):
         # save a reference to the device
@@ -74,10 +70,10 @@ class OffloadStream:
 
     def __del__(self):
         debug(1,
-              'destroying stream 0x{0:0x} '
-              'for device {1}'.format(self._stream_id,
-                                      self._device_id))
-        pymic_stream_destroy(self._device_id, self._stream_id)
+              'destroying stream 0x{0:0x} for device {1}',
+              self._stream_id, self._device_id)
+        if self._device_id is not None:
+            pymic_stream_destroy(self._device_id, self._stream_id)
 
     @trace
     def sync(self):
@@ -97,6 +93,8 @@ class OffloadStream:
            --------
            n/a
         """
+        debug(2, 'syncing stream 0x{0:x} on device {1}',
+                 self._stream_id, self._device_id)
         pymic_stream_sync(self._device_id, self._stream_id)
         return None
 
@@ -577,25 +575,27 @@ class OffloadStream:
                 arg_type[i] = -1    # magic number to mark nullptrs
                 arg_ptrs[i] = 0     # nullptr
                 arg_size[i] = 0
-                debug(3, "(device {0}, stream 0x{1:x}) kernel '{2}' "
-                         "arg {3} is None (device pointer 'nullptr')"
-                         "".format(self._device_id, self._stream_id,
-                         kernel[0], i))
+                debug(3,
+                      "(device {0}, stream 0x{1:x}) kernel '{2}' "
+                      "arg {3} is None (device pointer 'nullptr')"
+                      "".format(self._device_id, self._stream_id,
+                                kernel[0], i))
             elif isinstance(a, pymic.OffloadArray):
                 # get the device pointer of the OffloadArray and
                 # pass it to the kernel
                 arg_dims[i] = 1
                 arg_type[i] = map_data_types(a.dtype)
-                arg_ptrs[i] = a._device_ptr._device_ptr # fake pointer
+                arg_ptrs[i] = a._device_ptr._device_ptr  # fake pointer
                 arg_size[i] = a._nbytes
-                debug(3, "(device {0}, stream 0x{1:x}) kernel '{2}' "
-                         "arg {3} is offload array (device pointer "
-                         "{4})".format(self._device_id, self._stream_id,
-                         kernel[0], i, a._device_ptr))
+                debug(3,
+                      "(device {0}, stream 0x{1:x}) kernel '{2}' "
+                      "arg {3} is offload array (device pointer "
+                      "{4})".format(self._device_id, self._stream_id,
+                                    kernel[0], i, a._device_ptr))
             elif isinstance(a, numpy.ndarray):
                 # allocate device buffer on the target of the invoke
                 # and mark the numpy.ndarray for copyin/copyout semantics
-                host_ptr = a.ctypes.data # raw C pointer to host data
+                host_ptr = a.ctypes.data  # raw C pointer to host data
                 nbytes = a.dtype.itemsize * a.size
                 dev_ptr = self.allocate_device_memory(nbytes)
                 copy_in_out.append((host_ptr, dev_ptr, nbytes, a))
@@ -603,11 +603,12 @@ class OffloadStream:
                 arg_type[i] = map_data_types(a.dtype)
                 arg_ptrs[i] = dev_ptr._device_ptr    # fake pointer
                 arg_size[i] = nbytes
-                debug(3, "(device {0}, stream 0x{1:x}) kernel '{2}' "
-                         "arg {3} is copy-in/-out array (host pointer {4}, "
-                         "device pointer "
-                         "{5})".format(self._device_id, self._stream_id,
-                         kernel[0], i, host_ptr, dev_ptr))
+                debug(3,
+                      "(device {0}, stream 0x{1:x}) kernel '{2}' "
+                      "arg {3} is copy-in/-out array (host pointer {4}, "
+                      "device pointer "
+                      "{5})".format(self._device_id, self._stream_id,
+                                    kernel[0], i, host_ptr, dev_ptr))
             else:
                 # this is a hack, but let's wrap scalars as numpy arrays
                 cvtd = numpy.asarray(a)
@@ -618,10 +619,11 @@ class OffloadStream:
                 arg_type[i] = map_data_types(cvtd.dtype)
                 arg_ptrs[i] = host_ptr
                 arg_size[i] = nbytes
-                debug(3, "(device {0}, stream 0x{1:x}) kernel '{2}' "
-                         "arg {3} is scalar {4} (host pointer "
-                         "{5})".format(self._device_id, self._stream_id,
-                         kernel[0], i, a, host_ptr))
+                debug(3,
+                      "(device {0}, stream 0x{1:x}) kernel '{2}' "
+                      "arg {3} is scalar {4} (host pointer "
+                      "{5})".format(self._device_id, self._stream_id,
+                                    kernel[0], i, a, host_ptr))
         debug(1, "(device {0}, stream 0x{1:x}) invoking kernel '{2}' "
                  "(pointer 0x{3:x}) with {4} "
                  "argument(s) ({5} copy-in/copy-out, {6} scalars)",
@@ -636,6 +638,8 @@ class OffloadStream:
         # iterate over the copyout arguments, transfer them back
         for c in copy_in_out:
             self.transfer_device2host(c[1], c[0], c[2])
+        if len(copy_in_out) != 0:
+            self.sync()
 
     @trace
     def bind(self, array, update_device=True):

@@ -29,13 +29,10 @@
  */
 
 #include <pymic_kernel.h>
-#include <stdio.h>
 
 PYMIC_KERNEL
 void doubleit_kernel(long int *array, const long int *n) {
     int i;
-    fprintf(stderr, "&array=%p &n=%p\n", array, n);
-    fflush(stderr);
     for (i = 0; i < (*n); i++) {
         array[i] *= 2;
     }

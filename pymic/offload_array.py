@@ -31,14 +31,14 @@ from __future__ import print_function
 
 import numpy
 
-from _misc import _debug as debug
-from _misc import _deprecated as deprecated
-from _tracing import _trace as trace
-from _misc import _map_data_types as map_data_types
-from _misc import _is_complex_type as is_complex_type
+from pymic._misc import _debug as debug
+from pymic._misc import _deprecated as deprecated
+from pymic._tracing import _trace as trace
+from pymic._misc import _map_data_types as map_data_types
+from pymic._misc import _is_complex_type as is_complex_type
 
-from offload_device import OffloadDevice
-from offload_device import devices
+from pymic.offload_device import OffloadDevice
+from pymic.offload_device import devices
 
 # TODO:
 #   - find out how to easily copy the whole numpy.array interface
@@ -666,12 +666,29 @@ class OffloadArray(object):
            The operation is enqueued into the array's default stream object
            and completes asynchronously.
         """
-        # TODO: raise errors here: shape/size/data data type
-
         lb = min(i, self.size)
         ub = min(j, self.size)
-        dt = map_data_types(self.dtype)
+        self.__setitem__(slice(lb, ub, 1), sequence)
 
+    def __setitem__(self, index, sequence):
+        """Overwrite this OffloadArray with slice coming from another array.
+
+           The operation is enqueued into the array's default stream object
+           and completes asynchronously.
+        """
+        lb, ub, stride = index.start, index.stop, index.step
+        if lb is None:
+            lb = 0
+        if ub is None:
+            ub = self.size
+        if stride is None:
+            stride = 1
+
+        # TODO: add additional checks here: shape/size/data type
+        if stride != 1:
+            raise ValueError('Cannot assign with stride not equal to 1')
+            
+        dt = map_data_types(self.dtype)
         if isinstance(sequence, OffloadArray):
             self.stream.invoke(self._library.pymic_offload_array_setslice,
                                dt, lb, ub, self, sequence)

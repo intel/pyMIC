@@ -59,6 +59,7 @@ target/
 
 # Cython stuff
 src/pymic_libxstream.c
+src/pymic_libxstream.cpp
 
 # compiled code
 *.o

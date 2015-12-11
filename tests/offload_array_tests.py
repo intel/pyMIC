@@ -1,33 +1,33 @@
 #!/usr/bin/python
 
-# Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
-# 
-# Redistribution and use in source and binary forms, with or without 
-# modification, are permitted provided that the following conditions are 
-# met: 
-# 
-# 1. Redistributions of source code must retain the above copyright 
-# notice, this list of conditions and the following disclaimer. 
+# Copyright (c) 2014-2015, Intel Corporation All rights reserved.
 #
-# 2. Redistributions in binary form must reproduce the above copyright 
-# notice, this list of conditions and the following disclaimer in the 
-# documentation and/or other materials provided with the distribution. 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
 #
-# 3. Neither the name of the copyright holder nor the names of its 
-# contributors may be used to endorse or promote products derived from 
-# this software without specific prior written permission. 
+# 1. Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS 
-# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED 
-# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A 
-# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
-# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
-# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+# 2. Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import sys
 import unittest
@@ -39,7 +39,7 @@ from helper import skipNoDevice
 from helper import get_library
 
 epsilon = 0.0000000001
-
+cutoff_value = 16777215
 
 class OffloadArrayTest(unittest.TestCase):
     """This class defines the test cases for the OffloadArray class."""
@@ -67,7 +67,7 @@ class OffloadArrayTest(unittest.TestCase):
         offl_a = stream.bind(a)
         r = numpy.empty((1,), dtype=int)
         offl_r = stream.bind(r)
-        stream.invoke(library.test_check_pattern, 
+        stream.invoke(library.test_check_pattern,
                       offl_a, offl_a.size, offl_r, pattern)
         offl_r.update_host()
         stream.sync()
@@ -128,7 +128,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a + s
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a + s
         offl_a.update_host()
@@ -158,7 +158,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = offl_a + offl_o
@@ -192,7 +192,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a + o
         offl_a.update_host()
@@ -223,7 +223,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a + s
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a + s
         offl_a.update_host()
@@ -253,7 +253,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = offl_a + offl_o
@@ -318,7 +318,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a + s
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a + s
         offl_a.update_host()
@@ -348,7 +348,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = offl_a + offl_o
@@ -413,7 +413,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a + s
-        
+
         offl_a = stream.bind(a)
         offl_a += s
         offl_a.update_host()
@@ -429,7 +429,7 @@ class OffloadArrayTest(unittest.TestCase):
 
     @skipNoDevice
     def test_op_iadd_offload_array_int(self):
-        """Test __iadd__ operation of OffloadArray with OffloadArray 
+        """Test __iadd__ operation of OffloadArray with OffloadArray
            operand."""
 
         device = pymic.devices[0]
@@ -442,7 +442,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a += offl_o
@@ -474,7 +474,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a += o
@@ -504,7 +504,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a + s
-        
+
         offl_a = stream.bind(a)
         offl_a += s
         offl_a.update_host()
@@ -520,7 +520,7 @@ class OffloadArrayTest(unittest.TestCase):
 
     @skipNoDevice
     def test_op_iadd_offload_array_float(self):
-        """Test __iadd__ operation of OffloadArray with OffloadArray 
+        """Test __iadd__ operation of OffloadArray with OffloadArray
            operand."""
 
         device = pymic.devices[0]
@@ -533,7 +533,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a += offl_o
@@ -565,7 +565,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a += o
@@ -595,7 +595,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a + s
-        
+
         offl_a = stream.bind(a)
         offl_a += s
         offl_a.update_host()
@@ -611,7 +611,7 @@ class OffloadArrayTest(unittest.TestCase):
 
     @skipNoDevice
     def test_op_iadd_offload_array_complex(self):
-        """Test __iadd__ operation of OffloadArray with OffloadArray 
+        """Test __iadd__ operation of OffloadArray with OffloadArray
            operand."""
 
         device = pymic.devices[0]
@@ -624,7 +624,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a += offl_o
@@ -656,7 +656,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a + o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a += o
@@ -672,7 +672,7 @@ class OffloadArrayTest(unittest.TestCase):
                         "{0} should be {1}".format(o, old_o))
         self.assertTrue((r == expect).all(),
                         "Array contains unexpected values: "
-                        "{0} should be {1}".format(r, expect))                        
+                        "{0} should be {1}".format(r, expect))
 
     @skipNoDevice
     def test_op_sub_scalar_int(self):
@@ -686,7 +686,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a - s
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a - s
         offl_a.update_host()
@@ -716,7 +716,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = offl_a - offl_o
@@ -750,7 +750,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a - o
         offl_a.update_host()
@@ -781,7 +781,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a - s
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a - s
         offl_a.update_host()
@@ -811,7 +811,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = offl_a - offl_o
@@ -845,7 +845,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a - o
         offl_a.update_host()
@@ -876,7 +876,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a - s
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a - s
         offl_a.update_host()
@@ -906,7 +906,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = offl_a - offl_o
@@ -940,7 +940,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a - o
         offl_a.update_host()
@@ -971,7 +971,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a - s
-        
+
         offl_a = stream.bind(a)
         offl_a -= s
         offl_a.update_host()
@@ -987,7 +987,7 @@ class OffloadArrayTest(unittest.TestCase):
 
     @skipNoDevice
     def test_op_isub_offload_array_int(self):
-        """Test __isub__ operation of OffloadArray with OffloadArray 
+        """Test __isub__ operation of OffloadArray with OffloadArray
            operand."""
 
         device = pymic.devices[0]
@@ -1000,7 +1000,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a -= offl_o
@@ -1032,7 +1032,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a -= o
@@ -1062,7 +1062,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a - s
-        
+
         offl_a = stream.bind(a)
         offl_a -= s
         offl_a.update_host()
@@ -1078,7 +1078,7 @@ class OffloadArrayTest(unittest.TestCase):
 
     @skipNoDevice
     def test_op_isub_offload_array_float(self):
-        """Test __isub__ operation of OffloadArray with OffloadArray 
+        """Test __isub__ operation of OffloadArray with OffloadArray
            operand."""
 
         device = pymic.devices[0]
@@ -1091,7 +1091,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a -= offl_o
@@ -1123,7 +1123,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a -= o
@@ -1153,7 +1153,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a - s
-        
+
         offl_a = stream.bind(a)
         offl_a -= s
         offl_a.update_host()
@@ -1169,7 +1169,7 @@ class OffloadArrayTest(unittest.TestCase):
 
     @skipNoDevice
     def test_op_isub_offload_array_complex(self):
-        """Test __isub__ operation of OffloadArray with OffloadArray 
+        """Test __isub__ operation of OffloadArray with OffloadArray
            operand."""
 
         device = pymic.devices[0]
@@ -1182,7 +1182,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a -= offl_o
@@ -1214,7 +1214,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a - o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a -= o
@@ -1244,7 +1244,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a * s
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a * s
         offl_a.update_host()
@@ -1274,7 +1274,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = offl_a * offl_o
@@ -1308,7 +1308,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a * o
         offl_a.update_host()
@@ -1339,7 +1339,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a * s
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a * s
         offl_a.update_host()
@@ -1369,7 +1369,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = offl_a * offl_o
@@ -1403,7 +1403,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a * o
         offl_a.update_host()
@@ -1434,7 +1434,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a * s
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a * s
         offl_a.update_host()
@@ -1464,7 +1464,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = offl_a * offl_o
@@ -1498,7 +1498,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a * o
         offl_a.update_host()
@@ -1529,7 +1529,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a * s
-        
+
         offl_a = stream.bind(a)
         offl_a *= s
         offl_a.update_host()
@@ -1545,7 +1545,7 @@ class OffloadArrayTest(unittest.TestCase):
 
     @skipNoDevice
     def test_op_imul_offload_array_int(self):
-        """Test __imul__ operation of OffloadArray with OffloadArray 
+        """Test __imul__ operation of OffloadArray with OffloadArray
            operand."""
 
         device = pymic.devices[0]
@@ -1558,7 +1558,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a *= offl_o
@@ -1590,7 +1590,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a *= o
@@ -1620,7 +1620,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a * s
-        
+
         offl_a = stream.bind(a)
         offl_a *= s
         offl_a.update_host()
@@ -1636,7 +1636,7 @@ class OffloadArrayTest(unittest.TestCase):
 
     @skipNoDevice
     def test_op_imul_offload_array_float(self):
-        """Test __imul__ operation of OffloadArray with OffloadArray 
+        """Test __imul__ operation of OffloadArray with OffloadArray
            operand."""
 
         device = pymic.devices[0]
@@ -1649,7 +1649,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a *= offl_o
@@ -1681,7 +1681,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a *= o
@@ -1711,7 +1711,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = a * s
-        
+
         offl_a = stream.bind(a)
         offl_a *= s
         offl_a.update_host()
@@ -1727,7 +1727,7 @@ class OffloadArrayTest(unittest.TestCase):
 
     @skipNoDevice
     def test_op_imul_offload_array_complex(self):
-        """Test __imul__ operation of OffloadArray with OffloadArray 
+        """Test __imul__ operation of OffloadArray with OffloadArray
            operand."""
 
         device = pymic.devices[0]
@@ -1740,7 +1740,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a *= offl_o
@@ -1772,7 +1772,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = a * o
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_a *= o
@@ -1802,9 +1802,9 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         cutoff = numpy.empty_like(a)
-        cutoff[:] = sys.maxint - 1
+        cutoff[:] = cutoff_value
         expect = numpy.minimum(pow(a, s), cutoff)
-        
+
         offl_a = stream.bind(a)
         offl_r = pow(offl_a, s)
         r = offl_r.update_host().array
@@ -1835,9 +1835,9 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         cutoff = numpy.empty_like(a)
-        cutoff[:] = sys.maxint - 1
+        cutoff[:] = cutoff_value
         expect = numpy.minimum(pow(a, o), cutoff)
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = pow(offl_a, offl_o)
@@ -1872,9 +1872,9 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         cutoff = numpy.empty_like(a)
-        cutoff[:] = sys.maxint - 1
+        cutoff[:] = cutoff_value
         expect = numpy.minimum(pow(a, o), cutoff)
-        
+
         offl_a = stream.bind(a)
         offl_r = pow(offl_a, o)
         r = offl_r.update_host().array
@@ -1905,7 +1905,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = pow(a, s)
-        
+
         offl_a = stream.bind(a)
         offl_r = pow(offl_a, s)
         r = offl_r.update_host().array
@@ -1934,7 +1934,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = pow(a, o)
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = pow(offl_a, offl_o)
@@ -1967,7 +1967,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = pow(a, o)
-        
+
         offl_a = stream.bind(a)
         offl_r = pow(offl_a, o)
         r = offl_r.update_host().array
@@ -1997,7 +1997,7 @@ class OffloadArrayTest(unittest.TestCase):
         old = numpy.empty_like(a)
         old[:] = a[:]
         expect = pow(a, s)
-        
+
         offl_a = stream.bind(a)
         offl_r = pow(offl_a, s)
         r = offl_r.update_host().array
@@ -2026,7 +2026,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = pow(a, o)
-        
+
         offl_a = stream.bind(a)
         offl_o = stream.bind(o)
         offl_r = pow(offl_a, offl_o)
@@ -2059,7 +2059,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a[:] = a[:]
         old_o[:] = o[:]
         expect = pow(a, o)
-        
+
         offl_a = stream.bind(a)
         offl_r = pow(offl_a, o)
         r = offl_r.update_host().array
@@ -2089,13 +2089,13 @@ class OffloadArrayTest(unittest.TestCase):
         old_a = numpy.empty_like(a)
         old_a[:] = a[:]
         expect = abs(a)
-        
+
         offl_a = stream.bind(a)
         offl_r = abs(offl_a)
         r = offl_r.update_host().array
         stream.sync()
 
-        self.assertTrue((a == old_a).all(), 
+        self.assertTrue((a == old_a).all(),
                         "Input array operand 1 must not be modified: "
                         "{0} should be {1}".format(a, old_a))
         self.assertTrue((r == expect).all(),
@@ -2350,7 +2350,7 @@ class OffloadArrayTest(unittest.TestCase):
         r = offl_r.update_host().array
         stream.sync()
 
-        self.assertTrue((a == old_a).all(), 
+        self.assertTrue((a == old_a).all(),
                         "Input array operand 1 must not be modified: "
                         "{0} should be {1}".format(a, old_a))
         self.assertTrue((r == expect).all(),
@@ -2367,13 +2367,13 @@ class OffloadArrayTest(unittest.TestCase):
         old_a = numpy.empty_like(a)
         old_a[:] = a[:]
         expect = numpy.array(a[::-1])
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a.reverse()
         r = offl_r.update_host().array
         stream.sync()
 
-        self.assertTrue((a == old_a).all(), 
+        self.assertTrue((a == old_a).all(),
                         "Input array operand 1 must not be modified: "
                         "{0} should be {1}".format(a, old_a))
         self.assertTrue((r == expect).all(),
@@ -2390,7 +2390,7 @@ class OffloadArrayTest(unittest.TestCase):
         old_a = numpy.empty_like(a)
         old_a[:] = a[:]
         expect = numpy.array(a[::-1])
-        
+
         offl_a = stream.bind(a)
         offl_r = offl_a.reverse()
         offl_r.update_host()

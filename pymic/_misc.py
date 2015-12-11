@@ -71,7 +71,7 @@ if _config._debug_level is not None:
 
 
 def _debug(level, format, *objs):
-    if _config._debug_level >= level:
+    if _config._debug_level is not None and _config._debug_level >= level:
         msg = "PYMIC: " + format.format(*objs)
         print(msg, file=sys.stderr)
     return None
@@ -109,7 +109,7 @@ _data_type_map = {
     numpy.dtype(numpy.int32): 1,
     numpy.dtype(numpy.float64): 2,
     numpy.dtype(numpy.complex128): 3,
-    numpy.dtype(numpy.uint64) : 4
+    numpy.dtype(numpy.uint64): 4
 }
 
 
@@ -133,9 +133,9 @@ class _DeviceAllocation:
     def __init__(self, stream, device, device_ptr, sticky):
         """Initialize the fake pointer with the data coming from
            OffloadStream.allocate_device_memory."""
-        assert stream != None
-        assert device != None
-        assert device_ptr != None
+        assert stream is not None
+        assert device is not None
+        assert device_ptr is not None
 
         self._stream = stream
         self._device = device

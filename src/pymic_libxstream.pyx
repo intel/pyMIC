@@ -27,9 +27,12 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from offload_error import OffloadError
+from cpython.version cimport PY_MAJOR_VERSION
+
+from pymic.offload_error import OffloadError
 
 from libc.stdint cimport int64_t
+
 
 cdef extern from "libxstream/include/libxstream.h":
     ctypedef void libxstream_stream 
@@ -71,6 +74,9 @@ cdef _c_pymic_stream_create(int device_id, const char *stream_name):
     return <int64_t>stream
     
 def pymic_stream_create(device_id, stream_name = 'stream'):
+    if PY_MAJOR_VERSION > 2:
+        if isinstance(stream_name, str):
+            stream_name = bytes(stream_name, 'ascii')
     return _c_pymic_stream_create(device_id, stream_name)
 
 ################################################################################
@@ -226,6 +232,9 @@ cdef _c_pymic_library_load(int device, const char *filename):
     return (handle, <bytes> tempfile)
     
 def pymic_library_load(device_id, filename):
+    if PY_MAJOR_VERSION > 2:
+        if isinstance(filename, str):
+            filename = bytes(filename, 'ascii')
     return _c_pymic_library_load(device_id, filename)
 
 ################################################################################
@@ -237,6 +246,9 @@ cdef _c_pymic_library_unload(int device_id, int64_t library_handle, const char *
     return None
     
 def pymic_library_unload(device_id, library_handle, tempfile):
+    if PY_MAJOR_VERSION > 2:
+        if isinstance(tempfile, str):
+            tempfile = bytes(tempfile, 'ascii')
     _c_pymic_library_unload(device_id, library_handle, tempfile)
     return None
 
@@ -251,4 +263,7 @@ cdef _c_pymic_library_find_kernel(int device_id, int64_t library_handle, const c
     return kernel_ptr
 
 def pymic_library_find_kernel(device_id, library_handle, kernel_name):
+    if PY_MAJOR_VERSION > 2:
+        if isinstance(kernel_name, str):
+            kernel_name = bytes(kernel_name, 'ascii')
     return _c_pymic_library_find_kernel(device_id, library_handle, kernel_name)

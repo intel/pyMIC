@@ -34,13 +34,17 @@ import os
 import platform
 import subprocess
 
-from offload_error import OffloadError
-from _misc import _debug as debug
-from _misc import _config as config
+from pymic.offload_error import OffloadError
+from pymic._misc import _debug as debug
+from pymic._misc import _config as config
 
-from _engine import pymic_library_load
-from _engine import pymic_library_unload
-from _engine import pymic_library_find_kernel
+from pymic._engine import pymic_library_load
+from pymic._engine import pymic_library_unload
+from pymic._engine import pymic_library_find_kernel
+
+
+# retrieve the installation path of the module
+pymic_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 class OffloadLibrary:
@@ -67,6 +71,10 @@ class OffloadLibrary:
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         out, err = p.communicate()
+        if not isinstance(out, str):
+            out = str(out, 'ascii')
+        # look for architecture flags
+        # ('<unknown>' for older versions of binutils)
         return out.find('<unknown>: 0xb5') > 0 or out.find('Intel K1OM') > 0
 
     @staticmethod
@@ -74,12 +82,14 @@ class OffloadLibrary:
         if os.path.isabs(library) and OffloadLibrary._check_k1om(library):
             abspath = library
         else:
-            for path in config._search_path.split(os.pathsep):
+            path_list = [pymic_dir]
+            path_list.extend(config._search_path.split(os.pathsep))
+            for path in path_list:
                 debug(5, "    looking for {0} in {1}", library, path)
                 abspath = os.path.join(path, library)
 
                 if (os.path.isfile(abspath) and
-                    OffloadLibrary._check_k1om(abspath)):
+                        OffloadLibrary._check_k1om(abspath)):
                     break
             else:
                 return

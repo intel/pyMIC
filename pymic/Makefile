@@ -32,7 +32,7 @@
 all: liboffload_array.so 
 
 pep8check:
-	pep8 --ignore=W293,W291 *.py
+	pep8 *.py
 
 clean:
 	rm -f *.pyc

@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Copyright (c) 2014-2015, Intel Corporation All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,6 +37,6 @@ from offload_stream_tests import OffloadStreamTests
 from offload_array_tests import OffloadArrayTest
 from application_kernels import ApplicationKernelTests
 
-if __name__ == "__main__":        
+if __name__ == "__main__":
     # fire up all the unit tests we have
     unittest.main()

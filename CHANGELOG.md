@@ -1,5 +1,8 @@
-# Next Version
-* None arguments of kernels are converted to nullptr or NULL.
+# Version 0.7
+* Experimental support for Python 3.
+* `None` arguments of kernels are converted to nullptr or NULL.
+* Switched to Python's distutils to build and install pyMIC.
+* Deprecated the build system based on Makefiles.
 
 
 # Version 0.6

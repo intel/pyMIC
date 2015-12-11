@@ -40,10 +40,10 @@ libkernelnames.so: kernelnames.c
 	chmod a+rX libkernelnames.so
 
 tests: all
-	./testsuite.py -v
+	python ./testsuite.py -v
 
 pep8check:
-	pep8 --ignore=W293,W291 *.py
+	pep8 *.py
 
 clean:
 

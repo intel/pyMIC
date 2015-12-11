@@ -28,11 +28,12 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
+from __future__ import division
 
 import unittest
 import numpy
 
-import pymic 
+import pymic
 
 from helper import skipNoDevice
 from helper import get_library
@@ -43,15 +44,15 @@ class OffloadStreamTests(unittest.TestCase):
 
     @skipNoDevice
     def test_invalid_kernel_name(self):
-        """Test if invoke_kernel_string throws an exception if a kernel's 
+        """Test if invoke_kernel_string throws an exception if a kernel's
            name does not exist in any loaded library."""
 
         device = pymic.devices[0]
         library = get_library(device, "libtests.so")
         stream = device.get_default_stream()
-            
+
         try:
-            self.assertRaises(pymic.OffloadError, 
+            self.assertRaises(pymic.OffloadError,
                               library.this_kernel_does_not_exist_anywhere)
         except pymic.OffloadError:
             self.assertTrue(True)
@@ -60,7 +61,7 @@ class OffloadStreamTests(unittest.TestCase):
 
     @skipNoDevice
     def test_invoke_empty_kernel(self):
-        """Test if invoke_kernel_string does successfully invoke a 
+        """Test if invoke_kernel_string does successfully invoke a
            kernel function with no arguments."""
 
         device = pymic.devices[0]
@@ -94,10 +95,11 @@ class OffloadStreamTests(unittest.TestCase):
         stream = device.get_default_stream()
         library = get_library(device, "libtests.so")
 
-        dummy1 = numpy.empty((1024,), dtype=float);
+        dummy1 = numpy.empty((1024,), dtype=float)
         result = numpy.empty((1,), dtype=int)
         result[0] = 1234567890
-        stream.invoke(library.test_offload_stream_nullptr_2, dummy1, None, result)
+        stream.invoke(library.test_offload_stream_nullptr_2,
+                      dummy1, None, result)
         stream.sync()
 
         self.assertEqual(result[0], 0)
@@ -111,11 +113,12 @@ class OffloadStreamTests(unittest.TestCase):
         stream = device.get_default_stream()
         library = get_library(device, "libtests.so")
 
-        dummy1 = numpy.empty((1024,), dtype=float);
-        dummy2 = numpy.empty((1024,), dtype=float);
+        dummy1 = numpy.empty((1024,), dtype=float)
+        dummy2 = numpy.empty((1024,), dtype=float)
         result = numpy.empty((1,), dtype=int)
         result[0] = 1234567890
-        stream.invoke(library.test_offload_stream_nullptr_3, dummy1, None, dummy2, result)
+        stream.invoke(library.test_offload_stream_nullptr_3,
+                      dummy1, None, dummy2, result)
         stream.sync()
 
         self.assertEqual(result[0], 0)
@@ -129,11 +132,12 @@ class OffloadStreamTests(unittest.TestCase):
         stream = device.get_default_stream()
         library = get_library(device, "libtests.so")
 
-        dummy1 = numpy.empty((1024,), dtype=float);
-        dummy2 = numpy.empty((1024,), dtype=float);
+        dummy1 = numpy.empty((1024,), dtype=float)
+        dummy2 = numpy.empty((1024,), dtype=float)
         result = numpy.empty((1,), dtype=int)
         result[0] = 1234567890
-        stream.invoke(library.test_offload_stream_nullptr_4, dummy1, None, None, dummy2, result)
+        stream.invoke(library.test_offload_stream_nullptr_4,
+                      dummy1, None, None, dummy2, result)
         stream.sync()
 
         self.assertEqual(result[0], 0)
@@ -147,12 +151,13 @@ class OffloadStreamTests(unittest.TestCase):
         stream = device.get_default_stream()
         library = get_library(device, "libtests.so")
 
-        dummy1 = numpy.empty((1024,), dtype=float);
-        dummy2 = numpy.empty((1024,), dtype=float);
-        dummy3 = numpy.empty((1024,), dtype=float);
+        dummy1 = numpy.empty((1024,), dtype=float)
+        dummy2 = numpy.empty((1024,), dtype=float)
+        dummy3 = numpy.empty((1024,), dtype=float)
         result = numpy.empty((1,), dtype=int)
         result[0] = 1234567890
-        stream.invoke(library.test_offload_stream_nullptr_5, dummy1, None, dummy2, None, dummy3, result)
+        stream.invoke(library.test_offload_stream_nullptr_5,
+                      dummy1, None, dummy2, None, dummy3, result)
         stream.sync()
 
         self.assertEqual(result[0], 0)
@@ -171,7 +176,7 @@ class OffloadStreamTests(unittest.TestCase):
         device = pymic.devices[0]
         library = get_library(device, "libtests.so")
         stream = device.get_default_stream()
-        stream.invoke(library.test_offload_stream_kernel_scalars, 
+        stream.invoke(library.test_offload_stream_kernel_scalars,
                       a, b, c, d, ival, dval)
         stream.sync()
         self.assertEqual((ival[0], ival[1]), (42, 0))
@@ -187,21 +192,21 @@ class OffloadStreamTests(unittest.TestCase):
         d = 13
         m = 7
 
-        a_expect = a / d
+        a_expect = a // d
         b_expect = b % m
         c_expect = (a.shape[0], b.shape[0])
 
         device = pymic.devices[0]
         library = get_library(device, "libtests.so")
         stream = device.get_default_stream()
-        stream.invoke(library.test_offload_stream_kernel_arrays_int, 
+        stream.invoke(library.test_offload_stream_kernel_arrays_int,
                       a, b, a.size, b.size, d, m)
         stream.sync()
 
-        self.assertTrue((a == a_expect).all(), 
+        self.assertTrue((a == a_expect).all(),
                         "Wrong contents of array: "
                         "{0} should be {1}".format(a, a_expect))
-        self.assertTrue((a == a_expect).all(), 
+        self.assertTrue((a == a_expect).all(),
                         "Wrong contents of array: "
                         "{0} should be {1}".format(b, b_expect))
 
@@ -222,14 +227,14 @@ class OffloadStreamTests(unittest.TestCase):
         device = pymic.devices[0]
         library = get_library(device, "libtests.so")
         stream = device.get_default_stream()
-        stream.invoke(library.test_offload_stream_kernel_arrays_float, 
+        stream.invoke(library.test_offload_stream_kernel_arrays_float,
                       a, b, a.size, b.size, p, s)
         stream.sync()
 
-        self.assertTrue((a == a_expect).all(), 
+        self.assertTrue((a == a_expect).all(),
                         "Wrong contents of array: "
                         "{0} should be {1}".format(a, a_expect))
-        self.assertTrue((a == a_expect).all(), 
+        self.assertTrue((a == a_expect).all(),
                         "Wrong contents of array: "
                         "{0} should be {1}".format(b, b_expect))
 
@@ -247,7 +252,7 @@ class OffloadStreamTests(unittest.TestCase):
         a[:] = pattern
         offl_a = stream.bind(a)
         offl_r = stream.bind(r)
-        stream.invoke(library.test_check_pattern, 
+        stream.invoke(library.test_check_pattern,
                       offl_a, offl_a.size, offl_r, pattern)
         offl_r.update_host()
         stream.sync()
@@ -302,10 +307,10 @@ class OffloadStreamTests(unittest.TestCase):
         stream.transfer_device2host(device_ptr_2, ptr_b_host, nbytes)
         stream.sync()
 
-        self.assertTrue((a == a_expect).all(), 
+        self.assertTrue((a == a_expect).all(),
                         "Wrong contents of array: "
                         "{0} should be {1}".format(b, b_expect))
-        self.assertTrue((b == b_expect).all(), 
+        self.assertTrue((b == b_expect).all(),
                         "Wrong contents of array: "
                         "{0} should be {1}".format(b, b_expect))
 
@@ -319,8 +324,8 @@ class OffloadStreamTests(unittest.TestCase):
         a_expect = numpy.empty_like(a)
         a_expect[:] = a[:]
         b_expect = numpy.empty_like(a)
-        b_expect[0:a.size / 2] = a[a.size / 2:]
-        b_expect[a.size / 2:] = a[0:a.size / 2]
+        b_expect[0:a.size // 2] = a[a.size // 2:]
+        b_expect[a.size // 2:] = a[0:a.size // 2]
 
         nbytes = a.dtype.itemsize * a.size
         ptr_a_host = a.ctypes.data
@@ -329,26 +334,26 @@ class OffloadStreamTests(unittest.TestCase):
         device_ptr_1 = stream.allocate_device_memory(nbytes)
         device_ptr_2 = stream.allocate_device_memory(nbytes)
 
-        stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes / 2, 
+        stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes / 2,
                                     offset_host=0, offset_device=nbytes / 2)
-        stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes / 2, 
+        stream.transfer_host2device(ptr_a_host, device_ptr_1, nbytes / 2,
                                     offset_host=nbytes / 2, offset_device=0)
 
-        for i in xrange(0, 4):                            
-            stream.transfer_device2device(device_ptr_1, device_ptr_2, 
+        for i in range(0, 4):
+            stream.transfer_device2device(device_ptr_1, device_ptr_2,
                                           nbytes / 4,
-                                          offset_device_src=i * (nbytes / 4), 
+                                          offset_device_src=i * (nbytes / 4),
                                           offset_device_dst=(3 - i) *
                                                             (nbytes / 4))
-        for i in xrange(0, 4):
+        for i in range(0, 4):
             stream.transfer_device2host(device_ptr_2, ptr_b_host, nbytes / 4,
-                                        offset_device=i * (nbytes / 4), 
+                                        offset_device=i * (nbytes / 4),
                                         offset_host=(3 - i) * (nbytes / 4))
         stream.sync()
 
-        self.assertTrue((a == a_expect).all(), 
+        self.assertTrue((a == a_expect).all(),
                         "Wrong contents of array: "
                         "{0} should be {1}".format(b, b_expect))
-        self.assertTrue((b == b_expect).all(), 
+        self.assertTrue((b == b_expect).all(),
                         "Wrong contents of array: "
                         "{0} should be {1}".format(b, b_expect))

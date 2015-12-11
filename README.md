@@ -1,6 +1,6 @@
 # General Information
 
-pyMIC is a Python module to offload computation in a Python program to the Intel Xeon Phi coprocessor. It contains offloadable arrays and device management functions. It supports invocation of native kernels (C/C++, Fortran) and blends in with Numpy's array types for `float`, `complex`, and `int` data types. 
+pyMIC is a Python module to offload computation in a Python program to the Intel Xeon Phi coprocessor. It contains offloadable arrays and device management functions. It supports invocation of native kernels (C/C++, Fortran) and blends in with Numpy's array types for `float`, `complex`, and `int` data types.
 
 For more information and downloads please visit pyMIC's Github page: https://github.com/01org/pyMIC. You can find pyMIC's mailinglist at https://lists.01.org/mailman/listinfo/pymic. If you want to report a bug, please send an email to the mailinglist or file an issue at Github.
 
@@ -18,13 +18,16 @@ The pyMIC module is early code and is still under development. Please expect som
 
 
 
-# Requirements 
+# Requirements
+
+The requirements below describes the software packages that we have tested pyMIC with.  Other versions and packages might also work.
+
 
 ## Linux
 
 The pyMIC module still has some special requirements for the build system.  You will need to have the following software packages installed on your system:
 
-*   CPython 2.6.x or 2.7.x (<https://www.python.org/>)
+*   CPython 2.6.x or 2.7.x or CPython 3.4.x (<https://www.python.org/>)
 
 *   Cython 0.19 or later (<http://cython.org/>)
 
@@ -62,26 +65,14 @@ To compile pyMIC, please follow these steps carefully:
     $> cd $pymic
     ```
 
-*   Load the pyMIC enviroment by sourcing the enviroment script, to set all required path variables for pyMIC:
+*   Use `python ./setup.py build` to compile the pyMIC module.
 
-    ```
-    $> source env.sh
-    ```
+*   After successful compilation, type `python ./setup.py install` to install the module in the default place for Python modules.
 
-*   Depending on the Python version installed, you may need to adjust the variable `PYTHON_INCLUDES` in the makefiles to match your system
-
-*   Change to the pyMIC directory and build the native parts of the module:
-
-    ```
-    $> cd $PYMIC_BASE
-    $> make
-    ```
-
-*   You should now have the shared object files `pymic_libxstream.so` and `liboffload_array.so` in the `pymic` subdirectory.
 
 
 ## Usage
-  
+
 To use the pyMIC module in a Python application on Linux, please follow these steps:
 
 *   `$pymic` is the base directory of the pyMIC checkout/download
@@ -92,25 +83,12 @@ To use the pyMIC module in a Python application on Linux, please follow these st
     $> source /opt/intel/composerxe/bin/compilervars.sh intel64
     ```
 
-*   Load the pyMIC enviroment by sourcing the enviroment script, to set all required path variables for pyMIC:
-
-    ```
-    $> cd $pymic
-    $> source env.sh
-    ```
-
-*   Alternatively, set the Python search path, so that Python can find the pyMIC modules:
-
-    ```
-    $> export PYTHONPATH=$PYTHONPATH:$pymic
-    ```
-
 *   You can set `OFFLOAD_REPORT=<level>` to see the offloads that are triggered by pyMIC.
 
 *   If you want to have even more fine-grained debugging output, set the environment variable `PYMIC_DEBUG=<level>`.
 
 Please see the example codes in `$pymic/examples` and the API documentation for each pyMIC method on how to use the pyMIC module from your Python application.
- 
+
 
 
 # Setting up the pyMIC Module for Windows
@@ -128,7 +106,7 @@ The build system is based on a couple of Windows batch files.  To compile pyMIC 
     ```
     > cd %pymic%
     ```
- 
+
 *   Load the pyMIC environment:
 
     ```
@@ -175,16 +153,39 @@ Please see the example codes in `%pymic%/examples` and the API documentation for
 
 # Example Programs
 
-There are a few examples programs that you can use for your first steps.  You will find them in the `$pymic/examples` directory.  
+There are a few examples programs that you can use for your first steps.  You will find them in the `$pymic/examples` directory.
 
-To run the examples, pleae make sure that the environment of Intel Composer XE and pyMIC have been loaded:
+
+## Setting up the Examples
+
+pyMIC ships with a small set of example programs.  The examples are not compiled and installed by default.  Please follow these steps to run an example program:
+
+*   `$pymic` is the base directory of the pyMIC checkout/download
+
+*   Load the environment of the Intel Composer XE (if it has not been loaded yet):
+
+    ```
+    $> source /opt/intel/composerxe/bin/compilervars.sh intel64
+    ```
+
+*   Go to the directory of the example your are interested in, e.g., `dgemm`:
+
+    ```
+    $> cd $pymic/examples/dgemm
+    ```
+
+*   Type `make` in the directory.
+
+
+
+## Running the Examples
+
+To run the examples, please make sure that the environment of Intel Composer XE and pyMIC have been loaded:
 
 *   Linux:
 
     ```
     $> source /opt/intel/composerxe/bin/compilervars.sh intel64
-    $> cd $pymic
-    $> source env.sh
     ```
 
 *   Windows:
@@ -213,12 +214,13 @@ After completing the setup steps for the environment, you should now be able to 
 The `make` command creates a shared object for the examples kernel code for native execution on the Intel(R) Xeon Phi(tm) Coprocessor.  After this step has been completed, you can run the example code:
 
 ```
+$> export PYMIC_LIBRARY_PATH=$PYMIC_LIBRARY_PATH:$PWD
 $> python double_it.py
 ```
 
 Side note: if the shared object created for the example depends on additional libraries (e.g., the examples dgemm and svd) you need to make sure that the directories hosting these libraries are visible on the coprocessor via NFS or have been installed to the `/lib` directory on the coprocessor's ramdisk.
 
- 
+
 
 # Tracing & Debugging
 
@@ -236,7 +238,7 @@ The pyMIC module can collect a trace of all performance relevant calls into the 
 To enable tracing, set `PYMIC_TRACE=1` before launching the Python application.  Shortly before the program finishes, the tracing information will be printed to `stdout` as Python maps and lists that have been converted to plain text.  You can then run any desired analysis on the trace data.
 
 For each trace record, pyMIC records its source code location of the invocation.  This is called "compact" format (`PYMIC_TRACE_STACKS=commpact`).  If the full call stack of the invocation is needed, `PYMIC_TRACE_STACKS=full` will collect the full call stack from the call site of a pyMIC function up to the top of the application code.  You can turn of stack collection (to increase performance while tracing) by setting `PYMIC_TRACE_STACKS=none`.
- 
+
 
 # Debugging
 
@@ -248,7 +250,7 @@ You can set the `PYMIC_DEBUG` environment variable to enable the debugging outpu
 |1      | show data transfers and kernel invocation              |
 |2      | show allocation/deallocation of buffers                |
 |3      | show argument conversions                              |
-|5      | show additional operations performed                   | 
+|5      | show additional operations performed                   |
 |10     | extension module: data transfers                       |
 |100    | extension module: buffer management, kernel invocation |
 |1000   | extension module: function entry/exit                  |

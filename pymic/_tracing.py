@@ -34,8 +34,8 @@ import sys
 import timeit
 import inspect
 
-from _misc import _debug as debug
-from _misc import _config as config
+from pymic._misc import _debug as debug
+from pymic._misc import _config as config
 
 
 _pymic_modules = [
@@ -137,19 +137,19 @@ elif config._trace_level is not None:
 if config._trace_level >= 1:
     _stack_walk_func = _stack_walk_compact
     if config._collect_stacks_str.lower() == "none":
-        debug(5, "stack collection is set to '{0}'", 
+        debug(5, "stack collection is set to '{0}'",
               config._collect_stacks_str)
         _stack_walk_func = _stack_walk_none
     elif config._collect_stacks_str.lower() == "compact":
-        debug(5, "stack collection is set to '{0}'", 
+        debug(5, "stack collection is set to '{0}'",
               config._collect_stacks_str)
         _stack_walk_func = _stack_walk_compact
     elif config._collect_stacks_str.lower() == "full":
-        debug(5, "stack collection is set to '{0}'", 
+        debug(5, "stack collection is set to '{0}'",
               config._collect_stacks_str)
         _stack_walk_func = _stack_walk_full
     else:
-        debug(5, "stack collection is set to '{0}', using 'compact'", 
+        debug(5, "stack collection is set to '{0}', using 'compact'",
               config._collect_stacks_str)
 
     # create statistics database

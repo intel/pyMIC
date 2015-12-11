@@ -27,23 +27,22 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import _engine
+import pymic._engine
 
-from offload_error import OffloadError
+from pymic.offload_error import OffloadError
 
-from offload_array import OffloadArray
+from pymic.offload_array import OffloadArray
 
-from offload_stream import OffloadStream
+from pymic.offload_stream import OffloadStream
 
-from offload_device import OffloadDevice
-from offload_device import number_of_devices
-from offload_device import devices
+from pymic.offload_device import OffloadDevice
+from pymic.offload_device import number_of_devices
+from pymic.offload_device import devices
 
-from offload_library import OffloadLibrary
+from pymic.offload_library import OffloadLibrary
 
 
-# load all MIC libraries
 if True:
-    from _misc import _debug 
+    from pymic._misc import _debug
     _debug(5, "starting initialization of the offload infrastructure")
     _debug(5, "loading supporting pyMIC libraries on all devices")
