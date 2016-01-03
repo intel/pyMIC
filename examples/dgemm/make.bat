@@ -1,6 +1,6 @@
 @echo off
 
-REM # Copyright (c) 2014-2015, Intel Corporation All rights reserved. 
+REM # Copyright (c) 2014-2016, Intel Corporation All rights reserved.
 REM # 
 REM # Redistribution and use in source and binary forms, with or without 
 REM # modification, are permitted provided that the following conditions are 
