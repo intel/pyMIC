@@ -43,7 +43,7 @@ from distutils.unixccompiler import UnixCCompiler
 from Cython.Distutils import build_ext
 
 MAJOR = 0
-MINOR = 6
+MINOR = 7
 VERSION = '{0}.{1}'.format(MAJOR, MINOR)
 
 
