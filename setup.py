@@ -40,7 +40,8 @@ from distutils.core import setup
 from distutils.extension import Extension
 from distutils.ccompiler import CCompiler
 from distutils.unixccompiler import UnixCCompiler
-from Cython.Distutils import build_ext
+from Cython.Distutils import build_ext as build_ext_org
+
 
 MAJOR = 0
 MINOR = 7
@@ -93,6 +94,17 @@ class IntelCompiler(UnixCCompiler, object):
 def my_new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
     compiler = IntelCompiler(verbose, dry_run, force)
     return compiler
+
+
+# override naming of the resulting output files
+class build_ext(build_ext_org):
+    def get_ext_filename(self, ext_name):
+        filename = build_ext_org.get_ext_filename(self, ext_name)
+        split = os.path.splitext(filename)
+        basename = os.path.splitext(split[0])[0]
+        if basename in ['pymic_libxstream', 'liboffload_array']:
+            filename = basename + split[1]
+        return filename
 
 
 # override compiler construction
