@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #if defined(_WIN32)
 #else
+#include <unistd.h>
 #include <dlfcn.h>
 #endif
  
