@@ -42,10 +42,34 @@ from distutils.ccompiler import CCompiler
 from distutils.unixccompiler import UnixCCompiler
 from Cython.Distutils import build_ext as build_ext_org
 
+import subprocess
 
 MAJOR = 0
 MINOR = 7
 VERSION = '{0}.{1}'.format(MAJOR, MINOR)
+
+
+# detect the compiler version
+def find_compiler_major():
+    p = subprocess.Popen(['icpc', '-v'],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    if not isinstance(err, str):
+        err = str(err, 'ascii')
+    tokens = err.split()
+    version = tokens[2]
+    major, minor, revision = version.split('.')
+    print("detecting compiler version:", version)
+    return int(major)
+
+
+# functions to find proper command line arguments
+def find_offload_switch():
+    if find_compiler_major() >= 16:
+        return '-qoffload=mandatory'
+    else:
+        return '-offload=mandatory'
 
 
 # compiler driver for Intel Composer for C/C++
@@ -132,7 +156,7 @@ engine_libxstream = Extension('pymic.pymic_libxstream',
                               extra_compile_args=['-fPIC', '-std=c++0x',
                                                   '-DPYMIC_USE_XSTREAM=1',
                                                   '-DLIBXSTREAM_EXPORTED',
-                                                  '-offload=mandatory',
+                                                  find_offload_switch(),
                                                   '-Wall', '-pthread',
                                                   '-g', '-O2', '-ansi-alias'],
                               extra_link_args=['-pthread'])
