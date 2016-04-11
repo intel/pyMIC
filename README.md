@@ -31,7 +31,7 @@ The pyMIC module still has some special requirements for the build system.  You 
 
 *   Cython 0.19 or later (<http://cython.org/>)
 
-*   Intel(R) Composer XE 2013 SP1 or Intel Composer XE 2016 Beta (<https://software.intel.com/en-us/intel-parallel-studio-xe>)
+*   Intel(R) Composer XE 2016 or Intel(R) Composer 2017 Beta (<https://software.intel.com/en-us/intel-parallel-studio-xe>)
 
 *   MPSS 3.3 or greater (<https://software.intel.com/en-us/articles/intel-manycore-platform-software-stack-mpss>)
 

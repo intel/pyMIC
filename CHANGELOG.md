@@ -1,3 +1,8 @@
+# Version 0.7.1
+* Support for Intel(R) Composer XE 2017 Beta and MPSS 3.7 
+* Bugfix: fixed compilation problem with MPSS 3.6.1
+
+
 # Version 0.7
 * Experimental support for Python 3.
 * `None` arguments of kernels are converted to nullptr or NULL.
