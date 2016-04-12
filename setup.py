@@ -46,7 +46,8 @@ import subprocess
 
 MAJOR = 0
 MINOR = 7
-VERSION = '{0}.{1}'.format(MAJOR, MINOR)
+REVISION = 1
+VERSION = '{0}.{1}.{2}'.format(MAJOR, MINOR, REVISION)
 
 
 # detect the compiler version

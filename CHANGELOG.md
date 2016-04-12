@@ -1,3 +1,7 @@
+# Version 0.7.2
+* Add revision to the version string (missing in 0.7.1).
+
+
 # Version 0.7.1
 * Support for Intel(R) Composer XE 2017 Beta and MPSS 3.7 
 * Bugfix: fixed compilation problem with MPSS 3.6.1
