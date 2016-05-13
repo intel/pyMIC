@@ -109,7 +109,8 @@ _data_type_map = {
     numpy.dtype(numpy.int32): 1,
     numpy.dtype(numpy.float64): 2,
     numpy.dtype(numpy.complex128): 3,
-    numpy.dtype(numpy.uint64): 4
+    numpy.dtype(numpy.uint64): 4,
+    numpy.dtype(numpy.float32): 5
 }
 
 
