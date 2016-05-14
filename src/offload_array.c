@@ -40,9 +40,10 @@
 /* Data types, needs to match _data_type_map in _misc.py */
 #define DTYPE_INT64     0
 #define DTYPE_INT32     1
-#define DTYPE_FLOAT     2
+#define DTYPE_FLOAT64     2
 #define DTYPE_COMPLEX   3
 #define DTYPE_UINT64    4
+#define DTYPE_FLOAT32     5
 
 #define print printf
 
@@ -77,11 +78,21 @@ void pymic_offload_array_add(const int64_t *dtype, const int64_t *n,
             }
         }
         break;
-    case DTYPE_FLOAT:
+    case DTYPE_FLOAT64:
         {
             const double *x = (const double *)x_;
             const double *y = (const double *)y_;
             double *r = (double *)r_;
+            for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
+                r[ir] = x[ix] + y[iy];
+            }
+        }
+        break;
+    case DTYPE_FLOAT32:
+        {
+            const float *x = (const float *)x_;
+            const float *y = (const float *)y_;
+            float *r = (float *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] + y[iy];
             }
@@ -132,11 +143,21 @@ void pymic_offload_array_sub(const int64_t *dtype, const int64_t *n,
             }
         }
         break;
-    case DTYPE_FLOAT:
+    case DTYPE_FLOAT64:
         {
             const double *x = (const double *)x_;
             const double *y = (const double *)y_;
             double *r = (double *)r_;
+             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
+                r[ir] = x[ix] - y[iy];
+            }
+        }
+        break;
+    case DTYPE_FLOAT32:
+        {
+            const float *x = (const float *)x_;
+            const float *y = (const float *)y_;
+            float *r = (float *)r_;
              for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] - y[iy];
             }
@@ -186,11 +207,21 @@ void pymic_offload_array_mul(const int64_t *dtype, const int64_t *n,
             }
         }
         break;
-    case DTYPE_FLOAT:
+    case DTYPE_FLOAT64:
         {
             const double *x = (const double *)x_;
             const double *y = (const double *)y_;
             double *r = (double *)r_;
+            for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
+                r[ir] = x[ix] * y[iy];
+            }
+        }
+        break;
+    case DTYPE_FLOAT32:
+        {
+            const float *x = (const float *)x_;
+            const float *y = (const float *)y_;
+            float *r = (float *)r_;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = x[ix] * y[iy];
             }
@@ -236,10 +267,19 @@ void pymic_offload_array_fill(const int64_t *dtype, const int64_t *n,
             }
         }
         break;
-    case DTYPE_FLOAT:
+    case DTYPE_FLOAT64:
         {
             double  *x  = (double *)ptr;
             double   v  = *(const double *)value;
+            for (i = 0; i < *n; i++) {
+                x[i] = v;
+            }
+        }
+        break;
+    case DTYPE_FLOAT32:
+        {
+            float  *x  = (float *)ptr;
+            float   v  = *(const float *)value;
             for (i = 0; i < *n; i++) {
                 x[i] = v;
             }
@@ -280,8 +320,11 @@ void pymic_offload_array_setslice(const int64_t *dtype,
     case DTYPE_INT32:
         scale = 4; /* bytes */
         break;
-    case DTYPE_FLOAT:
+    case DTYPE_FLOAT64:
         scale = 8; /* bytes */
+        break;
+    case DTYPE_FLOAT32:
+        scale = 4; /* bytes */
         break;
     case DTYPE_COMPLEX:
         scale = 16; /* bytes */
@@ -317,10 +360,19 @@ void pymic_offload_array_abs(const int64_t *dtype, const int64_t *n,
             }
         }
         break;
-    case DTYPE_FLOAT:
+    case DTYPE_FLOAT64:
         {
             const double *x = (const double *)x_;
             double *r = (double *)r_;
+            for (i = 0; i < *n; i++) {
+                r[i] = fabs(x[i]);
+            }
+        }
+        break;
+    case DTYPE_FLOAT32:
+        {
+            const float *x = (const float *)x_;
+            float *r = (float *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = fabs(x[i]);
             }
@@ -378,11 +430,22 @@ void pymic_offload_array_pow(const int64_t *dtype, const int64_t *n,
             }
         }
         break;
-    case DTYPE_FLOAT:
+    case DTYPE_FLOAT64:
         {
             const double *x = (const double *)x_;
             const double *y = (const double *)y_;
             double *r = (double *)r_;
+            i = ix = iy = ir = 0;
+            for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
+                r[ir] = pow(x[ix], y[iy]);
+            }
+        }
+        break;
+    case DTYPE_FLOAT32:
+        {
+            const float *x = (const float *)x_;
+            const float *y = (const float *)y_;
+            float *r = (float *)r_;
             i = ix = iy = ir = 0;
             for (; i < *n; i++, ix += *incx, iy += *incy, ir += *incr) {
                 r[ir] = pow(x[ix], y[iy]);
@@ -429,10 +492,19 @@ void pymic_offload_array_reverse(const int64_t *dtype, const int64_t *n,
             }
         }
         break;
-    case DTYPE_FLOAT:
+    case DTYPE_FLOAT64:
         {
             const double *x = (const double *)x_;
             double *r = (double *)r_;
+            for (i = 0; i < *n; i++) {
+                r[i] = x[*n - i - 1];
+            }
+        }
+        break;
+    case DTYPE_FLOAT32:
+        {
+            const float *x = (const float *)x_;
+            float *r = (float *)r_;
             for (i = 0; i < *n; i++) {
                 r[i] = x[*n - i - 1];
             }
