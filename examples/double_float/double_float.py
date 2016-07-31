@@ -29,31 +29,32 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import pymic as mic
 import numpy as np
 
 # load the library with the kernel function (on the target)
-print "device = mic.devices[0]"
+print("device = mic.devices[0]")
 device = mic.devices[0]
-print "library = device.load_library...."
+print("library = device.load_library....")
 library = device.load_library(("libdouble_float.so",))
-print "stream = device.get_d"
+print("stream = device.get_d")
 stream = device.get_default_stream()
 
 na = np.arange(1, 33, dtype=np.float32)
 
 a = stream.bind(na)
 
-print "input:"
-print "--------------------------------------"
-print na
-print
-
+print("input:")
+print("--------------------------------------")
+print(na)
+print()
 stream.invoke(library.doubleit_kernel, a, a.size)
 stream.sync()
 
-print "output:"
-print "--------------------------------------"
+print("output:")
+print("--------------------------------------")
 a.update_host()
 stream.sync()
-print a
+print(a)
