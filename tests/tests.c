@@ -1,31 +1,31 @@
 /* Copyright (c) 2014-2016, Intel Corporation All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without 
- * modification, are permitted provided that the following conditions are 
- * met: 
  *
- * 1. Redistributions of source code must retain the above copyright 
- * notice, this list of conditions and the following disclaimer. 
- * 
- * 2. Redistributions in binary form must reproduce the above copyright 
- * notice, this list of conditions and the following disclaimer in the 
- * documentation and/or other materials provided with the distribution. 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
  *
- * 3. Neither the name of the copyright holder nor the names of its 
- * contributors may be used to endorse or promote products derived from 
- * this software without specific prior written permission. 
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS 
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED 
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A 
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
- * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
- * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * 1. Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <pymic_kernel.h>
@@ -70,11 +70,11 @@ void test_offload_stream_nullptr_5(const void *dummy1, const void *pointer1,
 }
 
 PYMIC_KERNEL
-void test_offload_stream_kernel_scalars(const long int *a, 
-                                        const double *b, 
-                                        const long int *c, 
-                                        const double *d, 
-                                        long int *ival, 
+void test_offload_stream_kernel_scalars(const long int *a,
+                                        const double *b,
+                                        const long int *c,
+                                        const double *d,
+                                        long int *ival,
                                         double *dval) {
     ival[0] = *a;
     ival[1] = *c;
@@ -83,10 +83,10 @@ void test_offload_stream_kernel_scalars(const long int *a,
 }
 
 PYMIC_KERNEL
-void test_offload_stream_kernel_arrays_int(long int *a, long int *b, 
-                                           const long int *na, 
+void test_offload_stream_kernel_arrays_int(long int *a, long int *b,
+                                           const long int *na,
                                            const long int *nb,
-                                           const long int *d, 
+                                           const long int *d,
                                            const long int *m) {
     size_t i;
     for (i = 0; i < *na; i++) {
@@ -98,8 +98,8 @@ void test_offload_stream_kernel_arrays_int(long int *a, long int *b,
 }
 
 PYMIC_KERNEL
-void test_offload_stream_kernel_arrays_float(double *a, double *b, 
-                                             long int *na, long int *nb, 
+void test_offload_stream_kernel_arrays_float(double *a, double *b,
+                                             long int *na, long int *nb,
                                              double *p, double *s) {
     size_t i;
     for (i = 0; i < *na; i++) {
@@ -111,7 +111,7 @@ void test_offload_stream_kernel_arrays_float(double *a, double *b,
 }
 
 PYMIC_KERNEL
-void test_check_pattern(const long int *a, const long int *n, 
+void test_check_pattern(const long int *a, const long int *n,
                         long int *r, const uint64_t *pattern) {
     size_t i;
     long int cnt = 0;
@@ -139,7 +139,7 @@ void test_sum_float(const double *a, long int *n, double *r) {
 }
 
 PYMIC_KERNEL
-void test_kernel_dgemm(const double *A, const double *B, double *C, 
+void test_kernel_dgemm(const double *A, const double *B, double *C,
                        const long int *m, const long int *n, const long int *k,
                        const double *alpha, const double *beta) {
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
@@ -147,10 +147,23 @@ void test_kernel_dgemm(const double *A, const double *B, double *C,
 }
 
 PYMIC_KERNEL
-void test_kernel_zgemm(const double complex *A, const double complex *B, 
-                       double complex *C, const long int *m, const long int *n, 
-                       const long int *k, const double complex *alpha, 
+void test_kernel_zgemm(const double complex *A, const double complex *B,
+                       double complex *C, const long int *m, const long int *n,
+                       const long int *k, const double complex *alpha,
                        const double complex *beta) {
     cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
                 *m, *n, *k, alpha, A, *k, B, *n, beta, C, *n);
+}
+
+PYMIC_KERNEL
+void test_too_many_arguments(const long int *a0, const long int *a1,
+                             const long int *a2, const long int *a3,
+                             const long int *a4, const long int *a5,
+                             const long int *a6, const long int *a7,
+                             const long int *a8, const long int *a9,
+                             const long int *aA, const long int *aB,
+                             const long int *aC, const long int *aD,
+                             const long int *aE, const long int *aF,
+                             const long int *aG) {
+    /* do nothing */
 }
