@@ -554,6 +554,12 @@ class OffloadStream:
             if type(args[0]) == tuple:
                 args = args[0]
 
+        # throw an exception if the number of kernel arguments is more than
+        # 16 (that's a limitation of libxstream at the moment)
+        if len(args) > 16:
+            raise ValueError("Kernels with more than 16 arguments "
+                             "are not supported")
+
         # safety check: avoid invoking a kernel if it's library has been loaded
         # on a different device
         if kernel[2] is not self._device:

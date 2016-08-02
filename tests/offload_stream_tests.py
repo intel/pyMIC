@@ -57,7 +57,7 @@ class OffloadStreamTests(unittest.TestCase):
         except pymic.OffloadError:
             self.assertTrue(True)
         else:
-            self.assertFalse(False)
+            self.assertTrue(False)
 
     @skipNoDevice
     def test_invoke_empty_kernel(self):
@@ -357,3 +357,29 @@ class OffloadStreamTests(unittest.TestCase):
         self.assertTrue((b == b_expect).all(),
                         "Wrong contents of array: "
                         "{0} should be {1}".format(b, b_expect))
+
+    @skipNoDevice
+    def test_too_many_arguments(self):
+        device = pymic.devices[0]
+        stream = device.get_default_stream()
+        library = get_library(device, "libtests.so")
+
+        a0, a1 = numpy.array([0]), numpy.array([1])
+        a2, a3 = numpy.array([2]), numpy.array([3])
+        a4, a5 = numpy.array([4]), numpy.array([5])
+        a6, a7 = numpy.array([6]), numpy.array([7])
+        a8, a9 = numpy.array([8]), numpy.array([9])
+        aA, aB = numpy.array([10]), numpy.array([11])
+        aC, aD = numpy.array([12]), numpy.array([13])
+        aE, aF = numpy.array([14]), numpy.array([15])
+        aG = numpy.array([16])
+
+        try:
+            stream.invoke(library.test_too_many_arguments,
+                          a0, a1, a2, a3, a4, a5, a6, a7,
+                          a8, a9, aA, aB, aC, aD, aE, aF,
+                          aG)
+        except ValueError:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
