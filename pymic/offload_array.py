@@ -687,7 +687,7 @@ class OffloadArray(object):
         # TODO: add additional checks here: shape/size/data type
         if stride != 1:
             raise ValueError('Cannot assign with stride not equal to 1')
-            
+
         dt = map_data_types(self.dtype)
         if isinstance(sequence, OffloadArray):
             self.stream.invoke(self._library.pymic_offload_array_setslice,

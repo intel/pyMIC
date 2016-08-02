@@ -41,6 +41,7 @@ from helper import get_library
 epsilon = 0.0000000001
 cutoff_value = 16777215
 
+
 class OffloadArrayTest(unittest.TestCase):
     """This class defines the test cases for the OffloadArray class."""
 
