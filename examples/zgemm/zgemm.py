@@ -49,7 +49,7 @@ m, n, k = ds, ds, ds
 if len(sys.argv) > 1:
     sz = int(sys.argv[1])
     m, n, k = sz, sz, sz
-alpha = 1.0 + 1.0j
+alpha = 1.0 + 0.0j
 beta = 0.0 + 0.0j
 
 # construct some matrices
