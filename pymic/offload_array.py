@@ -99,12 +99,15 @@ class OffloadArray(object):
             size = 1
             for d in shape:
                 size *= d
+            ndim = len(shape)
         except TypeError:
             assert isinstance(shape, (int, long))
             size = shape
             shape = (shape,)
+            ndim = 1
         self.size = size
         self.shape = shape
+        self.ndim = ndim
         self._nbytes = self.dtype.itemsize * self.size
 
         if base is not None:
