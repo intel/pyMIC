@@ -275,7 +275,7 @@ class OffloadStream:
             raise ValueError('Invalid byte count: {0}'.format(nbytes))
 
         debug(1, '(host -> device {0}) transferring {1} bytes '
-                 '(host ptr 0x{2:x}, device ptr {3}',
+                 '(host ptr 0x{2:x}, device ptr {3})',
                  self._device_id, nbytes, host_ptr, device_ptr)
         device_ptr = device_ptr._device_ptr
         pymic_stream_memcpy_h2d(self._device_id, self._stream_id,
