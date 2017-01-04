@@ -483,13 +483,11 @@ class OffloadArray(object):
         incx = int(1)
         if isinstance(other, (OffloadArray, numpy.ndarray)):
             _check_arrays(self, other)
-            y = other.array
             incy = int(1)
             incr = int(1)
         else:
             # scalar
             _check_scalar(self, other)
-            y = other
             incy = int(0)
             incr = int(1)
         result = OffloadArray(self.shape, self.dtype, device=self.device,
