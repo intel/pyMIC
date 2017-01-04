@@ -506,7 +506,7 @@ class OffloadArray(object):
            and completes asynchronously.
         """
 
-        if len(self.shape) > 1:
+        if self.ndim > 1:
             raise ValueError("Multi-dimensional arrays cannot be revered.")
 
         dt = map_data_types(self.dtype)
