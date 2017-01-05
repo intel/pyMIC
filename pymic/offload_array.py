@@ -61,9 +61,9 @@ def _check_arrays(arr_a, arr_b):
 
 
 def _check_scalar(array, scalar):
-    if array.dtype != type(other):
+    if array.dtype != type(scalar):
         raise ValueError("Data types do not match: "
-                         "{0} != {1}".format(array.dtype, type(other)))
+                         "{0} != {1}".format(array.dtype, type(scalar)))
 
 
 class OffloadArray(object):
@@ -483,6 +483,7 @@ class OffloadArray(object):
         dt = map_data_types(self.dtype)
         n = int(self.size)
         x = self
+        y = other
         incx = int(1)
         if isinstance(other, (OffloadArray, numpy.ndarray)):
             _check_arrays(self, other)
