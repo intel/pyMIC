@@ -51,6 +51,21 @@ for d in devices:
         _offload_libraries[d] = dev.load_library("liboffload_array.so")
 
 
+def _check_arrays(arr_a, arr_b):
+    if arr_a.shape != arr_b.shape:
+        raise ValueError("shapes of the arrays do not match: "
+                         "{0} != {1}".format(arr_a.shape, arr_b.shape))
+    if arr_a.dtype != arr_b.dtype:
+        raise ValueError("Data types do not match: "
+                         "{0} != {1}".format(arr_a.dtype, arr_b.dtype))
+
+
+def _check_scalar(array, scalar):
+    if array.dtype != type(scalar):
+        raise ValueError("Data types do not match: "
+                         "{0} != {1}".format(array.dtype, type(scalar)))
+
+
 class OffloadArray(object):
     """An offloadable array structure to perform array-based computation
        on an Intel(R) Xeon Phi(tm) Coprocessor
@@ -84,12 +99,15 @@ class OffloadArray(object):
             size = 1
             for d in shape:
                 size *= d
+            ndim = len(shape)
         except TypeError:
             assert isinstance(shape, (int, long))
             size = shape
             shape = (shape,)
+            ndim = 1
         self.size = size
         self.shape = shape
+        self.ndim = ndim
         self._nbytes = self.dtype.itemsize * self.size
 
         if base is not None:
@@ -198,31 +216,13 @@ class OffloadArray(object):
         x = self
         y = other
         incx = int(1)
-        if isinstance(other, OffloadArray):
-            if self.array.shape != other.array.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
-            incy = int(1)
-            incr = int(1)
-        elif isinstance(other, numpy.ndarray):
-            if self.array.shape != other.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
+        if isinstance(other, (OffloadArray, numpy.ndarray)):
+            _check_arrays(self, other)
             incy = int(1)
             incr = int(1)
         else:
             # scalar
-            if self.dtype != type(other):
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, type(other)))
+            _check_scalar(self, other)
             incy = int(0)
             incr = int(1)
         result = OffloadArray(self.shape, self.dtype, device=self.device,
@@ -239,29 +239,12 @@ class OffloadArray(object):
         x = self
         y = other
         incx = int(1)
-        if isinstance(other, OffloadArray):
-            if self.array.shape != other.array.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
-            incy = int(1)
-        elif isinstance(other, numpy.ndarray):
-            if self.array.shape != other.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
+        if isinstance(other, (OffloadArray, numpy.ndarray)):
+            _check_arrays(self, other)
             incy = int(1)
         else:
             # scalar
-            if self.dtype != type(other):
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, type(other)))
+            _check_scalar(self, other)
             incy = int(0)
         self.stream.invoke(self._library.pymic_offload_array_add,
                            dt, n, x, incx, y, incy, x, incx)
@@ -279,31 +262,13 @@ class OffloadArray(object):
         x = self
         y = other
         incx = int(1)
-        if isinstance(other, OffloadArray):
-            if self.array.shape != other.array.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
-            incy = int(1)
-            incr = int(1)
-        elif isinstance(other, numpy.ndarray):
-            if self.array.shape != other.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
+        if isinstance(other, (OffloadArray, numpy.ndarray)):
+            _check_arrays(self, other)
             incy = int(1)
             incr = int(1)
         else:
             # scalar
-            if self.dtype != type(other):
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, type(other)))
+            _check_scalar(self, other)
             incy = int(0)
             incr = int(1)
         result = OffloadArray(self.shape, self.dtype, device=self.device,
@@ -320,29 +285,12 @@ class OffloadArray(object):
         x = self
         y = other
         incx = int(1)
-        if isinstance(other, OffloadArray):
-            if self.array.shape != other.array.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
-            incy = int(1)
-        elif isinstance(other, numpy.ndarray):
-            if self.array.shape != other.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
+        if isinstance(other, (OffloadArray, numpy.ndarray)):
+            _check_arrays(self, other)
             incy = int(1)
         else:
             # scalar
-            if self.dtype != type(other):
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, type(other)))
+            _check_scalar(self, other)
             incy = int(0)
         self.stream.invoke(self._library.pymic_offload_array_sub,
                            dt, n, x, incx, y, incy, x, incx)
@@ -360,31 +308,13 @@ class OffloadArray(object):
         x = self
         y = other
         incx = int(1)
-        if isinstance(other, OffloadArray):
-            if self.array.shape != other.array.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
-            incy = int(1)
-            incr = int(1)
-        elif isinstance(other, numpy.ndarray):
-            if self.array.shape != other.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
+        if isinstance(other, (OffloadArray, numpy.ndarray)):
+            _check_arrays(self, other)
             incy = int(1)
             incr = int(1)
         else:
             # scalar
-            if self.dtype != type(other):
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, type(other)))
+            _check_scalar(self, other)
             incy = int(0)
             incr = int(1)
         result = OffloadArray(self.shape, self.dtype, device=self.device,
@@ -401,29 +331,12 @@ class OffloadArray(object):
         x = self
         y = other
         incx = int(1)
-        if isinstance(other, OffloadArray):
-            if self.array.shape != other.array.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
-            incy = int(1)
-        elif isinstance(other, numpy.ndarray):
-            if self.array.shape != other.shape:
-                raise ValueError("shapes of the arrays need to match: "
-                                 "{0} != {1}".format(self.array.shape,
-                                                     other.shape))
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
+        if isinstance(other, (OffloadArray, numpy.ndarray)):
+            _check_arrays(self, other)
             incy = int(1)
         else:
             # scalar
-            if self.dtype != type(other):
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, type(other)))
+            _check_scalar(self, other)
             incy = int(0)
         self.stream.invoke(self._library.pymic_offload_array_mul,
                            dt, n, x, incx, y, incy, x, incx)
@@ -468,11 +381,7 @@ class OffloadArray(object):
 
         if not isinstance(array, numpy.ndarray):
             raise TypeError("only numpy.ndarray supported")
-        if self.dtype is not array.dtype:
-            raise ValueError("Data types do not match: "
-                             "{0} != {1}".format(self.dtype, type(array)))
-        if self.shape != array.shape:
-            raise TypeError("shapes of arrays to not match")
+        _check_arrays(self, array)
 
         # copy data directly into the offload buffer
         nbytes = self._nbytes
@@ -574,35 +483,15 @@ class OffloadArray(object):
         dt = map_data_types(self.dtype)
         n = int(self.size)
         x = self
+        y = other
         incx = int(1)
-        if isinstance(other, OffloadArray):
-            if self.array.shape != other.array.shape:
-                raise ValueError("shapes of the arrays need to match ("
-                                 + str(self.array.shape) + " != "
-                                 + str(other.array.shape) + ")")
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
-            y = other.array
-            incy = int(1)
-            incr = int(1)
-        elif isinstance(other, numpy.ndarray):
-            if self.array.shape != other.shape:
-                raise ValueError("shapes of the arrays need to match ("
-                                 + str(self.array.shape) + " != "
-                                 + str(other.shape) + ")")
-            if self.dtype != other.dtype:
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, other.dtype))
-            y = other
+        if isinstance(other, (OffloadArray, numpy.ndarray)):
+            _check_arrays(self, other)
             incy = int(1)
             incr = int(1)
         else:
             # scalar
-            if self.dtype != type(other):
-                raise ValueError("Data types do not match: "
-                                 "{0} != {1}".format(self.dtype, type(other)))
-            y = other
+            _check_scalar(self, other)
             incy = int(0)
             incr = int(1)
         result = OffloadArray(self.shape, self.dtype, device=self.device,
@@ -618,7 +507,7 @@ class OffloadArray(object):
            and completes asynchronously.
         """
 
-        if len(self.shape) > 1:
+        if self.ndim > 1:
             raise ValueError("Multi-dimensional arrays cannot be revered.")
 
         dt = map_data_types(self.dtype)
