@@ -566,6 +566,9 @@ class OffloadStream:
             raise OffloadError("Cannot invoke kernel, "
                                "library not loaded on device")
 
+        # Map None to nullptr
+        args = [arg if arg is not None else 0 for arg in args]
+
         # determine the types of the arguments (scalar vs arrays);
         # we store the device pointers as 64-bit integers in an ndarray
         arg_dims = numpy.empty((len(args),), dtype=numpy.int64)
