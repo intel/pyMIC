@@ -592,4 +592,9 @@ class OffloadArray(object):
         dt = map_data_types(self.dtype)
         n = int(self.size)
         x = self
+        if axis is None or axis < 0:
+            axis = int(-1)
+        else :
+            this.axis = int(axis)
+        self.stream.invoke(self.pymic_offload_array_sum, dt, n, x, x, axis)
         return self
