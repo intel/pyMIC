@@ -521,3 +521,78 @@ void pymic_offload_array_reverse(const int64_t *dtype, const int64_t *n,
         break;
     }
 }
+
+PYMIC_KERNEL
+void pymic_offload_array_sum(const int64_t *dtype, const int64_t *n, 
+                        const void *x_, const void *y_, void *r_) {
+    size_t i;
+    i = 0;  
+    
+    switch(*dtype) {
+        case DTYPE_INT64:
+        {
+            const int64_t *x = (const int64_t *)x_;
+            const int64_t *y = (const int64_t *)y_;
+            int64_t *r = (int64_t *)r_;
+            *r = 0;
+
+            for (; i < *n; i++) {
+                *r += x[i] + y[i];
+            }
+        }
+        break;
+    case DTYPE_INT32:
+        {
+            const int32_t *x = (const int32_t *)x_;
+            const int32_t *y = (const int32_t *)y_;
+            int32_t *r = (int32_t *)r_;
+            *r = 0;
+
+            for (; i < *n; i++) {
+                *r += x[i] + y[i];
+            }
+            
+        }
+        break;
+    case DTYPE_FLOAT64:
+        {
+            const double *x = (const double *)x_;
+            const double *y = (const double *)y_;
+            double *r = (double *)r_;
+            *r = 0;
+
+            for (; i < *n; i++) {
+                *r += x[i] + y[i];
+            }
+            
+        }
+        break;
+    case DTYPE_FLOAT32:
+        {
+            const float *x = (const float *)x_;
+            const float *y = (const float *)y_;
+            float *r = (float *)r_;
+            *r = 0;
+
+            for (; i < *n; i++) {
+                *r += x[i] + y[i];
+            }
+            
+        }
+        break;
+    case DTYPE_COMPLEX:
+        {
+            const double complex *x = (const double complex *)x_;
+            const double complex *y = (const double complex *)y_;
+            double complex *r = (double complex *)r_;
+            *r = 0;
+
+            for (; i < *n; i++) {
+                *r += x[i] + y[i];
+            }
+            
+        }
+        break;
+    }
+}
+
