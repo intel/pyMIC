@@ -588,3 +588,8 @@ class OffloadArray(object):
             self.stream.sync()
         else:
             self.fill(sequence)
+    def sum(self, axis=None) :
+        dt = map_data_types(self.dtype)
+        n = int(self.size)
+        x = self
+        return self
