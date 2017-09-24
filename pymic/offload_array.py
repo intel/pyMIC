@@ -594,10 +594,6 @@ class OffloadArray(object):
         x = self
         sh = self.shape
         nd = self.ndim
-        if axis is None or axis < 0:
-            axis = int(-1)
-        else :
-            this.axis = int(axis)
         result = OffloadArray(self.shape, self.dtype, device=self.device,
                               stream=self.stream)
         self.stream.invoke(self.pymic_offload_array_sum, dt, n, x, result, axis, sh, nd)

@@ -1,9 +1,10 @@
-import pymic as mp
+import pymic as mic
 import numpy as np
+import sys
 
 
 if len(sys.argv) > 1 :
-	m = int(sys.argv[1])
+    m = int(sys.argv[1])
     n = int(sys.argv[2])
 else :
 	m, n = 5, 6
