@@ -588,13 +588,12 @@ class OffloadArray(object):
             self.stream.sync()
         else:
             self.fill(sequence)
-    def sum(self, axis) :
+    def sum(self, axis=None) :
         dt = map_data_types(self.dtype)
         n = int(self.size)
         x = self
         sh = self.shape
         nd = self.ndim
-        axis = int(1)
         result = OffloadArray(self.shape, self.dtype, device=self.device,
                               stream=self.stream)
         self.stream.invoke(self._library.pymic_offload_array_sum, dt, n, x, result, axis, sh, nd)
