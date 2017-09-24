@@ -21,7 +21,7 @@ offl_a = stream.bind(a)
 offl_r = stream.bind(r)
 stream.sync()
 
-offl_r = offl_a.sum
+offl_r = offl_a.sum()
 result = offl_r.update_host().array
 stream.sync()
 
