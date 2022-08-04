@@ -1,3 +1,12 @@
+DISCONTINUATION OF PROJECT.
+
+This project will no longer be maintained by Intel.
+
+Intel has ceased development and contributions including, but not limited to, maintenance, bug fixes, new releases, or updates, to this project. 
+
+Intel no longer accepts patches to this project.
+
+If you have an ongoing need to use this project, are interested in independently developing it, or would like to maintain patches for the open source software community, please create your own fork of this project. 
 # General Information
 
 pyMIC is a Python module to offload computation in a Python program to the Intel Xeon Phi coprocessor. It contains offloadable arrays and device management functions. It supports invocation of native kernels (C/C++, Fortran) and blends in with Numpy's array types for `float`, `complex`, and `int` data types.
